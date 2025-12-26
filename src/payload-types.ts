@@ -168,6 +168,7 @@ export interface Media {
 export interface Window {
   id: number;
   title: string;
+  slug: string;
   shortcut?: boolean | null;
   conent?:
     | {
@@ -305,6 +306,7 @@ export interface MediaSelect<T extends boolean = true> {
  */
 export interface WindowsSelect<T extends boolean = true> {
   title?: T;
+  slug?: T;
   shortcut?: T;
   conent?:
     | T

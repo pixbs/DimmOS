@@ -1,28 +1,51 @@
-import { randomInt } from 'crypto'
+import { UniqueIdentifier } from '@dnd-kit/core'
+import { useSortable } from '@dnd-kit/sortable'
+import { CSS } from '@dnd-kit/utilities'
+import Link from 'next/link'
 
 type Props = {
 	children: string
+	id: UniqueIdentifier
+	slug: string
 }
 
 const colors = [
-	{ name: 'Red', bg: 'bg-red hover:bg-red/80' },
-	{ name: 'Green', bg: 'bg-green hover:bg-green/80' },
-	{ name: 'Blue', bg: 'bg-blue hover:bg-blue/80' },
-	{ name: 'Yellow', bg: 'bg-yellow hover:bg-yellow/80' },
+	'bg-red hover:bg-red/80',
+	'bg-green hover:bg-green/80',
+	'bg-blue hover:bg-blue/80',
+	'bg-yellow hover:bg-yellow/80',
 ] as const
 
 export default function Shortcut(props: Props) {
-	const { children = 'Hey' } = props
-	const color = colors[randomInt(0, colors.length)]
+	const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+		id: props.id,
+	})
+
+	const style = {
+		transform: CSS.Transform.toString(transform),
+		transition,
+	}
+
+	const { children = 'Hey', slug } = props
+	const color = colors[Math.floor(Math.random() * colors.length)]
 
 	return (
-		<div className='flex flex-col items-center gap-1'>
-			<div
-				className={`size-1cell border-foreground/20 rounded-sm text-center transition-colors duration-200 ease-in-out ${color.bg}`}
+		<div
+			ref={setNodeRef}
+			{...attributes}
+			{...listeners}
+		>
+			<Link
+				className='flex flex-col items-center gap-1 w-2cell h-2cell'
+				style={style}
+				href={`/${slug}`}
+				shallow={true}
 			>
-				{color.name}
-			</div>
-			<div bg='background'>{children}</div>
+				<div
+					className={`border-foreground/20 rounded-sm text-center transition-colors duration-200 ease-in-out size-1cell ${color}`}
+				/>
+				<div bg='background'>{children}</div>
+			</Link>
 		</div>
 	)
 }

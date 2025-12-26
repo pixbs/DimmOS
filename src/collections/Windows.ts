@@ -14,6 +14,29 @@ export const Windows: CollectionConfig = {
 			required: true,
 		},
 		{
+			name: 'slug',
+			type: 'text',
+			required: true,
+			unique: true,
+			hooks: {
+				beforeValidate: [
+					({ value }) => {
+						if (typeof value === 'string') {
+							return value
+								.toString()
+								.toLowerCase()
+								.replace(/\s+/g, '-') // Replace spaces with -
+								.replace(/[^\w\-]+/g, '') // Remove all non-word chars
+								.replace(/\-\-+/g, '-') // Replace multiple - with single -
+								.replace(/^-+/, '') // Trim - from start of text
+								.replace(/-+$/, '') // Trim - from end of text
+						}
+						return value
+					},
+				],
+			},
+		},
+		{
 			name: 'shortcut',
 			type: 'checkbox',
 			label: 'Has Shortcut',
