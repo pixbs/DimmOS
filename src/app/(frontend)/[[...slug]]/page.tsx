@@ -1,26 +1,16 @@
-import Window from '@/components/organisms/window'
-import configPromise from '@payload-config'
-import { notFound } from 'next/navigation'
-import { getPayload } from 'payload'
+'use client'
+import { useWindows } from '@/contexts/WindowsContext'
+import { useEffect, use } from 'react'
 
-export default async function Page({ params }: { params: Promise<{ slug: string[] }> }) {
-	const { slug } = await params
-	const payload = await getPayload({ config: configPromise })
-	const window = await payload.find({
-		collection: 'windows',
-		where: {
-			slug: { equals: slug?.[0] },
-		},
-		limit: 1,
-	})
+export default function Page({ params }: { params: Promise<{ slug: string[] }> }) {
+	const { addWindow } = useWindows()
+	const { slug } = use(params)
 
-	if (slug === undefined || slug.length === 0) {
-		return <></>
-	}
+	useEffect(() => {
+		if (slug && slug.length > 0) {
+			addWindow(slug[0])
+		}
+	}, [slug])
 
-	if (window.totalDocs === 0) {
-		return notFound()
-	}
-
-	return <Window {...window.docs[0]} />
+	return <></>
 }

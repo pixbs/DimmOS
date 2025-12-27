@@ -1,7 +1,9 @@
 'use client'
-import type { Window } from '@/payload-types'
+import type { Window as WindowType } from '@/payload-types'
 import Shortcut from '../molecules/shortcut'
 import Wallpaper from '../molecules/wallpaper'
+import Window from './window'
+import { useWindows } from '@/contexts/WindowsContext'
 import {
 	DndContext,
 	closestCenter,
@@ -19,7 +21,7 @@ import {
 } from '@dnd-kit/sortable'
 import { useState } from 'react'
 
-export interface ShortcutData extends Pick<Window, 'id' | 'title' | 'slug'> {}
+export interface ShortcutData extends Pick<WindowType, 'id' | 'title' | 'slug'> {}
 
 interface DesktopProps {
 	shortcuts: ShortcutData[]
@@ -27,6 +29,7 @@ interface DesktopProps {
 
 export default function Desktop({ shortcuts }: DesktopProps) {
 	const [items, setItems] = useState(shortcuts)
+	const { openWindows } = useWindows()
 
 	const sensors = useSensors(
 		useSensor(PointerSensor),
@@ -59,6 +62,17 @@ export default function Desktop({ shortcuts }: DesktopProps) {
 						</Shortcut>
 					))}
 					<Wallpaper />
+					{openWindows.map((slug) => {
+						const windowData = items.find((item) => item.slug === slug)
+						if (!windowData) return null
+						return (
+							<Window
+								key={slug}
+								slug={slug}
+								title={windowData.title}
+							/>
+						)
+					})}
 				</div>
 			</SortableContext>
 		</DndContext>

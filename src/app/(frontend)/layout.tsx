@@ -3,6 +3,7 @@ import './globals.css'
 import Desktop from '@/components/organisms/desktop'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
+import { WindowsProvider } from '@/contexts/WindowsContext'
 
 export const metadata = {
 	description: 'A blank template using Payload in a Next.js app.',
@@ -27,14 +28,16 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
 
 	return (
 		<html lang='en'>
-			<body
-				bg='background'
-				className='relative size-screen'
-				text='foreground'
-			>
-				{children}
-				<Desktop shortcuts={shortcuts.docs} />
-			</body>
+			<WindowsProvider>
+				<body
+					bg='background'
+					className='relative size-screen'
+					text='foreground'
+				>
+					{children}
+					<Desktop shortcuts={shortcuts.docs} />
+				</body>
+			</WindowsProvider>
 		</html>
 	)
 }

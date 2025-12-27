@@ -1,8 +1,14 @@
-import type { Window } from '@/payload-types'
-import Link from 'next/link'
+'use client'
+import { useWindows } from '@/contexts/WindowsContext'
 
-export default function Window(props: Window) {
-	const { title, slug } = props
+type Props = {
+	slug: string
+	title: string
+}
+
+export default function Window({ slug, title }: Props) {
+	const { removeWindow } = useWindows()
+
 	return (
 		<div
 			className='absolute z-10 left-1/2 top-1/2 -translate-x-1/2 -translate-y-1/2 w-6cell h-60 flex flex-col rounded-xl'
@@ -16,9 +22,9 @@ export default function Window(props: Window) {
 				border-b='foreground/10 1'
 			>
 				<div className='w-full'>
-					<Link href='/'>
+					<button onClick={() => removeWindow(slug)}>
 						<div className='size-3 p-1.5 bg-red rounded-full m-0.25' />
-					</Link>
+					</button>
 				</div>
 				<div className='shrink-0'>~/{slug}</div>
 				<div className='w-full' />

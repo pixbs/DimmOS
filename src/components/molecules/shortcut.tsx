@@ -1,7 +1,8 @@
+'use client'
 import { UniqueIdentifier } from '@dnd-kit/core'
 import { useSortable } from '@dnd-kit/sortable'
 import { CSS } from '@dnd-kit/utilities'
-import Link from 'next/link'
+import { useWindows } from '@/contexts/WindowsContext'
 
 type Props = {
 	children: string
@@ -17,9 +18,10 @@ const colors = [
 ] as const
 
 export default function Shortcut(props: Props) {
-	const { attributes, listeners, setNodeRef, transform, transition } = useSortable({
+	const { attributes, listeners, setNodeRef, transform, transition, isDragging } = useSortable({
 		id: props.id,
 	})
+	const { addWindow } = useWindows()
 
 	const style = {
 		transform: CSS.Transform.toString(transform),
@@ -34,18 +36,16 @@ export default function Shortcut(props: Props) {
 			ref={setNodeRef}
 			{...attributes}
 			{...listeners}
+			onDoubleClick={() => {
+				addWindow(slug)
+			}}
+			className='flex flex-col items-center gap-1 w-2cell h-2cell cursor-pointer'
+			style={style}
 		>
-			<Link
-				className='flex flex-col items-center gap-1 w-2cell h-2cell'
-				style={style}
-				href={`/${slug}`}
-				shallow={true}
-			>
-				<div
-					className={`border-foreground/20 rounded-sm text-center transition-colors duration-200 ease-in-out size-1cell ${color}`}
-				/>
-				<div bg='background'>{children}</div>
-			</Link>
+			<div
+				className={`border-foreground/20 rounded-sm text-center transition-colors duration-200 ease-in-out size-1cell ${color}`}
+			/>
+			<div bg='background'>{children}</div>
 		</div>
 	)
 }
