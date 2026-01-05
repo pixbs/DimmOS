@@ -2,8 +2,6 @@
 import type { Window as WindowType } from '@/payload-types'
 import Shortcut from '../molecules/shortcut'
 import Wallpaper from '../molecules/wallpaper'
-import Window from './window'
-import { useWindows } from '@/contexts/WindowsContext'
 import {
 	DndContext,
 	closestCenter,
@@ -29,7 +27,6 @@ interface DesktopProps {
 
 export default function Desktop({ shortcuts }: DesktopProps) {
 	const [items, setItems] = useState(shortcuts)
-	const { openWindows } = useWindows()
 
 	const sensors = useSensors(
 		useSensor(PointerSensor),
@@ -62,17 +59,6 @@ export default function Desktop({ shortcuts }: DesktopProps) {
 						</Shortcut>
 					))}
 					<Wallpaper />
-					{openWindows.map((slug) => {
-						const windowData = items.find((item) => item.slug === slug)
-						if (!windowData) return null
-						return (
-							<Window
-								key={slug}
-								slug={slug}
-								title={windowData.title}
-							/>
-						)
-					})}
 				</div>
 			</SortableContext>
 		</DndContext>

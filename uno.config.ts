@@ -1,15 +1,21 @@
-import { defineConfig, presetAttributify, presetMini, transformerAttributifyJsx } from 'unocss'
+import {
+	defineConfig,
+	presetAttributify,
+	presetMini,
+	presetWind4,
+	transformerAttributifyJsx,
+} from 'unocss'
 
 const cellUnit = '3.33vw'
 
 export default defineConfig({
-	presets: [presetAttributify(), presetMini()],
+	presets: [presetAttributify(), presetWind4()],
 	theme: {
 		colors: {
 			background: '#111',
 			foreground: '#FFF',
 			red: '#FF7474',
-			green: '#FACC15',
+			green: '#4ADE80',
 			blue: '#60A5FA',
 			yellow: '#FACC15',
 		},

@@ -1,6 +1,7 @@
 import '@unocss/reset/tailwind.css'
 import './globals.css'
 import Desktop from '@/components/organisms/desktop'
+import Windows from '@/components/organisms/windows'
 import configPromise from '@payload-config'
 import { getPayload } from 'payload'
 import { WindowsProvider } from '@/contexts/WindowsContext'
@@ -36,6 +37,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
 				>
 					{children}
 					<Desktop shortcuts={shortcuts.docs} />
+					<Windows />
 				</body>
 			</WindowsProvider>
 		</html>
