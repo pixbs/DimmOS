@@ -170,14 +170,24 @@ export interface Window {
   title: string;
   slug: string;
   shortcut?: boolean | null;
-  conent?:
-    | {
-        title: string;
-        description?: string | null;
-        id?: string | null;
-        blockName?: string | null;
-        blockType: 'title';
-      }[]
+  content?:
+    | (
+        | {
+            title: string;
+            description?: string | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'title';
+          }
+        | {
+            Name: string;
+            Role: string;
+            Message?: string | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'welcome';
+          }
+      )[]
     | null;
   updatedAt: string;
   createdAt: string;
@@ -308,7 +318,7 @@ export interface WindowsSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
   shortcut?: T;
-  conent?:
+  content?:
     | T
     | {
         title?:
@@ -316,6 +326,15 @@ export interface WindowsSelect<T extends boolean = true> {
           | {
               title?: T;
               description?: T;
+              id?: T;
+              blockName?: T;
+            };
+        welcome?:
+          | T
+          | {
+              Name?: T;
+              Role?: T;
+              Message?: T;
               id?: T;
               blockName?: T;
             };

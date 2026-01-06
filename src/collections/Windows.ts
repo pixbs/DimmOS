@@ -1,8 +1,12 @@
+import { Title } from '@/components/organisms/content/title/scheme'
+import { Welcome } from '@/components/organisms/content/welcome/scheme'
 import type { CollectionConfig } from 'payload'
-import { Title } from '@/blocks/Title'
 
 export const Windows: CollectionConfig = {
 	slug: 'windows',
+	access: {
+		read: () => true, // Public read access
+	},
 	admin: {
 		useAsTitle: 'title',
 		defaultColumns: ['title'],
@@ -42,9 +46,9 @@ export const Windows: CollectionConfig = {
 			label: 'Has Shortcut',
 		},
 		{
-			name: 'conent',
+			name: 'content',
 			type: 'blocks',
-			blocks: [Title],
+			blocks: [Title, Welcome],
 		},
 	],
 }

@@ -3,6 +3,8 @@ import { useWindows } from '@/contexts/WindowsContext'
 import { useEffect, useState, useCallback } from 'react'
 import { useDraggable, useDndMonitor } from '@dnd-kit/core'
 import TitleBar from '../molecules/title-bar'
+import WindowContent from '../molecules/window-content'
+import type { Window as WindowType } from '@/payload-types'
 
 type Props = {
 	slug: string
@@ -13,7 +15,7 @@ type ResizeDirection = 'right' | 'bottom' | 'corner' | null
 export default function Window({ slug }: Props) {
 	const { closeWindow, minimizeWindow, bringToFront, getZIndex, getWindowState, updateWindowState } =
 		useWindows()
-	const [title, setTitle] = useState<string | null>(null)
+	const [windowData, setWindowData] = useState<WindowType | null>(null)
 	const [loading, setLoading] = useState(true)
 	const [resizing, setResizing] = useState<ResizeDirection>(null)
 	const [resizeStart, setResizeStart] = useState({ x: 0, y: 0, width: 0, height: 0 })
@@ -126,7 +128,7 @@ export default function Window({ slug }: Props) {
 				const res = await fetch(`/api/windows?where[slug][equals]=${slug}&limit=1`)
 				const data = await res.json()
 				if (data.docs?.[0]) {
-					setTitle(data.docs[0].title)
+					setWindowData(data.docs[0])
 				}
 			} finally {
 				setLoading(false)
@@ -175,9 +177,7 @@ export default function Window({ slug }: Props) {
 			{loading ? (
 				<div className='flex items-center justify-center h-full w-full'>Loading</div>
 			) : (
-				<div className='flex items-center justify-center h-full w-full'>
-					{title || 'Untitled Window'}
-				</div>
+				<WindowContent content={windowData?.content} />
 			)}
 			{/* Resize handles */}
 			<div
