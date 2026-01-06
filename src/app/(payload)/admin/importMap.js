@@ -1,5 +1,7 @@
+import { IconSelector as IconSelector_029c5a77fc405153d0e322e704321408 } from '@/components/fields/icon-selector'
 import { CollectionCards as CollectionCards_ab83ff7e88da8d3530831f296ec4756a } from '@payloadcms/ui/rsc'
 
 export const importMap = {
+  "@/components/fields/icon-selector#IconSelector": IconSelector_029c5a77fc405153d0e322e704321408,
   "@payloadcms/ui/rsc#CollectionCards": CollectionCards_ab83ff7e88da8d3530831f296ec4756a
 }

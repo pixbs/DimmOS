@@ -24,6 +24,8 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
 			title: true,
 			slug: true,
 			id: true,
+			icon: true,
+			color: true,
 		},
 	})
 

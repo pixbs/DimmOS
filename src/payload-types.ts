@@ -170,6 +170,8 @@ export interface Window {
   title: string;
   slug: string;
   shortcut?: boolean | null;
+  color: 'blue' | 'green' | 'red' | 'yellow';
+  icon?: string | null;
   content?:
     | (
         | {
@@ -318,6 +320,8 @@ export interface WindowsSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
   shortcut?: T;
+  color?: T;
+  icon?: T;
   content?:
     | T
     | {

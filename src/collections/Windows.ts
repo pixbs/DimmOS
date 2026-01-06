@@ -1,5 +1,6 @@
 import { Title } from '@/components/organisms/content/title/scheme'
 import { Welcome } from '@/components/organisms/content/welcome/scheme'
+import { iconField } from '@/fields/icon'
 import type { CollectionConfig } from 'payload'
 
 export const Windows: CollectionConfig = {
@@ -40,15 +41,45 @@ export const Windows: CollectionConfig = {
 				],
 			},
 		},
+
 		{
-			name: 'shortcut',
-			type: 'checkbox',
-			label: 'Has Shortcut',
-		},
-		{
-			name: 'content',
-			type: 'blocks',
-			blocks: [Title, Welcome],
+			type: 'tabs',
+			tabs: [
+				{
+					label: 'Shortcut',
+					fields: [
+						{
+							name: 'shortcut',
+							type: 'checkbox',
+							label: 'Has Shortcut',
+						},
+						{
+							name: 'color',
+							type: 'select',
+							options: [
+								{ label: 'Blue', value: 'blue' },
+								{ label: 'Green', value: 'green' },
+								{ label: 'Red', value: 'red' },
+								{ label: 'Yellow', value: 'yellow' },
+							],
+							defaultValue: 'blue',
+							required: true,
+						},
+						iconField({ label: 'Icon' }),
+					],
+				},
+				{
+					label: 'Content',
+					fields: [
+						{
+							name: 'content',
+							type: 'blocks',
+							minRows: 1,
+							blocks: [Title, Welcome],
+						},
+					],
+				},
+			],
 		},
 	],
 }

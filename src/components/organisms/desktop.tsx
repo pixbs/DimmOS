@@ -19,7 +19,7 @@ import {
 } from '@dnd-kit/sortable'
 import { useState } from 'react'
 
-export interface ShortcutData extends Pick<WindowType, 'id' | 'title' | 'slug'> {}
+export interface ShortcutData extends Pick<WindowType, 'id' | 'title' | 'slug' | 'icon' | 'color'> {}
 
 interface DesktopProps {
 	shortcuts: ShortcutData[]
@@ -49,11 +49,13 @@ export default function Desktop({ shortcuts }: DesktopProps) {
 					border='foreground/10'
 					className='relative size-screen flex flex-col flex-wrap-reverse content-start p-1cell'
 				>
-					{items.map(({ id, slug, title }) => (
+					{items.map(({ id, slug, title, icon, color }) => (
 						<Shortcut
 							key={id}
 							id={id}
 							slug={slug}
+							icon={icon}
+							color={color}
 						>
 							{title}
 						</Shortcut>
