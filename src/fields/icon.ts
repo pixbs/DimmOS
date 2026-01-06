@@ -1,12 +1,22 @@
-import type { Field } from 'payload'
+import type { TextField } from 'payload'
 
-export const iconField = (overrides?: Partial<Field> & { name?: string }): Field => ({
-	name: overrides?.name || 'icon',
-	type: 'text',
-	admin: {
-		components: {
-			Field: '@/components/fields/icon-selector#IconSelector',
+type IconFieldOverrides = Partial<
+	Omit<TextField, 'type' | 'hasMany' | 'minRows' | 'maxRows' | 'validate'>
+>
+
+export const iconField = (overrides?: IconFieldOverrides): TextField => {
+	const { admin, ...rest } = overrides || {}
+
+	return {
+		name: 'icon',
+		...rest,
+		type: 'text',
+		admin: {
+			...admin,
+			components: {
+				...admin?.components,
+				Field: '@/components/fields/icon-selector#IconSelector',
+			},
 		},
-	},
-	...overrides,
-})
+	} as TextField
+}

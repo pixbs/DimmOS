@@ -18,8 +18,12 @@ import {
 	verticalListSortingStrategy,
 } from '@dnd-kit/sortable'
 import { useState } from 'react'
+import { restrictToWindowEdges } from '@dnd-kit/modifiers'
 
-export interface ShortcutData extends Pick<WindowType, 'id' | 'title' | 'slug' | 'icon' | 'color'> {}
+export interface ShortcutData extends Pick<
+	WindowType,
+	'id' | 'title' | 'slug' | 'icon' | 'color'
+> {}
 
 interface DesktopProps {
 	shortcuts: ShortcutData[]
@@ -40,6 +44,7 @@ export default function Desktop({ shortcuts }: DesktopProps) {
 			sensors={sensors}
 			onDragEnd={handleDragEnd}
 			collisionDetection={closestCenter}
+			modifiers={[restrictToWindowEdges]}
 		>
 			<SortableContext
 				items={items}
