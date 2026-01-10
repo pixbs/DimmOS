@@ -21,7 +21,8 @@
     box-sizing: border-box;
   }
 
-  &:hover::after {
+  &:hover::after,
+  &.active::after {
     border-color: var(--foreground-20) !important;
   }
 }
@@ -42,7 +43,8 @@
     border-width: 0 0 2px 0;
   }
 
-  &:hover::after {
+  &:hover::after,
+  &.active::after {
     border-width: 0 0 4px 0;
   }
 }
@@ -63,7 +65,8 @@
     border-color: var(--foreground-10);
   }
 
-  &:hover::after {
+  &:hover::after,
+  &.active::after {
     border-width: 0 4px 0 0;
   }
 }
@@ -83,7 +86,8 @@
     border-width: 0 2px 2px 0;
   }
 
-  &:hover::after {
+  &:hover::after,
+  &.active::after {
     border-width: 0 4px 4px 0;
   }
 }
