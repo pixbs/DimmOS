@@ -1,0 +1,61 @@
+:root {
+  --background: #111;
+  --foreground: #fff;
+  --foreground-05: color-mix(in srgb, var(--foreground) 5%, transparent);
+  --foreground-10: color-mix(in srgb, var(--foreground) 10%, transparent);
+  --foreground-20: color-mix(in srgb, var(--foreground) 20%, transparent);
+  --primary: #f22f57;
+  --primary-10: color-mix(in srgb, var(--primary) 10%, transparent);
+
+  background-color: var(--background);
+
+  margin: 0;
+  padding: 0;
+
+  color: var(--foreground);
+  font-family: "Geist Sans", sans-serif;
+
+  --tile: 25vw;
+  @media (width > 768px) {
+    --tile: 12.5vw;
+  }
+  @media (width > 1200px) {
+    --tile: 10vw;
+  }
+  @media (width > 1600px) {
+    --tile: 6.25vw;
+  }
+  @media (width > 1900px) {
+    --tile: 4vw;
+  }
+  --2tile: calc(var(--tile) * 2);
+}
+
+body {
+  overflow: hidden;
+  margin: 0;
+  padding: 0;
+  height: 100dvh;
+  width: 100dvw;
+  display: grid;
+  grid-template-columns: repeat(auto-fill, var(--tile));
+  grid-template-rows: repeat(auto-fill, var(--tile));
+  justify-content: center;
+  align-items: center;
+  background-image:
+    repeating-linear-gradient(
+      180deg,
+      rgba(0, 0, 0, 0),
+      rgba(0, 0, 0, 0) calc(var(--tile) - 2px),
+      var(--foreground-10) calc(var(--tile) - 2px),
+      var(--foreground-10) var(--tile)
+    ),
+    repeating-linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0),
+      rgba(0, 0, 0, 0) calc(var(--tile) - 2px),
+      var(--foreground-10) calc(var(--tile) - 2px),
+      var(--foreground-10) var(--tile)
+    );
+  background-opacity: 0.1;
+}

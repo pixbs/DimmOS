@@ -1,19 +1,7 @@
-import { withPayload } from '@payloadcms/next/withPayload'
-import type { Configuration } from 'webpack'
+import type { NextConfig } from "next";
 
-/** @type {import('next').NextConfig} */
-const nextConfig = {
-	// Your Next.js config here
-	webpack: (webpackConfig: Configuration) => {
-		webpackConfig.resolve = webpackConfig.resolve || {}
-		webpackConfig.resolve.extensionAlias = {
-			'.cjs': ['.cts', '.cjs'],
-			'.js': ['.ts', '.tsx', '.js', '.jsx'],
-			'.mjs': ['.mts', '.mjs'],
-		}
+const nextConfig: NextConfig = {
+  /* config options here */
+};
 
-		return webpackConfig
-	},
-}
-
-export default withPayload(nextConfig, { devBundleServerPackages: false })
+export default nextConfig;

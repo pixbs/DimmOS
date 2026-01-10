@@ -1,0 +1,89 @@
+.handle {
+  /* Reset button styles */
+  background: none;
+  border: none;
+  padding: 0;
+  margin: 0;
+  font: inherit;
+  color: inherit;
+  outline: none;
+  position: absolute;
+  cursor: pointer;
+
+  &::after {
+    content: "";
+    position: absolute;
+    border-style: solid;
+    border-color: rgba(255, 255, 255, 0);
+    transition:
+      border-width 100ms ease-out,
+      border-color 100ms ease-out;
+    box-sizing: border-box;
+  }
+
+  &:hover::after {
+    border-color: var(--foreground-20) !important;
+  }
+}
+
+.bottom {
+  bottom: -8px;
+  left: 0;
+  right: 0;
+  height: 16px;
+  cursor: ns-resize;
+
+  &::after {
+    bottom: 8px;
+    left: 0;
+    right: 0;
+    height: 0;
+    border-color: var(--foreground-10);
+    border-width: 0 0 2px 0;
+  }
+
+  &:hover::after {
+    border-width: 0 0 4px 0;
+  }
+}
+
+.right {
+  right: -8px;
+  top: 0;
+  bottom: 0;
+  width: 16px;
+  cursor: ew-resize;
+
+  &::after {
+    right: 8px;
+    top: 0;
+    bottom: 0;
+    width: 0;
+    border-width: 0 2px 0 0;
+    border-color: var(--foreground-10);
+  }
+
+  &:hover::after {
+    border-width: 0 4px 0 0;
+  }
+}
+
+.corner {
+  width: 32px;
+  height: 32px;
+  bottom: 0;
+  right: 0;
+  cursor: nwse-resize;
+
+  &::after {
+    top: 0;
+    left: 0;
+    width: 32px;
+    height: 32px;
+    border-width: 0 2px 2px 0;
+  }
+
+  &:hover::after {
+    border-width: 0 4px 4px 0;
+  }
+}

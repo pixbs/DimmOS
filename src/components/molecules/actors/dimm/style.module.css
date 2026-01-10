@@ -1,0 +1,54 @@
+.dimm {
+    width: min(100%, 100cqh);
+    height: min(100%, 100cqw);
+    aspect-ratio: 1 / 1;
+    container-type: size;
+    color: var(--background);
+    background-color: var(--foreground);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 100%;
+}
+
+.md {
+    display: block;
+}
+
+.sm {
+    display: none;
+}
+
+:global(.w-1) .md,
+:global(.w-2) .md,
+:global(.w-3) .md,
+:global(.h-1) .md,
+:global(.h-2) .md,
+:global(.h-3) .md {
+    display: none;
+}
+
+:global(.w-1) .sm,
+:global(.w-2) .sm,
+:global(.w-3) .sm,
+:global(.h-1) .sm,
+:global(.h-2) .sm,
+:global(.h-3) .sm {
+    display: block;
+}
+
+@keyframes blink {
+    0%, 85% {
+        transform: translateY(0);
+    }
+    90% {
+        transform: translateY(24px);
+    }
+    95%, 100% {
+        transform: translateY(0);
+    }
+}
+
+.blink {
+    animation: blink 3s infinite;
+}
