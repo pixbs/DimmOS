@@ -1,0 +1,125 @@
+:root {
+    --bg: #111;
+    --bgs: #070707;
+    --fg: #fff;
+    --brand: #F22F57;
+    --border: 2px;
+    --green: #4ADE80;
+    --yellow: #FACC15;
+    --blue: #60A5FA;
+    --red: #FCA5A5;
+
+    color: var(--fg);
+
+    --tile: 16.6667vw;
+    @media (width > 768px) {
+      --tile: 12.5vw;
+    }
+    @media (width > 1200px) {
+      --tile: 10vw;
+    }
+    @media (width > 1600px) {
+      --tile: 6.25vw;
+    }
+    @media (width > 2560px) {
+      --tile: 4vw;
+    }
+    --2tile: calc(var(--tile) * 2);
+    
+}
+
+a {
+  color: var(--fg);
+  text-decoration: none;
+  :hover {
+    opacity: 0.8;
+  }
+}
+
+body {
+    margin: 0;
+    padding: 0;
+    height: 100dvh;
+    width: 100dvw;
+    display: flex;
+    flex-direction: column;
+    font-size: 0.875rem;
+    background-color: var(--bg);
+    font-weight: 700;
+}
+
+header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem;
+  border-bottom: var(--border) solid color-mix(in srgb, var(--fg) 10%, transparent);
+  padding: 0 1.5rem;
+  height: 2.5rem;
+}
+
+main {
+    height: 100%;
+    width: 100%;
+    display: grid; 
+    grid-template-columns: repeat(auto-fill, calc(var(--tile)*2));
+    grid-template-rows: repeat(auto-fill, calc(var(--tile)*2));
+    justify-content: center;
+    align-items: center;
+    @media (width > 1200px) {
+      grid-template-columns: repeat(auto-fill, var(--tile));
+      grid-template-rows: repeat(auto-fill, var(--tile));
+      grid-auto-flow: column;
+      direction: rtl;
+    }
+
+    background-color: var(--bg);
+    background-image:
+    linear-gradient(
+      color-mix(in srgb, var(--bg) 90%, transparent)
+    ),
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0),
+      rgba(0, 0, 0, 0) calc(100% - var(--border)),
+      color-mix(in srgb, var(--fg) 20%, transparent) calc(100% - var(--border)),
+      color-mix(in srgb, var(--fg) 20%, transparent) 100%
+    ),
+    linear-gradient(
+      rgba(0, 0, 0, 0),
+      rgba(0, 0, 0, 0) calc(100% - var(--border)),
+      color-mix(in srgb, var(--fg) 20%, transparent) calc(100% - var(--border)),
+      color-mix(in srgb, var(--fg) 20%, transparent) 100%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0),
+      rgba(0, 0, 0, 0) calc(var(--border)*3),
+      var(--bg) calc(var(--border)*3),
+      var(--bg) calc(100% - var(--border)*4),
+      rgba(0, 0, 0, 0) calc(100% - var(--border)*4),
+      rgba(0, 0, 0, 0) 100%
+    ),
+    linear-gradient(
+      rgba(0, 0, 0, 0),
+      rgba(0, 0, 0, 0) calc(var(--border)*3),
+      var(--bg) calc(var(--border)*3),
+      var(--bg) calc(100% - var(--border)*4),
+      rgba(0, 0, 0, 0) calc(100% - var(--border)*4),
+      rgba(0, 0, 0, 0) 100%
+    ),
+    linear-gradient(
+      90deg,
+      rgba(0, 0, 0, 0),
+      rgba(0, 0, 0, 0) calc(100% - var(--border)),
+      var(--fg) calc(100% - var(--border)),
+      var(--fg) 100%
+    ),
+    linear-gradient(
+      rgba(0, 0, 0, 0),
+      rgba(0, 0, 0, 0) calc(100% - var(--border)),
+      var(--fg) calc(100% - var(--border)),
+      var(--fg) 100%
+    );
+    background-size: var(--tile) var(--tile);
+}
