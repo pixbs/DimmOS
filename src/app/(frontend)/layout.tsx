@@ -27,11 +27,15 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
           </Link>
         </header>
         <main>
-          <Shortcut name='Welcome' color="green" href="/welcome" />
-          <Shortcut name='Works' href="/works" />
-          <Shortcut name='Services' href="/services" />
-          <Shortcut name='Contact' color="blue" href="/contact" />
+          <Shortcut name='Welcome' color="green" href="/welcome" icon="Computer" />
+          <Shortcut name='Works' href="/works" icon="Folder5" />
+          <Shortcut name='Services' href="/services" icon="Folder5" />
+          <Shortcut name='Contact' color="blue" href="/contact" icon='Mail' />
         </main>
+        <nav>
+          <Shortcut name='Welcome' color="green" href="/welcome" hasTitle={false} icon="Computer" />
+          <Shortcut name='Works' href="/works" hasTitle={false} icon="Folder5" />
+        </nav>
       </body>
     </html>
   )

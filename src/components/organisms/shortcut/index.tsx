@@ -4,21 +4,25 @@ import Link from "next/link";
 
 type ShortcutProps = {
     name: string;
-    color?: 'green' | 'yellow' | 'blue' | 'red';
     href: string;
+    icon?: string;
+    color?: 'green' | 'yellow' | 'blue' | 'red';
+    hasTitle?: boolean;
 }
 
 export default function Shortcut(props: ShortcutProps) {
-    const { name, color = 'yellow', href } = props
+    const { name, color = 'yellow', href, hasTitle = true, icon = "Folder" } = props
 
     return (
         <Link href={href} className={styles.shortcut}>
             <div className={`${styles.icon} ${styles[`icon-${color}`]}`}>
-                <Icon name="Folder" size={24} variant="fill" />
+                <Icon name={icon} size={24} variant="fill" />
             </div>
+            {hasTitle && (
             <p>
                 {name}
             </p>
+            )}
         </Link>
     )
 }
