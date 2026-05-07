@@ -16,9 +16,9 @@ export const metadata = {
 }
 
 const COLLECTION_META = {
-  windows: { href: '/windows', color: '#4A9EFF' },
-  works:   { href: '/works',   color: '#F5A623' },
-  forms:   { href: '/forms',   color: '#A259FF' },
+  windows: { color: '#4A9EFF' },
+  works:   { color: '#F5A623' },
+  forms:   { color: '#E3465A' },
 } as const
 
 type CollectionSlug = keyof typeof COLLECTION_META
@@ -34,15 +34,15 @@ async function fetchShortcuts() {
   ])
 
   return [
-    ...windows.docs.map((doc) => ({ ...doc, _slug: 'windows' as CollectionSlug })),
-    ...works.docs.map((doc)   => ({ ...doc, _slug: 'works'   as CollectionSlug })),
-    ...forms.docs.map((doc)   => ({ ...doc, _slug: 'forms'   as CollectionSlug })),
+    ...windows.docs.map((doc) => ({ ...doc, _slug: 'windows' as CollectionSlug, _href: '/windows' })),
+    ...works.docs.map((doc)   => ({ ...doc, _slug: 'works'   as CollectionSlug, _href: '/works' })),
+    ...forms.docs.map((doc)   => ({ ...doc, _slug: 'forms'   as CollectionSlug, _href: `/${(doc as any).slug ?? ''}` })),
   ]
     .sort((a, b) => (a.shortcutOrder ?? Infinity) - (b.shortcutOrder ?? Infinity))
     .map((doc) => ({
       icon:  doc.shortcutIcon  ?? 'ri-file-fill',
-      name:  doc.shortcutName  ?? doc._slug,
-      href:  COLLECTION_META[doc._slug].href,
+      name:  doc.shortcutName  ?? doc.title,
+      href:  doc._href,
       color: COLLECTION_META[doc._slug].color,
     }))
 }
