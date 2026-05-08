@@ -16,8 +16,8 @@ export const Windows: CollectionConfig = {
               type: 'text',
               index: true,
               admin: { description: 'URL path for this shortcut link (e.g. my-window)' },
-              validate: (value: string) => {
-                if (!value) return true
+              validate: (value: string | string[] | null | undefined) => {
+                if (!value || Array.isArray(value)) return true
                 if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value))
                   return 'Slug must be lowercase letters, numbers, and hyphens only'
                 return true
