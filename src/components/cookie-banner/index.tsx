@@ -20,13 +20,13 @@ export default function CookieBanner() {
         </div>
 
         <div className="flex flex-col gap-3 mt-2">
-          <DrawerCloseButton className="w-full py-4 rounded-full bg-fg/5 text-fg font-semibold text-sm cursor-pointer">
+          <DrawerCloseButton className="w-full py-4 rounded-xl bg-bgs text-fg font-bold text-sm cursor-pointer">
             Configure
           </DrawerCloseButton>
-          <DrawerCloseButton className="w-full py-4 rounded-full bg-[#e8315a] text-white font-semibold text-sm cursor-pointer">
+          <DrawerCloseButton className="w-full py-4 rounded-xl bg-brand text-white font-bold text-sm cursor-pointer">
             Reject
           </DrawerCloseButton>
-          <DrawerCloseButton className="w-full py-4 rounded-full bg-[#e8315a] text-white font-semibold text-sm cursor-pointer">
+          <DrawerCloseButton className="w-full py-4 rounded-xl bg-brand text-white font-bold text-sm cursor-pointer">
             Accept All
           </DrawerCloseButton>
         </div>

@@ -11,6 +11,18 @@ export const Works: CollectionConfig = {
         {
           label: 'Shortcut',
           fields: [
+            {
+              name: 'slug',
+              type: 'text',
+              index: true,
+              admin: { description: 'URL path for this shortcut link (e.g. my-work)' },
+              validate: (value: string) => {
+                if (!value) return true
+                if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value))
+                  return 'Slug must be lowercase letters, numbers, and hyphens only'
+                return true
+              },
+            },
             { name: 'showShortcut', type: 'checkbox', defaultValue: false },
             { name: 'shortcutName', type: 'text' },
             { name: 'shortcutIcon', type: 'text', defaultValue: 'ri-folder-fill' },

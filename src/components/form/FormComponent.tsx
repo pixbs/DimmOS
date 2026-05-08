@@ -19,7 +19,6 @@ type FormField = {
   required?: boolean
   defaultValue?: string
   isPreDefined?: boolean
-  preDefinedValue?: string
 }
 
 type FormData = {
@@ -34,16 +33,16 @@ export function FormComponent({ form }: { form: FormData }) {
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ''
 
   useEffect(() => {
-    if (!siteKey) return
+    const style = document.createElement('style')
+    style.textContent = '.grecaptcha-badge{display:none!important}'
+    document.head.appendChild(style)
+
+    if (!siteKey) return () => document.head.removeChild(style)
 
     const script = document.createElement('script')
     script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`
     script.async = true
     document.head.appendChild(script)
-
-    const style = document.createElement('style')
-    style.textContent = '.grecaptcha-badge{visibility:hidden!important}'
-    document.head.appendChild(style)
 
     return () => {
       document.head.removeChild(script)
@@ -62,7 +61,7 @@ export function FormComponent({ form }: { form: FormData }) {
 
     const submissionData = (form.fields || []).map((field) => ({
       field: field.name,
-      value: field.isPreDefined ? (field.preDefinedValue || '') : (values[field.name] || ''),
+      value: field.isPreDefined ? (field.defaultValue || '') : (values[field.name] || ''),
     }))
 
     if (siteKey && window.grecaptcha) {
@@ -100,20 +99,19 @@ export function FormComponent({ form }: { form: FormData }) {
   const bodyField = (form.fields || []).find((f) => f.blockType === 'textarea')
 
   return (
-    <form onSubmit={handleSubmit} className="flex flex-col h-full" noValidate={false}>
+    <form onSubmit={handleSubmit} className="pb-36" noValidate={false}>
       {/* Row fields (email, text) */}
       {rowFields.map((field) => {
         const isDisabled = field.blockType === 'email' && field.isPreDefined
         const label = field.label || field.name
         return (
-          <div key={field.name} className="flex items-center gap-4 px-4 py-3 border-t border-fg/10">
-            <span className="text-fg/40 text-[0.9375rem] shrink-0 w-16">{label}:</span>
+          <div key={field.name} className="flex items-center gap-4 px-6 py-3 border-b border-fg/10">
+            <span className="text-fg/40 text-sm shrink-0 w-16">{label}:</span>
             {isDisabled ? (
               <span
-                className="px-3 py-1 rounded-full text-[0.9375rem]"
-                style={{ background: 'color-mix(in srgb, #e3465a 18%, #111111)', color: '#e3465a' }}
+                className="px-3 py-1 rounded-lg text-xs bg-brand/10 text-brand"
               >
-                {field.preDefinedValue}
+                {field.defaultValue}
               </span>
             ) : (
               <input
@@ -123,7 +121,7 @@ export function FormComponent({ form }: { form: FormData }) {
                 placeholder={field.placeholder || ''}
                 value={values[field.name] || ''}
                 onChange={(e) => setValue(field.name, e.target.value)}
-                className="bg-transparent text-fg/60 placeholder:text-fg/20 outline-none flex-1 text-[0.9375rem]"
+                className="bg-transparent text-fg/60 placeholder:text-fg/20 outline-none flex-1 text-sm"
               />
             )}
           </div>
@@ -132,27 +130,27 @@ export function FormComponent({ form }: { form: FormData }) {
 
       {/* Body textarea */}
       {bodyField && (
-        <div className="flex-1 px-4 py-3 border-t border-fg/10">
+        <div className="flex-1 px-6 py-3 border-b border-fg/10">
           <textarea
             name={bodyField.name}
             required={bodyField.required}
             placeholder={bodyField.placeholder || ''}
             value={values[bodyField.name] || ''}
             onChange={(e) => setValue(bodyField.name, e.target.value)}
-            className="bg-transparent text-fg/80 placeholder:text-fg/20 resize-none w-full h-full outline-none text-[0.9375rem] leading-relaxed"
+            className="bg-transparent text-fg/80 placeholder:text-fg/20 resize-none w-full h-full outline-none text-sm leading-relaxed"
           />
         </div>
       )}
 
       {/* Footer */}
-      <div className="px-4 pb-8 pt-4 flex flex-col gap-4">
+      <div className="fixed inset-x-0 bottom-0 px-6 pb-8 pt-4 flex flex-col gap-4 bg-bg">
         <p className="text-fg/25 text-xs leading-relaxed">
           This site is protected by reCAPTCHA and the Google{' '}
           <a
             href="https://policies.google.com/privacy"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline"
+            className="underline hover:text-fg transition-colors"
           >
             Privacy Policy
           </a>{' '}
@@ -161,7 +159,7 @@ export function FormComponent({ form }: { form: FormData }) {
             href="https://policies.google.com/terms"
             target="_blank"
             rel="noopener noreferrer"
-            className="underline"
+            className="underline hover:text-fg transition-colors"
           >
             Terms of Service
           </a>{' '}
@@ -170,7 +168,7 @@ export function FormComponent({ form }: { form: FormData }) {
         <button
           type="submit"
           disabled={status === 'submitting' || status === 'success'}
-          className="w-full py-4 rounded-full font-medium text-white text-[0.9375rem] transition-opacity disabled:opacity-60 cursor-pointer disabled:cursor-default"
+          className="w-full py-4 rounded-xl font-medium text-white text-sm transition-opacity disabled:opacity-60 cursor-pointer disabled:cursor-default"
           style={{ background: '#e3465a' }}
         >
           {status === 'submitting' ? 'Sending…' : status === 'success' ? 'Sent!' : 'Send'}

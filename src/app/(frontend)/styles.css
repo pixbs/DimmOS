@@ -5,12 +5,28 @@
   --color-fg: white;
   --color-bg: #111111;
   --color-bgs: #070707;
-  --tile: 16.6667vw;
+  --color-brand: #F22F57;
   --border: 1.5px;
 }
 
 :root {
   --header-height: 2.5rem;
+  --tile: 16.6667vw;
+  --cols: 6;
+}
+
+@media (min-width: 768px) {
+  :root {
+    --tile: 8.3333vw;
+    --cols: 12;
+  }
+}
+
+@media (min-width: 1280px) {
+  :root {
+    --tile: 5vw;
+    --cols: 20;
+  }
 }
 
 body {

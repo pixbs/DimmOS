@@ -73,15 +73,7 @@ export default buildConfig({
               name: 'isPreDefined',
               type: 'checkbox',
               defaultValue: false,
-              admin: { description: 'Lock this field — user input is ignored on submit' },
-            },
-            {
-              name: 'preDefinedValue',
-              type: 'text',
-              admin: {
-                description: 'Server-enforced value (replaces user input server-side)',
-                condition: (_, siblingData) => Boolean(siblingData?.isPreDefined),
-              },
+              admin: { description: 'Lock this field — defaultValue is used as the server-enforced value' },
             },
           ],
         },
@@ -101,22 +93,6 @@ export default buildConfig({
           return [
             titleField,
             {
-              name: 'slug',
-              type: 'text',
-              required: true,
-              unique: true,
-              index: true,
-              admin: {
-                description: 'Used as the URL path: /contact → /contact',
-              },
-              validate: (value: string) => {
-                if (!value) return 'Slug is required'
-                if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value))
-                  return 'Slug must be lowercase letters, numbers, and hyphens only'
-                return true
-              },
-            },
-            {
               type: 'tabs',
               tabs: [
                 {
@@ -126,6 +102,22 @@ export default buildConfig({
                 {
                   label: 'Shortcut',
                   fields: [
+                    {
+                      name: 'slug',
+                      type: 'text',
+                      required: true,
+                      unique: true,
+                      index: true,
+                      admin: {
+                        description: 'Used as the URL path: /contact → /contact',
+                      },
+                      validate: (value: string) => {
+                        if (!value) return 'Slug is required'
+                        if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value))
+                          return 'Slug must be lowercase letters, numbers, and hyphens only'
+                        return true
+                      },
+                    },
                     { name: 'showShortcut', type: 'checkbox', defaultValue: false },
                     { name: 'shortcutName', type: 'text' },
                     { name: 'shortcutIcon', type: 'text', defaultValue: 'ri-draft-fill' },

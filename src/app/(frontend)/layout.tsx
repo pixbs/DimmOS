@@ -34,8 +34,8 @@ async function fetchShortcuts() {
   ])
 
   return [
-    ...windows.docs.map((doc) => ({ ...doc, _slug: 'windows' as CollectionSlug, _href: '/windows' })),
-    ...works.docs.map((doc)   => ({ ...doc, _slug: 'works'   as CollectionSlug, _href: '/works' })),
+    ...windows.docs.map((doc) => ({ ...doc, _slug: 'windows' as CollectionSlug, _href: `/${(doc as any).slug ?? 'windows'}` })),
+    ...works.docs.map((doc)   => ({ ...doc, _slug: 'works'   as CollectionSlug, _href: `/${(doc as any).slug ?? 'works'}` })),
     ...forms.docs.map((doc)   => ({ ...doc, _slug: 'forms'   as CollectionSlug, _href: `/${(doc as any).slug ?? ''}` })),
   ]
     .sort((a, b) => (a.shortcutOrder ?? Infinity) - (b.shortcutOrder ?? Infinity))
@@ -56,7 +56,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
       <body>
         <Header />
         <main>
-          <div className="grid grid-cols-[repeat(6,var(--tile))] auto-rows-[calc(2*var(--tile))]">
+          <div className="grid grid-cols-[repeat(var(--cols),var(--tile))] auto-rows-[calc(2*var(--tile))]">
             {shortcuts.map((s, i) => (
               <Shortcut key={i} icon={s.icon} name={s.name} href={s.href} color={s.color} />
             ))}

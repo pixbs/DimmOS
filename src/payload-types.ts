@@ -176,6 +176,10 @@ export interface Media {
 export interface Window {
   id: number;
   title: string;
+  /**
+   * URL path for this shortcut link (e.g. my-window)
+   */
+  slug?: string | null;
   showShortcut?: boolean | null;
   shortcutName?: string | null;
   shortcutIcon?: string | null;
@@ -193,6 +197,10 @@ export interface Window {
 export interface Work {
   id: number;
   title: string;
+  /**
+   * URL path for this shortcut link (e.g. my-work)
+   */
+  slug?: string | null;
   showShortcut?: boolean | null;
   shortcutName?: string | null;
   shortcutIcon?: string | null;
@@ -210,10 +218,6 @@ export interface Work {
 export interface Form {
   id: number;
   title: string;
-  /**
-   * Used as the URL path: /contact → /contact
-   */
-  slug: string;
   fields?:
     | (
         | {
@@ -223,13 +227,9 @@ export interface Form {
             required?: boolean | null;
             defaultValue?: string | null;
             /**
-             * Lock this field — user input is ignored on submit
+             * Lock this field — defaultValue is used as the server-enforced value
              */
             isPreDefined?: boolean | null;
-            /**
-             * Server-enforced value (replaces user input server-side)
-             */
-            preDefinedValue?: string | null;
             id?: string | null;
             blockName?: string | null;
             blockType: 'email';
@@ -311,6 +311,10 @@ export interface Form {
         id?: string | null;
       }[]
     | null;
+  /**
+   * Used as the URL path: /contact → /contact
+   */
+  slug: string;
   showShortcut?: boolean | null;
   shortcutName?: string | null;
   shortcutIcon?: string | null;
@@ -474,6 +478,7 @@ export interface MediaSelect<T extends boolean = true> {
  */
 export interface WindowsSelect<T extends boolean = true> {
   title?: T;
+  slug?: T;
   showShortcut?: T;
   shortcutName?: T;
   shortcutIcon?: T;
@@ -487,6 +492,7 @@ export interface WindowsSelect<T extends boolean = true> {
  */
 export interface WorksSelect<T extends boolean = true> {
   title?: T;
+  slug?: T;
   showShortcut?: T;
   shortcutName?: T;
   shortcutIcon?: T;
@@ -500,7 +506,6 @@ export interface WorksSelect<T extends boolean = true> {
  */
 export interface FormsSelect<T extends boolean = true> {
   title?: T;
-  slug?: T;
   fields?:
     | T
     | {
@@ -513,7 +518,6 @@ export interface FormsSelect<T extends boolean = true> {
               required?: T;
               defaultValue?: T;
               isPreDefined?: T;
-              preDefinedValue?: T;
               id?: T;
               blockName?: T;
             };
@@ -560,6 +564,7 @@ export interface FormsSelect<T extends boolean = true> {
         message?: T;
         id?: T;
       };
+  slug?: T;
   showShortcut?: T;
   shortcutName?: T;
   shortcutIcon?: T;
