@@ -176,6 +176,10 @@ export interface Media {
 export interface Window {
   id: number;
   title: string;
+  /**
+   * URL path identifier, e.g. "about" → /about
+   */
+  slug: string;
   showShortcut?: boolean | null;
   shortcutName?: string | null;
   shortcutIcon?: string | null;
@@ -193,6 +197,10 @@ export interface Window {
 export interface Work {
   id: number;
   title: string;
+  /**
+   * URL path identifier, e.g. "my-project" → /my-project
+   */
+  slug: string;
   showShortcut?: boolean | null;
   shortcutName?: string | null;
   shortcutIcon?: string | null;
@@ -223,13 +231,9 @@ export interface Form {
             required?: boolean | null;
             defaultValue?: string | null;
             /**
-             * Lock this field — user input is ignored on submit
+             * Lock this field — default value is enforced on submit
              */
             isPreDefined?: boolean | null;
-            /**
-             * Server-enforced value (replaces user input server-side)
-             */
-            preDefinedValue?: string | null;
             id?: string | null;
             blockName?: string | null;
             blockType: 'email';
@@ -474,6 +478,7 @@ export interface MediaSelect<T extends boolean = true> {
  */
 export interface WindowsSelect<T extends boolean = true> {
   title?: T;
+  slug?: T;
   showShortcut?: T;
   shortcutName?: T;
   shortcutIcon?: T;
@@ -487,6 +492,7 @@ export interface WindowsSelect<T extends boolean = true> {
  */
 export interface WorksSelect<T extends boolean = true> {
   title?: T;
+  slug?: T;
   showShortcut?: T;
   shortcutName?: T;
   shortcutIcon?: T;
@@ -513,7 +519,6 @@ export interface FormsSelect<T extends boolean = true> {
               required?: T;
               defaultValue?: T;
               isPreDefined?: T;
-              preDefinedValue?: T;
               id?: T;
               blockName?: T;
             };

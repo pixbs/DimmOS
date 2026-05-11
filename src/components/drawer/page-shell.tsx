@@ -32,7 +32,9 @@ export function PageDrawerShell({ children }: { children: ReactNode }) {
   }, [isOpen])
 
   useEffect(() => {
-    return () => { delete document.body.dataset.pageDrawer }
+    return () => {
+      delete document.body.dataset.pageDrawer
+    }
   }, [])
 
   useEffect(() => {
@@ -77,7 +79,7 @@ export function PageDrawerShell({ children }: { children: ReactNode }) {
     <DrawerContext.Provider value={{ close, open }}>
       <div
         aria-hidden="true"
-        className="fixed inset-x-0 bottom-0 z-20 pointer-events-none bg-bgs"
+        className="fixed inset-x-0 bottom-0 z-20 pointer-events-none bg-bgs flex flex-col"
         style={{
           top: 'var(--header-height)',
           opacity: 'var(--drawer-open-pct)',
@@ -88,7 +90,7 @@ export function PageDrawerShell({ children }: { children: ReactNode }) {
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        className={`fixed inset-x-0 bottom-0 z-30 bg-bg border-t-2 border-fg/10 rounded-t-2xl will-change-transform overflow-auto transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        className={`fixed inset-x-0 bottom-0 z-30 bg-bg border-t-2 border-fg/10 rounded-t-2xl will-change-transform flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
           isOpen ? 'translate-y-0' : 'translate-y-full'
         }`}
         style={{
@@ -105,7 +107,7 @@ export function PageDrawerShell({ children }: { children: ReactNode }) {
           <div className="w-20 h-1 rounded-full bg-fg/20" />
         </div>
 
-        {children}
+        <div className="flex-1 overflow-auto min-h-0">{children}</div>
       </div>
     </DrawerContext.Provider>
   )

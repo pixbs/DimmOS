@@ -73,15 +73,7 @@ export default buildConfig({
               name: 'isPreDefined',
               type: 'checkbox',
               defaultValue: false,
-              admin: { description: 'Lock this field — user input is ignored on submit' },
-            },
-            {
-              name: 'preDefinedValue',
-              type: 'text',
-              admin: {
-                description: 'Server-enforced value (replaces user input server-side)',
-                condition: (_, siblingData) => Boolean(siblingData?.isPreDefined),
-              },
+              admin: { description: 'Lock this field — default value is enforced on submit' },
             },
           ],
         },

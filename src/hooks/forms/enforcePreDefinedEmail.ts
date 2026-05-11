@@ -17,9 +17,9 @@ export const enforcePreDefinedEmailHook: CollectionBeforeChangeHook = async ({
   if (!form?.fields) return data
 
   for (const field of form.fields as any[]) {
-    if (field.blockType === 'email' && field.isPreDefined && field.preDefinedValue) {
+    if (field.blockType === 'email' && field.isPreDefined && field.defaultValue) {
       const entry = (data.submissionData || []).find((e: any) => e.field === field.name)
-      if (entry) entry.value = field.preDefinedValue
+      if (entry) entry.value = field.defaultValue
     }
   }
 

@@ -4,7 +4,7 @@ import { DrawerCloseButton } from '@/components/drawer/close-button'
 export default function CookieBanner() {
   return (
     <Drawer autoOpen>
-      <div className="px-6 pb-10 flex flex-col gap-4 max-w-lg mx-auto">
+      <div className="px-6 pb-10 flex flex-col gap-4">
         <h2 className="text-2xl font-bold text-fg">Cookie Notice</h2>
 
         <div className="flex flex-col gap-3 text-fg/70 text-sm">
@@ -23,10 +23,10 @@ export default function CookieBanner() {
           <DrawerCloseButton className="w-full py-4 rounded-full bg-fg/5 text-fg font-semibold text-sm cursor-pointer">
             Configure
           </DrawerCloseButton>
-          <DrawerCloseButton className="w-full py-4 rounded-full bg-[#e8315a] text-white font-semibold text-sm cursor-pointer">
+          <DrawerCloseButton className="w-full py-4 rounded-full bg-brand text-white font-semibold text-sm cursor-pointer">
             Reject
           </DrawerCloseButton>
-          <DrawerCloseButton className="w-full py-4 rounded-full bg-[#e8315a] text-white font-semibold text-sm cursor-pointer">
+          <DrawerCloseButton className="w-full py-4 rounded-full bg-brand text-white font-semibold text-sm cursor-pointer">
             Accept All
           </DrawerCloseButton>
         </div>

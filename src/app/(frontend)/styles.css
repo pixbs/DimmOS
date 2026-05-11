@@ -5,12 +5,22 @@
   --color-fg: white;
   --color-bg: #111111;
   --color-bgs: #070707;
-  --tile: 16.6667vw;
+  --color-brand: #F22F57;
   --border: 1.5px;
 }
 
 :root {
   --header-height: 2.5rem;
+  --cols: 6;
+  --tile: calc(100vw / var(--cols));
+}
+
+@media (min-width: 768px) {
+  :root { --cols: 12; }
+}
+
+@media (min-width: 1280px) {
+  :root { --cols: 20; }
 }
 
 body {
@@ -90,4 +100,8 @@ body[data-page-drawer="dragging"] {
 body[data-page-drawer] header {
   background-color: color-mix(in srgb, var(--color-bgs) var(--drawer-open-pct), var(--color-bg));
   border-bottom-color: color-mix(in srgb, transparent var(--drawer-open-pct), color-mix(in srgb, var(--color-fg) 10%, transparent));
+}
+
+.grecaptcha-badge {
+  visibility: hidden !important;
 }

@@ -19,7 +19,6 @@ type FormField = {
   required?: boolean
   defaultValue?: string
   isPreDefined?: boolean
-  preDefinedValue?: string
 }
 
 type FormData = {
@@ -41,13 +40,8 @@ export function FormComponent({ form }: { form: FormData }) {
     script.async = true
     document.head.appendChild(script)
 
-    const style = document.createElement('style')
-    style.textContent = '.grecaptcha-badge{visibility:hidden!important}'
-    document.head.appendChild(style)
-
     return () => {
       document.head.removeChild(script)
-      document.head.removeChild(style)
     }
   }, [siteKey])
 
@@ -62,7 +56,7 @@ export function FormComponent({ form }: { form: FormData }) {
 
     const submissionData = (form.fields || []).map((field) => ({
       field: field.name,
-      value: field.isPreDefined ? (field.preDefinedValue || '') : (values[field.name] || ''),
+      value: field.isPreDefined ? field.defaultValue || '' : values[field.name] || '',
     }))
 
     if (siteKey && window.grecaptcha) {
@@ -106,14 +100,11 @@ export function FormComponent({ form }: { form: FormData }) {
         const isDisabled = field.blockType === 'email' && field.isPreDefined
         const label = field.label || field.name
         return (
-          <div key={field.name} className="flex items-center gap-4 px-4 py-3 border-t border-fg/10">
+          <div key={field.name} className="flex items-center gap-4 px-4 py-3 border-b border-fg/10">
             <span className="text-fg/40 text-[0.9375rem] shrink-0 w-16">{label}:</span>
             {isDisabled ? (
-              <span
-                className="px-3 py-1 rounded-full text-[0.9375rem]"
-                style={{ background: 'color-mix(in srgb, #e3465a 18%, #111111)', color: '#e3465a' }}
-              >
-                {field.preDefinedValue}
+              <span className="px-3 py-1 rounded-lg text-xs text-brand bg-brand/10">
+                {field.defaultValue}
               </span>
             ) : (
               <input
@@ -123,7 +114,7 @@ export function FormComponent({ form }: { form: FormData }) {
                 placeholder={field.placeholder || ''}
                 value={values[field.name] || ''}
                 onChange={(e) => setValue(field.name, e.target.value)}
-                className="bg-transparent text-fg/60 placeholder:text-fg/20 outline-none flex-1 text-[0.9375rem]"
+                className="bg-transparent text-fg placeholder:text-fg/50 outline-none flex-1 text-sm"
               />
             )}
           </div>
@@ -132,21 +123,21 @@ export function FormComponent({ form }: { form: FormData }) {
 
       {/* Body textarea */}
       {bodyField && (
-        <div className="flex-1 px-4 py-3 border-t border-fg/10">
+        <div className="flex-1 px-4 py-3 border-b border-fg/10">
           <textarea
             name={bodyField.name}
             required={bodyField.required}
             placeholder={bodyField.placeholder || ''}
             value={values[bodyField.name] || ''}
             onChange={(e) => setValue(bodyField.name, e.target.value)}
-            className="bg-transparent text-fg/80 placeholder:text-fg/20 resize-none w-full h-full outline-none text-[0.9375rem] leading-relaxed"
+            className="bg-transparent text-fg placeholder:text-fg/50 resize-none w-full h-full outline-none text-sm"
           />
         </div>
       )}
 
       {/* Footer */}
       <div className="px-4 pb-8 pt-4 flex flex-col gap-4">
-        <p className="text-fg/25 text-xs leading-relaxed">
+        <p className="text-fg/25 text-xs">
           This site is protected by reCAPTCHA and the Google{' '}
           <a
             href="https://policies.google.com/privacy"
@@ -176,7 +167,7 @@ export function FormComponent({ form }: { form: FormData }) {
           {status === 'submitting' ? 'Sending…' : status === 'success' ? 'Sent!' : 'Send'}
         </button>
         {status === 'error' && (
-          <p className="text-[#e3465a] text-sm text-center">Something went wrong. Please try again.</p>
+          <p className="text-brand text-sm text-center">Something went wrong. Please try again.</p>
         )}
       </div>
     </form>
