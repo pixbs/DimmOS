@@ -101,7 +101,7 @@ export default buildConfig({
               admin: {
                 description: 'Used as the URL path: /contact → /contact',
               },
-              validate: (value: string) => {
+              validate: (value: string | null | undefined) => {
                 if (!value) return 'Slug is required'
                 if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value))
                   return 'Slug must be lowercase letters, numbers, and hyphens only'

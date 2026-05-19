@@ -12,7 +12,7 @@ export const Works: CollectionConfig = {
       unique: true,
       index: true,
       admin: { description: 'URL path identifier, e.g. "my-project" → /my-project' },
-      validate: (value: string) => {
+      validate: (value: string | null | undefined) => {
         if (!value) return 'Slug is required'
         if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value))
           return 'Slug must be lowercase letters, numbers, and hyphens only'
