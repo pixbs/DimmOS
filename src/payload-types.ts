@@ -71,6 +71,8 @@ export interface Config {
     media: Media;
     windows: Window;
     works: Work;
+    'cookie-services': CookieService;
+    'cookie-consents': CookieConsent;
     forms: Form;
     'form-submissions': FormSubmission;
     'payload-kv': PayloadKv;
@@ -84,6 +86,8 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     windows: WindowsSelect<false> | WindowsSelect<true>;
     works: WorksSelect<false> | WorksSelect<true>;
+    'cookie-services': CookieServicesSelect<false> | CookieServicesSelect<true>;
+    'cookie-consents': CookieConsentsSelect<false> | CookieConsentsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
     'form-submissions': FormSubmissionsSelect<false> | FormSubmissionsSelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
@@ -95,8 +99,12 @@ export interface Config {
     defaultIDType: number;
   };
   fallbackLocale: null;
-  globals: {};
-  globalsSelect: {};
+  globals: {
+    'cookie-settings': CookieSetting;
+  };
+  globalsSelect: {
+    'cookie-settings': CookieSettingsSelect<false> | CookieSettingsSelect<true>;
+  };
   locale: null;
   widgets: {
     collections: CollectionsWidget;
@@ -208,6 +216,76 @@ export interface Work {
    * Controls position across all shortcuts. Lower = earlier. Leave blank to append.
    */
   shortcutOrder?: number | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cookie-services".
+ */
+export interface CookieService {
+  id: number;
+  name: string;
+  category: 'essential' | 'functional' | 'analytics' | 'marketing';
+  description?: string | null;
+  /**
+   * Legal entity name, e.g. "Google LLC"
+   */
+  legalName?: string | null;
+  /**
+   * Link to the service privacy policy
+   */
+  privacyPolicyUrl?: string | null;
+  cookies?:
+    | {
+        storageType?: ('cookie' | 'localStorage' | 'sessionStorage' | 'indexedDB' | 'other') | null;
+        /**
+         * e.g. _grecaptcha, _ph_opt_in_out_*, _ga
+         */
+        name?: string | null;
+        /**
+         * e.g. "1 year", "Session", "Persistent"
+         */
+        duration?: string | null;
+        /**
+         * What this specific cookie/item is used for
+         */
+        description?: string | null;
+        id?: string | null;
+      }[]
+    | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * Audit log of all cookie consent events. Do not edit manually.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cookie-consents".
+ */
+export interface CookieConsent {
+  id: number;
+  /**
+   * UUID generated client-side. Each consent event (including updates) gets a fresh ID.
+   */
+  consentId: string;
+  categories: ('essential' | 'functional' | 'analytics' | 'marketing')[];
+  /**
+   * Auto-captured from request headers
+   */
+  ipAddress?: string | null;
+  /**
+   * Auto-captured from request headers
+   */
+  userAgent?: string | null;
+  /**
+   * Browser language (navigator.language)
+   */
+  language?: string | null;
+  /**
+   * CookieSettings.consentVersion at time of consent
+   */
+  consentVersion?: string | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -383,6 +461,14 @@ export interface PayloadLockedDocument {
         value: number | Work;
       } | null)
     | ({
+        relationTo: 'cookie-services';
+        value: number | CookieService;
+      } | null)
+    | ({
+        relationTo: 'cookie-consents';
+        value: number | CookieConsent;
+      } | null)
+    | ({
         relationTo: 'forms';
         value: number | Form;
       } | null)
@@ -497,6 +583,42 @@ export interface WorksSelect<T extends boolean = true> {
   shortcutName?: T;
   shortcutIcon?: T;
   shortcutOrder?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cookie-services_select".
+ */
+export interface CookieServicesSelect<T extends boolean = true> {
+  name?: T;
+  category?: T;
+  description?: T;
+  legalName?: T;
+  privacyPolicyUrl?: T;
+  cookies?:
+    | T
+    | {
+        storageType?: T;
+        name?: T;
+        duration?: T;
+        description?: T;
+        id?: T;
+      };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cookie-consents_select".
+ */
+export interface CookieConsentsSelect<T extends boolean = true> {
+  consentId?: T;
+  categories?: T;
+  ipAddress?: T;
+  userAgent?: T;
+  language?: T;
+  consentVersion?: T;
   updatedAt?: T;
   createdAt?: T;
 }
@@ -627,6 +749,35 @@ export interface PayloadMigrationsSelect<T extends boolean = true> {
   batch?: T;
   updatedAt?: T;
   createdAt?: T;
+}
+/**
+ * Configure the cookie consent banner shown to visitors.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cookie-settings".
+ */
+export interface CookieSetting {
+  id: number;
+  title?: string | null;
+  description?: string | null;
+  /**
+   * Bump this value (e.g. "1.1", "2.0") to invalidate existing consents and re-ask all visitors.
+   */
+  consentVersion?: string | null;
+  updatedAt?: string | null;
+  createdAt?: string | null;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "cookie-settings_select".
+ */
+export interface CookieSettingsSelect<T extends boolean = true> {
+  title?: T;
+  description?: T;
+  consentVersion?: T;
+  updatedAt?: T;
+  createdAt?: T;
+  globalType?: T;
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema

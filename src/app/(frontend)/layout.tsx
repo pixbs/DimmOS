@@ -1,9 +1,11 @@
 import React from 'react'
+import Script from 'next/script'
 import { Onest } from 'next/font/google'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import Header from '@/components/header'
 import CookieBanner from '@/components/cookie-banner'
+import { CookieConsentProvider } from '@/components/cookie-banner/context'
 import { Shortcut } from '@/components/shortcut'
 import './styles.css'
 import 'remixicon/fonts/remixicon.css'
@@ -54,16 +56,20 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   return (
     <html lang="en" className={onest.className}>
       <body>
-        <Header />
-        <main>
-          <div className="grid grid-cols-[repeat(var(--cols),var(--tile))] auto-rows-[calc(2*var(--tile))]">
-            {shortcuts.map((s, i) => (
-              <Shortcut key={i} icon={s.icon} name={s.name} href={s.href} color={s.color} />
-            ))}
-          </div>
-          {children}
-        </main>
-        <CookieBanner />
+        {/* Google Consent Mode v2 — fires before hydration, Next.js injects this into <head> */}
+        <Script src="/consent-init.js" strategy="beforeInteractive" />
+        <CookieConsentProvider>
+          <Header />
+          <main>
+            <div className="grid grid-cols-[repeat(var(--cols),var(--tile))] auto-rows-[calc(2*var(--tile))]">
+              {shortcuts.map((s, i) => (
+                <Shortcut key={i} icon={s.icon} name={s.name} href={s.href} color={s.color} />
+              ))}
+            </div>
+            {children}
+          </main>
+          <CookieBanner />
+        </CookieConsentProvider>
       </body>
     </html>
   )

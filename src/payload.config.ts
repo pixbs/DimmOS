@@ -11,6 +11,9 @@ import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Windows } from './collections/Windows'
 import { Works } from './collections/Works'
+import { CookieServices } from './collections/CookieServices'
+import { CookieConsents } from './collections/CookieConsents'
+import { CookieSettings } from './globals/CookieSettings'
 import { enforcePreDefinedEmailHook } from './hooks/forms/enforcePreDefinedEmail'
 import { verifyRecaptchaHook } from './hooks/forms/verifyRecaptcha'
 
@@ -24,7 +27,8 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Windows, Works],
+  collections: [Users, Media, Windows, Works, CookieServices, CookieConsents],
+  globals: [CookieSettings],
   editor: lexicalEditor(),
   email: resendAdapter({
     defaultFromAddress: 'noreply@dimm.co',
