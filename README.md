@@ -222,11 +222,18 @@ Never edit `src/payload-types.ts` by hand.
 
 ### Migration workflow
 
-1. Edit collection or global config
-2. Run `bun payload migrate:create` — Payload diffs the live DB schema and emits a migration file under `src/migrations/`
+The `postgresAdapter` uses default `push` behavior. Two distinct modes:
+
+**Local dev database** — `bun dev` auto-pushes schema changes via Drizzle push on startup. Never run `bun payload migrate` against your local dev database.
+
+**CI / production (fresh databases)** — `bun payload migrate` applies all pending migration files in sequence before starting the server.
+
+Steps when changing any collection, global, or field:
+1. Edit the config
+2. Run `bun payload migrate:create` — Payload diffs the DB schema and emits a migration file under `src/migrations/`
 3. Review the generated SQL before committing
-4. Run `bun payload migrate` in development to apply
-5. Run `bun payload migrate` in CI and production **before** starting the server
+4. Start `bun dev` — the local DB is updated automatically on startup
+5. In CI/production: run `bun payload migrate` against a fresh database **before** starting the server
 
 Never write migration SQL by hand.
 

@@ -62,8 +62,60 @@ const CTABlock: Block = {
   ],
 }
 
+const ArticleListBlock: Block = {
+  slug: 'articleList',
+  labels: { singular: 'Article List', plural: 'Article Lists' },
+  fields: [
+    {
+      name: 'heading',
+      type: 'text',
+      admin: { placeholder: 'e.g. Our Services, Recent Work' },
+    },
+    {
+      name: 'types',
+      type: 'select',
+      hasMany: true,
+      required: true,
+      defaultValue: ['case-study', 'service'],
+      options: [
+        { label: 'Works (Case Studies)', value: 'case-study' },
+        { label: 'Services', value: 'service' },
+      ],
+      admin: { description: 'Which article types to include in this list' },
+    },
+    {
+      name: 'sortField',
+      type: 'select',
+      defaultValue: 'createdAt',
+      options: [
+        { label: 'Date Created', value: 'createdAt' },
+        { label: 'Date Updated', value: 'updatedAt' },
+        { label: 'Title', value: 'title' },
+        { label: 'Manual Order', value: 'shortcutOrder' },
+      ],
+    },
+    {
+      name: 'sortDirection',
+      type: 'select',
+      defaultValue: 'desc',
+      options: [
+        { label: 'Descending (newest / Z→A)', value: 'desc' },
+        { label: 'Ascending (oldest / A→Z)', value: 'asc' },
+      ],
+    },
+    {
+      name: 'limit',
+      type: 'number',
+      defaultValue: 6,
+      min: 1,
+      max: 50,
+      admin: { description: 'Maximum number of articles to display' },
+    },
+  ],
+}
+
 export const contentBlocksField: Field = {
   name: 'content',
   type: 'blocks',
-  blocks: [RichTextBlock, ImageBlock, GalleryBlock, EmbedBlock, CTABlock],
+  blocks: [RichTextBlock, ImageBlock, GalleryBlock, EmbedBlock, CTABlock, ArticleListBlock],
 }

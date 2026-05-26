@@ -96,6 +96,34 @@ describe('Windows collection', () => {
     expect(docs[0].slug).toBe('test-window-rich-text')
   })
 
+  it('creates a window with an articleList block', async () => {
+    const doc = await payload.create({
+      collection: 'windows',
+      data: {
+        title: 'Article List Window',
+        slug: 'test-window-article-list',
+        content: [
+          {
+            blockType: 'articleList',
+            types: ['case-study'],
+            sortField: 'title',
+            sortDirection: 'asc',
+            limit: 3,
+          },
+        ],
+      },
+      overrideAccess: true,
+    })
+
+    createdIds.push(doc.id)
+    expect(doc.content?.[0]?.blockType).toBe('articleList')
+    const block = doc.content?.[0] as Extract<typeof doc.content[number], { blockType: 'articleList' }>
+    expect(block.types).toEqual(['case-study'])
+    expect(block.sortField).toBe('title')
+    expect(block.sortDirection).toBe('asc')
+    expect(block.limit).toBe(3)
+  })
+
   it('blocks unauthenticated read (admin-only)', async () => {
     await expect(
       payload.find({

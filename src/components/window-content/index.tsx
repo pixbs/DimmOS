@@ -1,6 +1,8 @@
+import { Suspense } from 'react'
 import type { Window, Media } from '@/payload-types'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 import Image from 'next/image'
+import { ArticleListRenderer } from './article-list-renderer'
 
 type Block = NonNullable<Window['content']>[number]
 
@@ -87,6 +89,13 @@ function BlockRenderer({ block }: { block: Block }) {
             </a>
           )}
         </div>
+      )
+
+    case 'articleList':
+      return (
+        <Suspense fallback={<div />}>
+          <ArticleListRenderer block={block} />
+        </Suspense>
       )
   }
 }

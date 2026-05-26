@@ -245,6 +245,22 @@ export interface Window {
             blockName?: string | null;
             blockType: 'cta';
           }
+        | {
+            heading?: string | null;
+            /**
+             * Which article types to include in this list
+             */
+            types: ('case-study' | 'service')[];
+            sortField?: ('createdAt' | 'updatedAt' | 'title' | 'shortcutOrder') | null;
+            sortDirection?: ('desc' | 'asc') | null;
+            /**
+             * Maximum number of articles to display
+             */
+            limit?: number | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'articleList';
+          }
       )[]
     | null;
   showShortcut?: boolean | null;
@@ -325,6 +341,22 @@ export interface Article {
             id?: string | null;
             blockName?: string | null;
             blockType: 'cta';
+          }
+        | {
+            heading?: string | null;
+            /**
+             * Which article types to include in this list
+             */
+            types: ('case-study' | 'service')[];
+            sortField?: ('createdAt' | 'updatedAt' | 'title' | 'shortcutOrder') | null;
+            sortDirection?: ('desc' | 'asc') | null;
+            /**
+             * Maximum number of articles to display
+             */
+            limit?: number | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'articleList';
           }
       )[]
     | null;
@@ -735,6 +767,17 @@ export interface WindowsSelect<T extends boolean = true> {
               id?: T;
               blockName?: T;
             };
+        articleList?:
+          | T
+          | {
+              heading?: T;
+              types?: T;
+              sortField?: T;
+              sortDirection?: T;
+              limit?: T;
+              id?: T;
+              blockName?: T;
+            };
       };
   showShortcut?: T;
   shortcutName?: T;
@@ -799,6 +842,17 @@ export interface ArticlesSelect<T extends boolean = true> {
                     href?: T;
                     openInNewTab?: T;
                   };
+              id?: T;
+              blockName?: T;
+            };
+        articleList?:
+          | T
+          | {
+              heading?: T;
+              types?: T;
+              sortField?: T;
+              sortDirection?: T;
+              limit?: T;
               id?: T;
               blockName?: T;
             };
