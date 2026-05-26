@@ -18,9 +18,9 @@ export const metadata = {
 }
 
 const COLLECTION_META = {
-  windows: { color: '#4A9EFF' },
-  works:   { color: '#F5A623' },
-  forms:   { color: '#E3465A' },
+  windows:  { color: '#4A9EFF' },
+  articles: { color: '#F5A623' },
+  forms:    { color: '#E3465A' },
 } as const
 
 type CollectionSlug = keyof typeof COLLECTION_META
@@ -28,22 +28,23 @@ type CollectionSlug = keyof typeof COLLECTION_META
 async function fetchShortcuts() {
   const payload = await getPayload({ config })
   const where = { showShortcut: { equals: true } }
+  const select = { title: true, slug: true, shortcutName: true, shortcutIcon: true, shortcutOrder: true } as const
 
-  const [windows, works, forms] = await Promise.all([
-    payload.find({ collection: 'windows', where }),
-    payload.find({ collection: 'works',   where }),
-    payload.find({ collection: 'forms',   where }),
+  const [windows, articles, forms] = await Promise.all([
+    payload.find({ collection: 'windows',  where, select, depth: 0, limit: 100 }),
+    payload.find({ collection: 'articles', where, select, depth: 0, limit: 100 }),
+    payload.find({ collection: 'forms',    where, select, depth: 0, limit: 100 }),
   ])
 
   return [
-    ...windows.docs.map((doc) => ({ ...doc, _slug: 'windows' as CollectionSlug, _href: `/${(doc as any).slug ?? ''}` })),
-    ...works.docs.map((doc)   => ({ ...doc, _slug: 'works'   as CollectionSlug, _href: `/${(doc as any).slug ?? ''}` })),
-    ...forms.docs.map((doc)   => ({ ...doc, _slug: 'forms'   as CollectionSlug, _href: `/${(doc as any).slug ?? ''}` })),
+    ...windows.docs.map((doc) => ({ ...doc, _slug: 'windows'  as CollectionSlug, _href: `/${doc.slug ?? ''}` })),
+    ...articles.docs.map((doc) => ({ ...doc, _slug: 'articles' as CollectionSlug, _href: `/${doc.slug ?? ''}` })),
+    ...forms.docs.map((doc)    => ({ ...doc, _slug: 'forms'    as CollectionSlug, _href: `/${(doc as any).slug ?? ''}` })),
   ]
     .sort((a, b) => (a.shortcutOrder ?? Infinity) - (b.shortcutOrder ?? Infinity))
     .map((doc) => ({
-      icon:  doc.shortcutIcon  ?? 'ri-file-fill',
-      name:  doc.shortcutName  ?? doc.title,
+      icon:  doc.shortcutIcon ?? 'ri-file-fill',
+      name:  doc.shortcutName ?? doc.title,
       href:  doc._href,
       color: COLLECTION_META[doc._slug].color,
     }))

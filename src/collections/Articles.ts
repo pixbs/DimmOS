@@ -1,11 +1,11 @@
-// Windows = general content pages (about, contact, welcome).
-// Portfolio work and services live in the Articles collection.
+// Articles = portfolio case studies (type: 'case-study') and service descriptions (type: 'service').
+// Replaces the Works collection. The type field drives /works and /services listing routes.
 import type { CollectionConfig } from 'payload'
 import { revalidatePath } from 'next/cache'
 import { contentBlocksField } from '@/fields/contentBlocks'
 
-export const Windows: CollectionConfig = {
-  slug: 'windows',
+export const Articles: CollectionConfig = {
+  slug: 'articles',
   admin: { useAsTitle: 'title' },
   hooks: {
     afterChange: [
@@ -15,6 +15,8 @@ export const Windows: CollectionConfig = {
         try {
           revalidatePath(`/${doc.slug}`)
           revalidatePath('/')
+          revalidatePath('/works')
+          revalidatePath('/services')
         } catch {}
         req.context.skipHooks = false
       },
@@ -24,6 +26,8 @@ export const Windows: CollectionConfig = {
         try {
           revalidatePath(`/${doc.slug}`)
           revalidatePath('/')
+          revalidatePath('/works')
+          revalidatePath('/services')
         } catch {}
       },
     ],
@@ -31,12 +35,22 @@ export const Windows: CollectionConfig = {
   fields: [
     { name: 'title', type: 'text', required: true },
     {
+      name: 'type',
+      type: 'select',
+      required: true,
+      index: true,
+      options: [
+        { label: 'Case Study', value: 'case-study' },
+        { label: 'Service', value: 'service' },
+      ],
+    },
+    {
       name: 'slug',
       type: 'text',
       required: true,
       unique: true,
       index: true,
-      admin: { description: 'URL path identifier, e.g. "about" → /about' },
+      admin: { description: 'URL path identifier, e.g. "my-project" → /my-project' },
       validate: (value: string | null | undefined) => {
         if (!value) return 'Slug is required'
         if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value))
@@ -56,7 +70,7 @@ export const Windows: CollectionConfig = {
           fields: [
             { name: 'showShortcut', type: 'checkbox', defaultValue: false },
             { name: 'shortcutName', type: 'text' },
-            { name: 'shortcutIcon', type: 'text', defaultValue: 'ri-window-fill' },
+            { name: 'shortcutIcon', type: 'text', defaultValue: 'ri-folder-fill' },
             {
               name: 'shortcutOrder',
               type: 'number',

@@ -90,6 +90,7 @@ export function PageDrawerShell({ children }: { children: ReactNode }) {
         ref={panelRef}
         role="dialog"
         aria-modal="true"
+        data-testid="page-drawer"
         className={`fixed inset-x-0 bottom-0 z-30 bg-bg border-t-2 border-fg/10 rounded-t-2xl will-change-transform flex flex-col transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
           isOpen ? 'translate-y-0' : 'translate-y-full'
         }`}

@@ -70,7 +70,7 @@ export interface Config {
     users: User;
     media: Media;
     windows: Window;
-    works: Work;
+    articles: Article;
     'cookie-services': CookieService;
     'cookie-consents': CookieConsent;
     forms: Form;
@@ -85,7 +85,7 @@ export interface Config {
     users: UsersSelect<false> | UsersSelect<true>;
     media: MediaSelect<false> | MediaSelect<true>;
     windows: WindowsSelect<false> | WindowsSelect<true>;
-    works: WorksSelect<false> | WorksSelect<true>;
+    articles: ArticlesSelect<false> | ArticlesSelect<true>;
     'cookie-services': CookieServicesSelect<false> | CookieServicesSelect<true>;
     'cookie-consents': CookieConsentsSelect<false> | CookieConsentsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
@@ -188,6 +188,65 @@ export interface Window {
    * URL path identifier, e.g. "about" → /about
    */
   slug: string;
+  content?:
+    | (
+        | {
+            content?: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            } | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'richText';
+          }
+        | {
+            image: number | Media;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'image';
+          }
+        | {
+            images?:
+              | {
+                  image?: (number | null) | Media;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'gallery';
+          }
+        | {
+            url: string;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'embed';
+          }
+        | {
+            heading: string;
+            body?: string | null;
+            link?: {
+              label?: string | null;
+              href?: string | null;
+              openInNewTab?: boolean | null;
+            };
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'cta';
+          }
+      )[]
+    | null;
   showShortcut?: boolean | null;
   shortcutName?: string | null;
   shortcutIcon?: string | null;
@@ -200,15 +259,75 @@ export interface Window {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "works".
+ * via the `definition` "articles".
  */
-export interface Work {
+export interface Article {
   id: number;
   title: string;
+  type: 'case-study' | 'service';
   /**
    * URL path identifier, e.g. "my-project" → /my-project
    */
   slug: string;
+  content?:
+    | (
+        | {
+            content?: {
+              root: {
+                type: string;
+                children: {
+                  type: any;
+                  version: number;
+                  [k: string]: unknown;
+                }[];
+                direction: ('ltr' | 'rtl') | null;
+                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+                indent: number;
+                version: number;
+              };
+              [k: string]: unknown;
+            } | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'richText';
+          }
+        | {
+            image: number | Media;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'image';
+          }
+        | {
+            images?:
+              | {
+                  image?: (number | null) | Media;
+                  id?: string | null;
+                }[]
+              | null;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'gallery';
+          }
+        | {
+            url: string;
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'embed';
+          }
+        | {
+            heading: string;
+            body?: string | null;
+            link?: {
+              label?: string | null;
+              href?: string | null;
+              openInNewTab?: boolean | null;
+            };
+            id?: string | null;
+            blockName?: string | null;
+            blockType: 'cta';
+          }
+      )[]
+    | null;
   showShortcut?: boolean | null;
   shortcutName?: string | null;
   shortcutIcon?: string | null;
@@ -457,8 +576,8 @@ export interface PayloadLockedDocument {
         value: number | Window;
       } | null)
     | ({
-        relationTo: 'works';
-        value: number | Work;
+        relationTo: 'articles';
+        value: number | Article;
       } | null)
     | ({
         relationTo: 'cookie-services';
@@ -565,6 +684,58 @@ export interface MediaSelect<T extends boolean = true> {
 export interface WindowsSelect<T extends boolean = true> {
   title?: T;
   slug?: T;
+  content?:
+    | T
+    | {
+        richText?:
+          | T
+          | {
+              content?: T;
+              id?: T;
+              blockName?: T;
+            };
+        image?:
+          | T
+          | {
+              image?: T;
+              id?: T;
+              blockName?: T;
+            };
+        gallery?:
+          | T
+          | {
+              images?:
+                | T
+                | {
+                    image?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        embed?:
+          | T
+          | {
+              url?: T;
+              id?: T;
+              blockName?: T;
+            };
+        cta?:
+          | T
+          | {
+              heading?: T;
+              body?: T;
+              link?:
+                | T
+                | {
+                    label?: T;
+                    href?: T;
+                    openInNewTab?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+      };
   showShortcut?: T;
   shortcutName?: T;
   shortcutIcon?: T;
@@ -574,11 +745,64 @@ export interface WindowsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "works_select".
+ * via the `definition` "articles_select".
  */
-export interface WorksSelect<T extends boolean = true> {
+export interface ArticlesSelect<T extends boolean = true> {
   title?: T;
+  type?: T;
   slug?: T;
+  content?:
+    | T
+    | {
+        richText?:
+          | T
+          | {
+              content?: T;
+              id?: T;
+              blockName?: T;
+            };
+        image?:
+          | T
+          | {
+              image?: T;
+              id?: T;
+              blockName?: T;
+            };
+        gallery?:
+          | T
+          | {
+              images?:
+                | T
+                | {
+                    image?: T;
+                    id?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+        embed?:
+          | T
+          | {
+              url?: T;
+              id?: T;
+              blockName?: T;
+            };
+        cta?:
+          | T
+          | {
+              heading?: T;
+              body?: T;
+              link?:
+                | T
+                | {
+                    label?: T;
+                    href?: T;
+                    openInNewTab?: T;
+                  };
+              id?: T;
+              blockName?: T;
+            };
+      };
   showShortcut?: T;
   shortcutName?: T;
   shortcutIcon?: T;

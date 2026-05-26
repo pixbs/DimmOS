@@ -7,7 +7,10 @@ export default defineConfig({
   test: {
     environment: 'node',
     pool: 'forks',
+    maxWorkers: 1,
+    minWorkers: 1,
     setupFiles: ['./vitest.setup.ts'],
     include: ['tests/int/**/*.int.spec.ts'],
+    hookTimeout: 60000,
   },
 })

@@ -10,7 +10,7 @@ import sharp from 'sharp'
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Windows } from './collections/Windows'
-import { Works } from './collections/Works'
+import { Articles } from './collections/Articles'
 import { CookieServices } from './collections/CookieServices'
 import { CookieConsents } from './collections/CookieConsents'
 import { CookieSettings } from './globals/CookieSettings'
@@ -27,7 +27,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Windows, Works, CookieServices, CookieConsents],
+  collections: [Users, Media, Windows, Articles, CookieServices, CookieConsents],
   globals: [CookieSettings],
   editor: lexicalEditor(),
   email: resendAdapter({
