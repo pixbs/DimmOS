@@ -33,18 +33,21 @@ src/
 │   │   ├── page.tsx             # Homepage shell (shortcuts rendered in layout)
 │   │   ├── (pages)/             # Routes that open inside PageDrawer
 │   │   │   ├── layout.tsx       # Wraps children in <PageDrawer>
-│   │   │   ├── works/           # /works — portfolio listing
-│   │   │   ├── [slug]/          # /[slug] — dynamic forms / windows / works
+│   │   │   ├── works/           # /works — case study listing (Articles type: case-study)
+│   │   │   ├── services/        # /services — services listing (Articles type: service)
+│   │   │   ├── [slug]/          # /[slug] — dynamic: windows → articles → forms
 │   │   │   └── cookie-preferences/  # /cookie-preferences — consent management
 │   │   └── test/                # /test — drawer interaction playground
 │   └── (payload)/               # Payload admin + REST/GraphQL API
 ├── collections/
 │   ├── Users.ts                 # Auth collection
 │   ├── Media.ts                 # Uploads with alt text
-│   ├── Windows.ts               # Content windows (title, slug, shortcut fields)
-│   ├── Works.ts                 # Portfolio works (title, slug, shortcut fields)
+│   ├── Windows.ts               # General content pages (about, contact, welcome) + content blocks + revalidation hooks
+│   ├── Articles.ts              # Portfolio case studies + service descriptions; type: 'case-study' | 'service'
 │   ├── CookieServices.ts        # Cookie service catalogue
 │   └── CookieConsents.ts        # Consent audit log (write-protected, custom endpoint)
+├── fields/
+│   └── contentBlocks.ts         # Shared blocks field: richText, image, gallery, embed, cta
 ├── globals/
 │   └── CookieSettings.ts        # Banner copy + consentVersion
 ├── components/
@@ -52,7 +55,9 @@ src/
 │   ├── cookie-banner/           # Consent banner + context
 │   ├── header/                  # Logo + Clock
 │   ├── shortcut/                # Desktop icon tiles
-│   └── form/                    # Dynamic form renderer
+│   ├── form/                    # Dynamic form renderer
+│   ├── window-content/          # Block renderer for Windows collection content
+│   └── article-content/         # Block renderer for Articles collection content
 ├── hooks/
 │   ├── cookies/captureRequestMetadata.ts
 │   └── forms/verifyRecaptcha.ts

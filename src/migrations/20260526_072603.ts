@@ -126,11 +126,11 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"created_at" timestamp(3) with time zone DEFAULT now() NOT NULL
   );
   
-  ALTER TABLE "works" DISABLE ROW LEVEL SECURITY;
-  DROP TABLE "works" CASCADE;
-  ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT "payload_locked_documents_rels_works_fk";
-  
-  DROP INDEX "payload_locked_documents_rels_works_id_idx";
+  ALTER TABLE IF EXISTS "works" DISABLE ROW LEVEL SECURITY;
+  DROP TABLE IF EXISTS "works" CASCADE;
+  ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT IF EXISTS "payload_locked_documents_rels_works_fk";
+
+  DROP INDEX IF EXISTS "payload_locked_documents_rels_works_id_idx";
   ALTER TABLE "payload_locked_documents_rels" ADD COLUMN "articles_id" integer;
   ALTER TABLE "windows_blocks_rich_text" ADD CONSTRAINT "windows_blocks_rich_text_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."windows"("id") ON DELETE cascade ON UPDATE no action;
   ALTER TABLE "windows_blocks_image" ADD CONSTRAINT "windows_blocks_image_image_id_media_id_fk" FOREIGN KEY ("image_id") REFERENCES "public"."media"("id") ON DELETE set null ON UPDATE no action;
@@ -235,9 +235,9 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   DROP TABLE "articles_blocks_embed" CASCADE;
   DROP TABLE "articles_blocks_cta" CASCADE;
   DROP TABLE "articles" CASCADE;
-  ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT "payload_locked_documents_rels_articles_fk";
-  
-  DROP INDEX "payload_locked_documents_rels_articles_id_idx";
+  ALTER TABLE "payload_locked_documents_rels" DROP CONSTRAINT IF EXISTS "payload_locked_documents_rels_articles_fk";
+
+  DROP INDEX IF EXISTS "payload_locked_documents_rels_articles_id_idx";
   ALTER TABLE "payload_locked_documents_rels" ADD COLUMN "works_id" integer;
   CREATE UNIQUE INDEX "works_slug_idx" ON "works" USING btree ("slug");
   CREATE INDEX "works_updated_at_idx" ON "works" USING btree ("updated_at");
