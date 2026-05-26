@@ -297,7 +297,7 @@ Must be completed before merging any Phase 1 work to main.
 
 ### 0.1 GitHub Actions CI pipeline
 
-- [ ] Create `.github/workflows/ci.yml` with steps in order:
+- [x] Create `.github/workflows/ci.yml` with steps in order:
   1. `bun install --frozen-lockfile`
   2. `bun run build` — fails the workflow if TypeScript or Next.js compilation errors exist
   3. Start a PostgreSQL service container (`postgres:16`; set `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`)
@@ -305,7 +305,7 @@ Must be completed before merging any Phase 1 work to main.
   5. `bun test:int`
   6. Start `bun start` as a background step; wait for port 3000
   7. `bun test:e2e`
-- [ ] Fix `playwright.config.ts` `webServer` for CI:
+- [x] Fix `playwright.config.ts` `webServer` for CI:
   ```ts
   webServer: {
     command: process.env.CI ? 'bun start' : 'bun run dev',
@@ -314,7 +314,7 @@ Must be completed before merging any Phase 1 work to main.
   }
   ```
   (`forbidOnly: !!process.env.CI` and `retries: process.env.CI ? 2 : 0` are already set.)
-- [ ] Add required CI secrets: `DATABASE_URL`, `PAYLOAD_SECRET`, `RECAPTCHA_SECRET_KEY`, `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`
+- [x] Add required CI secrets: `DATABASE_URL`, `PAYLOAD_SECRET`, `RECAPTCHA_SECRET_KEY`, `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`
 
 **Tests required:** the CI workflow itself; it must exit 0 on a clean main branch.
 

@@ -53,7 +53,6 @@ export async function up({ db, payload, req }: MigrateUpArgs): Promise<void> {
   	"created_at" timestamp(3) with time zone
   );
   
-  ALTER TABLE "forms_blocks_email" ADD COLUMN "is_pre_defined" boolean DEFAULT false;
   ALTER TABLE "payload_locked_documents_rels" ADD COLUMN "cookie_services_id" integer;
   ALTER TABLE "payload_locked_documents_rels" ADD COLUMN "cookie_consents_id" integer;
   ALTER TABLE "cookie_services_cookies" ADD CONSTRAINT "cookie_services_cookies_parent_id_fk" FOREIGN KEY ("_parent_id") REFERENCES "public"."cookie_services"("id") ON DELETE cascade ON UPDATE no action;
@@ -91,7 +90,6 @@ export async function down({ db, payload, req }: MigrateDownArgs): Promise<void>
   
   DROP INDEX "payload_locked_documents_rels_cookie_services_id_idx";
   DROP INDEX "payload_locked_documents_rels_cookie_consents_id_idx";
-  ALTER TABLE "forms_blocks_email" DROP COLUMN "is_pre_defined";
   ALTER TABLE "payload_locked_documents_rels" DROP COLUMN "cookie_services_id";
   ALTER TABLE "payload_locked_documents_rels" DROP COLUMN "cookie_consents_id";
   DROP TYPE "public"."enum_cookie_services_cookies_storage_type";

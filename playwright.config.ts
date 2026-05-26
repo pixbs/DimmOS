@@ -23,6 +23,9 @@ export default defineConfig({
   use: {
     baseURL: 'http://localhost:3000',
     trace: 'on-first-retry',
+    ...(process.env.CI && {
+      launchOptions: { args: ['--no-sandbox', '--disable-setuid-sandbox'] },
+    }),
   },
   projects: [
     {

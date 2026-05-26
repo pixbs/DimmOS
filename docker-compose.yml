@@ -1,43 +1,37 @@
-version: '3'
+name: dimm-os-ci
 
 services:
-  payload:
-    image: node:20-alpine
-    ports:
-      - '3000:3000'
-    volumes:
-      - .:/home/node/app
-      - node_modules:/home/node/app/node_modules
-    working_dir: /home/node/app/
-    command: sh -c "corepack enable && corepack prepare pnpm@latest --activate && pnpm install && pnpm dev"
+  postgres:
+    image: postgres:16
+    environment:
+      POSTGRES_DB: dimmos_test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  ci:
+    build:
+      context: .
+      dockerfile: Dockerfile.ci
     depends_on:
-      - mongo
-      # - postgres
-    env_file:
-      - .env
-
-  # Ensure your DATABASE_URL uses 'mongo' as the hostname ie. mongodb://mongo/my-db-name
-  mongo:
-    image: mongo:latest
-    ports:
-      - '27017:27017'
-    command:
-      - --storageEngine=wiredTiger
-    volumes:
-      - data:/data/db
-    logging:
-      driver: none
-
-  # Uncomment the following to use postgres
-  # postgres:
-  #   restart: always
-  #   image: postgres:latest
-  #   volumes:
-  #     - pgdata:/var/lib/postgresql/data
-  #   ports:
-  #     - "5432:5432"
-
-volumes:
-  data:
-  # pgdata:
-  node_modules:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://postgres:postgres@postgres:5432/dimmos_test
+      PAYLOAD_SECRET: ci-secret-placeholder-minimum-32-chars-long
+      RECAPTCHA_SECRET_KEY: ci-placeholder
+      NEXT_PUBLIC_RECAPTCHA_SITE_KEY: ci-placeholder
+      RESEND_API_KEY: ci-placeholder
+      CI: "true"
+    command: >
+      sh -c "
+        bun payload migrate &&
+        bun run build &&
+        bun test:int &&
+        bunx playwright install --with-deps chromium &&
+        bun test:e2e
+      "
