@@ -2,12 +2,14 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import Link from 'next/link'
 
+export const dynamic = 'force-dynamic'
+
 export default async function ServicesPage() {
   const payload = await getPayload({ config })
   const { docs } = await payload.find({
     collection: 'articles',
     where: { type: { equals: 'service' } },
-    select: { title: true, slug: true, shortcutIcon: true },
+    select: { title: true, slug: true, shortcutIcon: true } as const,
     depth: 0,
     limit: 24,
   })

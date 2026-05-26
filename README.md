@@ -108,6 +108,8 @@ await expect(el).toHaveClass(/translate-y-0/)   // open
 await expect(el).toHaveClass(/translate-y-full/) // closed
 ```
 
+Use `data-testid="page-drawer"` (set on `PageDrawerShell`) rather than `[role="dialog"]` in Playwright selectors — both `PageDrawerShell` (z-30) and `DrawerShell` / cookie banner (z-50) have `role="dialog"`, causing Playwright strict-mode violations if you target by role alone.
+
 ---
 
 ## Cookie consent system
@@ -137,18 +139,18 @@ await expect(el).toHaveClass(/translate-y-full/) // closed
 |---|---|---|
 | `users` | Auth | Admin only |
 | `media` | Upload | Read: public; write: admin |
-| `windows` | Content | Admin only |
-| `works` | Content | Admin only |
+| `windows` | General content pages (about, contact, welcome) + content blocks | Admin only |
+| `articles` | Portfolio case studies + service descriptions; `type: 'case-study' \| 'service'` | Admin only |
 | `cookie-services` | Service catalogue | Read: public; write: admin |
 | `cookie-consents` | Audit log | Create: endpoint only; read/update/delete: admin |
 | `cookie-settings` (global) | Config | Read: public; update: admin |
 
-**Windows & Works** currently have only `title`, `slug`, and shortcut tab fields (`showShortcut`, `shortcutName`, `shortcutIcon`, `shortcutOrder`). No content blocks yet.
+**Windows and Articles** both support five content block types via `src/fields/contentBlocks.ts`: `richText`, `image`, `gallery`, `embed`, `cta`. Both collections have `afterChange`/`afterDelete` hooks that call `revalidatePath` for instant cache busting on save.
 
 **Querying conventions:**
-- Always pass `select` to limit returned fields in listing queries. The `fetchShortcuts` function in `(frontend)/layout.tsx` is the current counter-example to fix (calls `payload.find()` with no `select`, `depth`, or `limit`).
+- Always pass `select` to limit returned fields in listing queries. Use `as const` so TypeScript infers literal `true` values required by Payload's `select` type.
 - Use `depth: 0` for listing queries where only IDs are needed; `depth: 1` when one level of relationship population is required. Set it explicitly — never rely on Payload's default of 1.
-- Index all fields used in `where` clauses. `slug` on Windows, Works, and Forms already has `index: true`. Follow the same pattern for any `type`, `status`, or `category` selector fields added in future collections.
+- Index all fields used in `where` clauses. `slug` on Windows, Articles, and Forms has `index: true`; `type` on Articles has `index: true`. Follow the same pattern for any `status` or `category` selector fields added in future collections.
 
 ---
 
@@ -167,9 +169,14 @@ bun test:e2e     # Playwright — tests/e2e/**/*.e2e.spec.ts
 |---|---|
 | `tests/int/cookie-consents.int.spec.ts` | Hook unit test, consent creation, access control, unique constraint |
 | `tests/int/cookie-services.int.spec.ts` | Service creation, public read, admin-only write |
+| `tests/int/windows.int.spec.ts` | Window creation with each block type, optional content, access control |
+| `tests/int/articles.int.spec.ts` | Article creation, type discriminator (`case-study`/`service`), slug uniqueness, access control |
+| `tests/int/windows-revalidation.int.spec.ts` | `revalidatePath` called on `afterChange`/`afterDelete`; `skipHooks` re-entry guard |
 | `tests/e2e/cookie-banner.e2e.spec.ts` | Full consent flow: first visit, accept, reject, configure, preferences, update |
 | `tests/e2e/admin.e2e.spec.ts` | Admin login, dashboard, list view, edit view |
 | `tests/e2e/frontend.e2e.spec.ts` | Homepage title + load |
+| `tests/e2e/windows.e2e.spec.ts` | Navigating to a window slug opens PageDrawer; richText block renders |
+| `tests/e2e/works.e2e.spec.ts` | `/works` listing: PageDrawer open, article card visible, clicking card navigates to detail |
 
 **Integration test access control pattern.** Always pass `overrideAccess: false` together with a `user` object to exercise real access control. Use `overrideAccess: true` only in test setup/teardown helpers. See `tests/int/cookie-services.int.spec.ts` — setup uses `overrideAccess: true` and assertions use `overrideAccess: false` — as the model to follow.
 
@@ -333,100 +340,74 @@ Windows and Works have slugs and shortcut metadata but no content. This phase ad
 
 ### 1.1 Decide collection structure
 
-- [ ] Make one of the following decisions and document it as a comment at the top of the relevant collection file(s):
-  - **Option A — Keep separate.** `Windows` = general content pages (about, contact, welcome). `Works` = portfolio pieces. Both use the same block schema via a shared field definition exported from `src/fields/contentBlocks.ts`.
-  - **Option B — Merge into `Articles`.** Single collection with a `type` field (`window | work`). Existing Windows and Works documents migrated via a Payload migration.
-  - This decision affects collection slugs in `generateStaticParams`, `revalidatePath` calls, and the `[slug]` route. Resolve before writing any tests for 1.2.
+- [x] **Decision: Option B — Merged into `Articles`.** Single collection with `type: 'case-study' | 'service'`. `Works` collection removed; existing Works data dropped via Payload migration (no production data at decision time). See `src/collections/Articles.ts`.
 
 ### 1.2 Content blocks field
 
-- [ ] Write `tests/int/windows.int.spec.ts` **first** (TDD):
-  - Create a Window document with each block type present; assert `content[0].blockType` matches
-  - Create a Window with no `content`; assert it is valid (field is optional)
-  - Fetch by slug with `overrideAccess: false`; assert the document is returned (or correctly denied per 1.1 access decision)
-- [ ] Create `src/fields/contentBlocks.ts` — exports a `blocks` field and individual block exports (kept separate for reuse across collections):
+- [x] Write `tests/int/windows.int.spec.ts` — Window creation with each block type, optional content, access control
+- [x] Create `src/fields/contentBlocks.ts` — exports `contentBlocksField` and five block types:
   - `RichTextBlock` — `blockType: 'richText'`, field: `content` (lexical richText)
   - `ImageBlock` — `blockType: 'image'`, field: `image` (upload rel to `media`, required)
   - `GalleryBlock` — `blockType: 'gallery'`, field: `images` (array of upload rels to `media`)
-  - `EmbedBlock` — `blockType: 'embed'`, field: `url` (text, required, validate rejects non-URL strings)
+  - `EmbedBlock` — `blockType: 'embed'`, field: `url` (text, required, URL validation)
   - `CTABlock` — `blockType: 'cta'`, fields: `heading` (text, required), `body` (textarea), `link` group (`label`, `href`, `openInNewTab` checkbox)
-- [ ] Add `content: contentBlocksField` to `Windows.ts` (and Works / Articles per 1.1 decision)
-- [ ] Run `bun generate:types` → `bun payload migrate:create` → `bun payload migrate`
-- [ ] `bun test:int` — new tests must pass
+- [x] Add `contentBlocksField` to `Windows.ts` and `Articles.ts`
+- [x] Run `bun generate:types` → `bun payload migrate:create` → `bun payload migrate`
+- [x] `bun test:int` — new tests pass
 
 ### 1.3 On-demand cache revalidation
 
 Revalidation lands here alongside content blocks so that admin saves immediately invalidate the Next.js cache in production without a redeploy.
 
-- [ ] Write `tests/int/windows-revalidation.int.spec.ts`:
-  - Spy on `next/cache.revalidatePath`; assert it is called with `/${doc.slug}` and `/` after `afterChange` fires
-  - Assert the `skipHooks` guard prevents re-entry when the hook triggers itself
-- [ ] Add `afterChange` + `afterDelete` hooks to `Windows.ts` (mirror for Works / Articles):
-  ```ts
-  import { revalidatePath } from 'next/cache'
-
-  afterChange: [async ({ doc, req }) => {
-    if (req.context.skipHooks) return
-    req.context.skipHooks = true
-    revalidatePath(`/${doc.slug}`)
-    revalidatePath('/') // shortcut grid on homepage
-    req.context.skipHooks = false
-  }]
-  ```
-  Consider `revalidateTag` instead of `revalidatePath` if multiple routes share a cache tag (e.g. `'shortcuts'` for the homepage grid).
-- [ ] `bun test:int` — revalidation tests pass
+- [x] Write `tests/int/windows-revalidation.int.spec.ts` — `revalidatePath` called on `afterChange`/`afterDelete`; `skipHooks` re-entry guard verified
+- [x] Add `afterChange` + `afterDelete` hooks to `Windows.ts` and `Articles.ts`:
+  - `revalidatePath` wrapped in `try/catch` so test-runner seed calls (outside Next.js context) don't throw "static generation store missing"
+  - `Articles.ts` also revalidates `/works` and `/services`
+- [x] `bun test:int` — revalidation tests pass
 
 ### 1.4 Welcome Window
 
-- [ ] Extend `tests/int/windows.int.spec.ts`:
-  - Seed a Window with `slug: 'welcome'` and at least one `RichTextBlock`
-  - Fetch by slug with `overrideAccess: false`; assert document returned; assert `content[0].blockType === 'richText'`
-- [ ] Create `src/components/window-content/index.tsx` (Server Component, no `'use client'`):
-  - Accepts `blocks: ContentBlock[]` (type from `payload-types.ts`)
-  - Switches on `block.blockType`; renders sub-components: `RichTextRenderer` (uses `@payloadcms/richtext-lexical/react`), `ImageRenderer`, `GalleryRenderer`, `EmbedRenderer`, `CTARenderer`
-- [ ] Write `tests/e2e/windows.e2e.spec.ts`:
-  - Navigate to the welcome window URL
-  - Assert PageDrawer opens: `expect(el).toHaveClass(/translate-y-0/)`
-  - Assert at least one block renders: `locator('[data-block-type="richText"]').toBeVisible()`
+- [x] Extend `tests/int/windows.int.spec.ts` — seed a Window with a `RichTextBlock`; assert `content[0].blockType === 'richText'`
+- [x] Create `src/components/window-content/index.tsx` — Server Component; switches on `block.blockType`; renders `RichText`, `image`, `gallery`, `embed`, and `cta` sub-components with `data-block-type` attributes for test targeting
+- [x] Create `src/components/article-content/index.tsx` — same pattern typed with `Article`
+- [x] Write `tests/e2e/windows.e2e.spec.ts`:
+  - Navigate to seeded window slug; assert `[data-testid="page-drawer"]` has class `translate-y-0`
+  - Assert `[data-block-type="richText"]` is visible
+  - Uses `page.addInitScript()` to seed cookie consent in localStorage before navigation (prevents cookie banner overlay)
 
 ### 1.5 Works listing page (`/works`)
 
-- [ ] Write `tests/e2e/works.e2e.spec.ts` **first** (TDD):
+- [x] Write `tests/e2e/works.e2e.spec.ts`:
   - Navigate to `/works`; assert PageDrawer open (`translate-y-0`)
-  - Assert ≥ 1 work card is visible (requires a seeded document in the test DB)
-  - Assert clicking a work card navigates to `/[slug]` and a detail drawer opens
-- [ ] Replace placeholder copy in `src/app/(frontend)/(pages)/works/page.tsx`:
-  - `payload.find({ collection: 'works', select: { title: true, slug: true, shortcutIcon: true }, depth: 0, limit: 24 })`
-  - Render a grid of `WorkCard` server components (no `'use client'`)
-- [ ] Add `generateStaticParams` to `src/app/(frontend)/(pages)/[slug]/page.tsx` covering windows + works + forms (currently covers forms only):
+  - Assert ≥ 1 article card is visible (seeded `type: 'case-study'` article in `beforeAll`)
+  - Assert clicking a card navigates to `/{slug}` and detail drawer opens
+- [x] Replace placeholder copy in `src/app/(frontend)/(pages)/works/page.tsx`:
+  - `payload.find({ collection: 'articles', where: { type: { equals: 'case-study' } }, select: { title: true, slug: true, shortcutIcon: true } as const, depth: 0, limit: 24 })`
+  - Renders a grid of article cards (Server Components, no `'use client'`)
+- [x] Update `generateStaticParams` in `src/app/(frontend)/(pages)/[slug]/page.tsx` — covers windows + articles + forms:
   ```ts
-  const [windows, works, forms] = await Promise.all([
-    payload.find({ collection: 'windows', select: { slug: true }, limit: 200 }),
-    payload.find({ collection: 'works',   select: { slug: true }, limit: 200 }),
-    payload.find({ collection: 'forms',   select: { slug: true }, limit: 200 }),
+  const [windows, articles, forms] = await Promise.all([
+    payload.find({ collection: 'windows',  select: { slug: true } as const, limit: 200, depth: 0 }),
+    payload.find({ collection: 'articles', select: { slug: true } as const, limit: 200, depth: 0 }),
+    payload.find({ collection: 'forms',    select: { slug: true } as const, limit: 200, depth: 0 }),
   ])
-  return [
-    ...windows.docs.map(d => ({ slug: d.slug })),
-    ...works.docs.map(d   => ({ slug: d.slug })),
-    ...forms.docs.map(d   => ({ slug: d.slug })),
-  ]
   ```
 
 ### 1.6 Services page
 
-- [ ] Per 1.1 decision: new `Services` collection OR filter Articles by `type: 'service'`
-  - If new collection: mirror Works structure — slug with `index: true`, contentBlocks field, same `afterChange` revalidation hook
-- [ ] Write integration test: access control + slug uniqueness + hook side effects
-- [ ] Write E2E test mirroring the works tests; add `/services` route under `(pages)/`
+- [x] Filter Articles by `type: 'service'` — no separate collection needed; `Articles.ts` is the single source
+- [x] Create `src/app/(frontend)/(pages)/services/page.tsx` mirroring works/page.tsx with `where: { type: { equals: 'service' } }`
+- [x] Integration test coverage: `tests/int/articles.int.spec.ts` covers `type: 'service'` creation and access control
+- [ ] Write `tests/e2e/services.e2e.spec.ts` mirroring `works.e2e.spec.ts`
 
 **Tests required for Phase 1:**
-- `tests/int/windows.int.spec.ts`
-- `tests/int/windows-revalidation.int.spec.ts`
-- `tests/int/works.int.spec.ts`
-- `tests/e2e/windows.e2e.spec.ts`
-- `tests/e2e/works.e2e.spec.ts`
+- `tests/int/windows.int.spec.ts` ✓
+- `tests/int/articles.int.spec.ts` ✓ (replaces `works.int.spec.ts`; Articles collection replaced Works)
+- `tests/int/windows-revalidation.int.spec.ts` ✓
+- `tests/e2e/windows.e2e.spec.ts` ✓
+- `tests/e2e/works.e2e.spec.ts` ✓
 
-**Quality gate:** `bun test:int && bun test:e2e && bun run build` pass; `src/payload-types.ts` committed.
+**Quality gate:** `bun test:int && bun test:e2e && bun run build` pass; `src/payload-types.ts` committed. ✓ **All gates green.**
 
 ---
 
@@ -608,12 +589,12 @@ All three services integrate with the existing cookie consent system. No service
 ### 6.1 Shortcut ordering and fetch optimisation
 
 - [ ] Write `tests/int/shortcuts.int.spec.ts`: two shortcuts with the same `shortcutOrder` are sorted stably by `id` as a tiebreaker
-- [ ] Fix `fetchShortcuts` in `src/app/(frontend)/layout.tsx` — add `select`, `depth`, and `limit` to all three `payload.find()` calls:
+- [x] Fix `fetchShortcuts` in `src/app/(frontend)/layout.tsx` — `select`, `depth: 0`, `limit: 100` added to all calls (windows, articles, forms); `works` entry removed; done as part of Phase 1 when wiring up Articles shortcuts:
   ```ts
   payload.find({
     collection: 'windows',
     where: { showShortcut: { equals: true } },
-    select: { title: true, slug: true, shortcutName: true, shortcutIcon: true, shortcutOrder: true },
+    select: { title: true, slug: true, shortcutName: true, shortcutIcon: true, shortcutOrder: true } as const,
     depth: 0,
     limit: 100,
   })
