@@ -4,6 +4,7 @@ import { notFound } from 'next/navigation'
 import { FormComponent } from '@/components/form/FormComponent'
 import { WindowContent } from '@/components/window-content'
 import { ArticleContent } from '@/components/article-content'
+import { SetWindowTitle } from '@/components/window/title-context'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -20,7 +21,12 @@ export default async function SlugPage({ params }: PageProps) {
     depth: 1,
   })
   if (windows.length) {
-    return <WindowContent blocks={windows[0].content ?? []} />
+    return (
+      <>
+        <SetWindowTitle title={windows[0].title} />
+        <WindowContent blocks={windows[0].content ?? []} />
+      </>
+    )
   }
 
   const { docs: articles } = await payload.find({
@@ -30,7 +36,12 @@ export default async function SlugPage({ params }: PageProps) {
     depth: 1,
   })
   if (articles.length) {
-    return <ArticleContent article={articles[0]} />
+    return (
+      <>
+        <SetWindowTitle title={articles[0].title} />
+        <ArticleContent article={articles[0]} />
+      </>
+    )
   }
 
   const { docs: forms } = await payload.find({

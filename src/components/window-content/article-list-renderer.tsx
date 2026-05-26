@@ -1,7 +1,7 @@
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import Link from 'next/link'
 import type { Window } from '@/payload-types'
+import { OpenWindowLink } from '@/components/window/open-window-link'
 
 type ArticleListBlock = Extract<
   NonNullable<Window['content']>[number],
@@ -25,17 +25,17 @@ export async function ArticleListRenderer({ block }: { block: ArticleListBlock }
   })
 
   return (
-    <div data-block-type="articleList">
-      {block.heading && <h2>{block.heading}</h2>}
-      <ul>
-        {docs.map((article) => (
-          <li key={article.id}>
-            <Link href={`/${article.slug}`} data-article-card>
-              {article.title}
-            </Link>
-          </li>
-        ))}
-      </ul>
+    <div data-block-type="articleList" className="flex flex-col gap-3">
+      {block.heading && <h2 className="text-lg font-semibold">{block.heading}</h2>}
+      {docs.map((article) => (
+        <OpenWindowLink
+          key={article.id}
+          slug={article.slug ?? ''}
+          className="flex items-center gap-3 rounded-xl bg-white/5 p-4 hover:bg-white/10 transition-colors"
+        >
+          <span className="font-medium text-fg">{article.title}</span>
+        </OpenWindowLink>
+      ))}
     </div>
   )
 }

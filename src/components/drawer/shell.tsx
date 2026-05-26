@@ -74,7 +74,7 @@ export function DrawerShell({ children, autoOpen, trigger }: DrawerShellProps) {
         ref={panelRef}
         role="dialog"
         aria-modal="true"
-        className={`fixed bottom-0 left-0 right-0 z-50 rounded-t-2xl bg-bg will-change-transform border-t-2 border-fg/10 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
+        className={`fixed bottom-0 left-0 right-0 w-full z-50 rounded-t-2xl bg-bg will-change-transform border-t-2 border-fg/10 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
           isOpen ? 'translate-y-0' : 'translate-y-full'
         }`}
         style={panelStyle}

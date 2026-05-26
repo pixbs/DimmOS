@@ -1,16 +1,19 @@
 import Link from 'next/link'
+import type { MouseEventHandler } from 'react'
 
 interface ShortcutProps {
   icon: string
   name: string
   href: string
   color: string
+  onClick?: MouseEventHandler<HTMLAnchorElement>
 }
 
-export function Shortcut({ icon, name, href, color }: ShortcutProps) {
+export function Shortcut({ icon, name, href, color, onClick }: ShortcutProps) {
   return (
     <Link
       href={href}
+      onClick={onClick}
       className="col-span-2 flex flex-col items-center gap-2 no-underline text-white [-webkit-tap-highlight-color:transparent] justify-center"
     >
       <div

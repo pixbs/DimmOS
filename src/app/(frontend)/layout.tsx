@@ -1,4 +1,4 @@
-import React from 'react'
+import React, { Suspense } from 'react'
 import Script from 'next/script'
 import { Onest } from 'next/font/google'
 import { getPayload } from 'payload'
@@ -6,7 +6,8 @@ import config from '@payload-config'
 import Header from '@/components/header'
 import CookieBanner from '@/components/cookie-banner'
 import { CookieConsentProvider } from '@/components/cookie-banner/context'
-import { Shortcut } from '@/components/shortcut'
+import { ShortcutGrid } from '@/components/shortcut/grid'
+import { WindowManagerProvider } from '@/components/window/WindowManagerProvider'
 import './styles.css'
 import 'remixicon/fonts/remixicon.css'
 
@@ -46,6 +47,7 @@ async function fetchShortcuts() {
       icon:  doc.shortcutIcon ?? 'ri-file-fill',
       name:  doc.shortcutName ?? doc.title,
       href:  doc._href,
+      slug:  doc.slug ?? (doc as any).slug ?? '',
       color: COLLECTION_META[doc._slug].color,
     }))
 }
@@ -60,16 +62,18 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         {/* Google Consent Mode v2 — fires before hydration, Next.js injects this into <head> */}
         <Script src="/consent-init.js" strategy="beforeInteractive" />
         <CookieConsentProvider>
-          <Header />
-          <main>
-            <div className="grid grid-cols-[repeat(var(--cols),var(--tile))] auto-rows-[calc(2*var(--tile))]">
-              {shortcuts.map((s, i) => (
-                <Shortcut key={i} icon={s.icon} name={s.name} href={s.href} color={s.color} />
-              ))}
-            </div>
-            {children}
-          </main>
-          <CookieBanner />
+          <Suspense>
+            <WindowManagerProvider>
+              <Header />
+              <main>
+                <div className="grid grid-cols-[repeat(var(--cols),var(--tile))] auto-rows-[calc(2*var(--tile))]">
+                  <ShortcutGrid shortcuts={shortcuts} />
+                </div>
+                {children}
+              </main>
+              <CookieBanner />
+            </WindowManagerProvider>
+          </Suspense>
         </CookieConsentProvider>
       </body>
     </html>
