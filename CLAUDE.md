@@ -1,7 +1,14 @@
 # Claude Code
 
-This project uses the Payload CMS skill at `.claude/skills/payload/`.
-Start with `.claude/skills/payload/SKILL.md` for a quick reference, then see `.claude/skills/payload/reference/` for detailed docs.
+## Skills installed
+
+| Skill | Trigger |
+|-------|---------|
+| `payload` | Payload CMS collections, fields, hooks, access control, queries |
+| `next-best-practices` | Writing/reviewing Next.js code — RSC, routing, data fetching, hydration |
+| `react-best-practices` | React performance — re-renders, bundle size, Server Components, Suspense |
+| `react-testing` | Testing React components with Vitest + vitest-browser-react / @testing-library |
+| `front-end-testing` | UI query patterns, userEvent, async assertions, MSW, idempotent tests |
 
 ## Schema and migrations — CRITICAL
 
