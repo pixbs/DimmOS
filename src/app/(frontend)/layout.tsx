@@ -7,6 +7,7 @@ import Header from '@/components/header'
 import CookieBanner from '@/components/cookie-banner'
 import { CookieConsentProvider } from '@/components/cookie-banner/context'
 import { ShortcutGrid } from '@/components/shortcut/grid'
+import { ShortcutRegistryProvider } from '@/components/shortcut/registry-context'
 import { WindowManagerProvider } from '@/components/window/WindowManagerProvider'
 import './styles.css'
 import 'remixicon/fonts/remixicon.css'
@@ -26,35 +27,52 @@ const COLLECTION_META = {
 
 type CollectionSlug = keyof typeof COLLECTION_META
 
-async function fetchShortcuts() {
+async function fetchData() {
   const payload = await getPayload({ config })
-  const where = { showShortcut: { equals: true } }
-  const select = { title: true, slug: true, shortcutName: true, shortcutIcon: true, shortcutOrder: true } as const
+  // Fetch all docs (no showShortcut filter) so the registry covers every possible window,
+  // including pages opened via direct URL navigation that may not have showShortcut set.
+  const select = { title: true, slug: true, shortcutName: true, shortcutIcon: true, shortcutOrder: true, showShortcut: true } as const
 
   const [windows, articles, forms] = await Promise.all([
-    payload.find({ collection: 'windows',  where, select, depth: 0, limit: 100 }),
-    payload.find({ collection: 'articles', where, select, depth: 0, limit: 100 }),
-    payload.find({ collection: 'forms',    where, select, depth: 0, limit: 100 }),
+    payload.find({ collection: 'windows',  select, depth: 0, limit: 200 }),
+    payload.find({ collection: 'articles', select, depth: 0, limit: 200 }),
+    payload.find({ collection: 'forms',    select, depth: 0, limit: 200 }),
   ])
 
-  return [
-    ...windows.docs.map((doc) => ({ ...doc, _slug: 'windows'  as CollectionSlug, _href: `/${doc.slug ?? ''}` })),
-    ...articles.docs.map((doc) => ({ ...doc, _slug: 'articles' as CollectionSlug, _href: `/${doc.slug ?? ''}` })),
-    ...forms.docs.map((doc)    => ({ ...doc, _slug: 'forms'    as CollectionSlug, _href: `/${(doc as any).slug ?? ''}` })),
+  const allDocs = [
+    ...windows.docs.map((doc) => ({ ...doc, _col: 'windows'  as CollectionSlug, _href: `/${doc.slug ?? ''}` })),
+    ...articles.docs.map((doc) => ({ ...doc, _col: 'articles' as CollectionSlug, _href: `/${doc.slug ?? ''}` })),
+    ...forms.docs.map((doc)    => ({ ...doc, _col: 'forms'    as CollectionSlug, _href: `/${(doc as any).slug ?? ''}` })),
   ]
-    .sort((a, b) => (a.shortcutOrder ?? Infinity) - (b.shortcutOrder ?? Infinity))
+
+  // Registry: all docs regardless of showShortcut, so the taskbar can look up any open page
+  const registryEntries = allDocs.map((doc) => ({
+    icon:     doc.shortcutIcon ?? 'ri-file-fill',
+    name:     doc.shortcutName ?? doc.title,
+    slug:     doc.slug ?? (doc as any).slug ?? '',
+    color:    COLLECTION_META[doc._col].color,
+    category: doc._col,
+  }))
+
+  // Shortcuts grid: only docs with showShortcut, sorted by order
+  const shortcuts = allDocs
+    .filter((doc) => (doc as any).showShortcut)
+    .sort((a, b) => ((a as any).shortcutOrder ?? Infinity) - ((b as any).shortcutOrder ?? Infinity))
     .map((doc) => ({
-      icon:  doc.shortcutIcon ?? 'ri-file-fill',
-      name:  doc.shortcutName ?? doc.title,
-      href:  doc._href,
-      slug:  doc.slug ?? (doc as any).slug ?? '',
-      color: COLLECTION_META[doc._slug].color,
+      icon:     doc.shortcutIcon ?? 'ri-file-fill',
+      name:     doc.shortcutName ?? doc.title,
+      href:     doc._href,
+      slug:     doc.slug ?? (doc as any).slug ?? '',
+      color:    COLLECTION_META[doc._col].color,
+      category: doc._col,
     }))
+
+  return { shortcuts, registryEntries }
 }
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
-  const shortcuts = await fetchShortcuts()
+  const { shortcuts, registryEntries } = await fetchData()
 
   return (
     <html lang="en" className={onest.className}>
@@ -63,16 +81,18 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
         <Script src="/consent-init.js" strategy="beforeInteractive" />
         <CookieConsentProvider>
           <Suspense>
-            <WindowManagerProvider>
-              <Header />
-              <main>
-                <div className="grid grid-cols-[repeat(var(--cols),var(--tile))] auto-rows-[calc(2*var(--tile))]">
-                  <ShortcutGrid shortcuts={shortcuts} />
-                </div>
-                {children}
-              </main>
-              <CookieBanner />
-            </WindowManagerProvider>
+            <ShortcutRegistryProvider shortcuts={registryEntries}>
+              <WindowManagerProvider>
+                <Header />
+                <main>
+                  <div className="grid grid-cols-[repeat(var(--cols),var(--tile))] auto-rows-[calc(2*var(--tile))]">
+                    <ShortcutGrid shortcuts={shortcuts} />
+                  </div>
+                  {children}
+                </main>
+                <CookieBanner />
+              </WindowManagerProvider>
+            </ShortcutRegistryProvider>
           </Suspense>
         </CookieConsentProvider>
       </body>

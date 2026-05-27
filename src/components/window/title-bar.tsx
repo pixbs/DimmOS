@@ -22,26 +22,34 @@ export function WindowTitleBar({
       onPointerDown={onPointerDown}
     >
       {/* Traffic lights */}
-      <div className="flex gap-1.5 z-10" onPointerDown={(e) => e.stopPropagation()}>
+      <div className="flex z-10" onPointerDown={(e) => e.stopPropagation()}>
         <button
           onClick={onClose}
           aria-label="Close"
-          className="w-3 h-3 rounded-full bg-[#FF5F57] hover:bg-[#FF3B30] transition-colors flex items-center justify-center group"
+          className="w-6 h-6 flex items-center justify-center group"
         >
-          <span className="opacity-0 group-hover:opacity-100 text-[7px] leading-none text-black/60 font-bold">×</span>
+          <div className="w-3 h-3 rounded-full bg-[#FF5F57] hover:bg-[#FF3B30] transition-all flex items-center justify-center group-hover:scale-150">
+            <span className="opacity-0 group-hover:opacity-100 text-xs text-black/60 font-bold leading-none">×</span>
+          </div>
         </button>
         <button
           onClick={onMinimize}
           aria-label="Minimize"
-          className="w-3 h-3 rounded-full bg-[#FEBC2E] hover:bg-[#FF9500] transition-colors flex items-center justify-center group"
+          className="w-6 h-6 flex items-center justify-center group"
         >
-          <span className="opacity-0 group-hover:opacity-100 text-[7px] leading-none text-black/60 font-bold">–</span>
+          <div className="w-3 h-3 rounded-full bg-[#FEBC2E] hover:bg-[#FF9500] transition-all flex items-center justify-center group-hover:scale-150">
+            <span className="opacity-0 group-hover:opacity-100 text-xs leading-none text-black/60 font-bold">–</span>
+          </div>
         </button>
         <button
           aria-label="Maximize (unavailable)"
           disabled
-          className="w-3 h-3 rounded-full bg-fg/10 cursor-default"
-        />
+          className="w-6 h-6 flex items-center justify-center group"
+        >
+          <div className="w-3 h-3 rounded-full bg-fg/10 cursor-default flex items-center justify-center group-hover:scale-150">
+            <span className="opacity-0 group-hover:opacity-100 text-xs text-black/60 font-bold leading-none"></span>
+          </div>
+        </button>
       </div>
 
       {/* Centred title */}
