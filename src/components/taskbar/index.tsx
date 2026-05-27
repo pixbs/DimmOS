@@ -1,5 +1,6 @@
 'use client'
 
+import { Fragment } from 'react'
 import { useWindowManagerContext } from '@/components/window/manager-context'
 import { useShortcutRegistry } from '@/components/shortcut/registry-context'
 
@@ -37,10 +38,9 @@ export function Taskbar() {
       data-taskbar=""
     >
       {groups.map((group, gi) => (
-        <>
+        <Fragment key={gi}>
           {gi > 0 && (
             <div
-              key={`divider-${gi}`}
               className="w-px h-8 self-center"
               style={{ background: 'color-mix(in srgb, white 15%, transparent)' }}
             />
@@ -73,7 +73,7 @@ export function Taskbar() {
               </div>
             )
           })}
-        </>
+        </Fragment>
       ))}
     </div>
   )
