@@ -127,23 +127,33 @@ test.describe('Windows — shared setup', () => {
       await page.goto(BASE_URL)
       await page.locator(`a[href="/${SLUG}"]`).click()
       // URL updates shallowly via history.replaceState — no full page navigation
-      await expect(page).toHaveURL(`${BASE_URL}/?open=${SLUG}`, { timeout: 5000 })
+      await expect(page).toHaveURL(`${BASE_URL}/${SLUG}`, { timeout: 5000 })
       // Secondary window renders without loading the page as primary
       await expect(page.locator(`[data-secondary-window="${SLUG}"]`)).toBeVisible({ timeout: 10000 })
     })
 
-    test('focusing a secondary window does not change the URL', async ({ page }) => {
-      await page.goto(`${BASE_URL}/?open=${SLUG}`)
+    test('focusing the active secondary window keeps the cosmetic URL', async ({ page }) => {
+      await page.addInitScript(() => {
+        sessionStorage.setItem('open-windows', JSON.stringify([
+          { slug: 'e2e-test-window', zIndex: 51, minimized: false },
+        ]))
+      })
+      await page.goto(BASE_URL)
       const win = page.locator(`[data-secondary-window="${SLUG}"]`)
       await expect(win).toBeVisible({ timeout: 10000 })
-      const urlBefore = page.url()
+      await expect(page).toHaveURL(`${BASE_URL}/${SLUG}`)
       await win.click()
       await page.waitForTimeout(300)
-      expect(page.url()).toBe(urlBefore)
+      await expect(page).toHaveURL(`${BASE_URL}/${SLUG}`)
     })
 
-    test('closing a secondary window removes it from the ?open= param', async ({ page }) => {
-      await page.goto(`${BASE_URL}/?open=${SLUG}`)
+    test('closing a secondary window resets the cosmetic URL to /', async ({ page }) => {
+      await page.addInitScript(() => {
+        sessionStorage.setItem('open-windows', JSON.stringify([
+          { slug: 'e2e-test-window', zIndex: 51, minimized: false },
+        ]))
+      })
+      await page.goto(BASE_URL)
       const win = page.locator(`[data-secondary-window="${SLUG}"]`)
       await expect(win).toBeVisible({ timeout: 10000 })
       await win.locator('[aria-label="Close"]').first().click()

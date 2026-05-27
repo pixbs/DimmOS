@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react'
 import { useRouter } from 'next/navigation'
 import { DrawerCloseButton } from '@/components/drawer/close-button'
 import { useCookieConsent } from '@/components/cookie-banner/context'
+import { SetWindowOptions } from '@/components/window/title-context'
 import type { CookieService, CookieSetting } from '@/payload-types'
 
 const CATEGORY_ORDER = ['essential', 'functional', 'analytics', 'marketing'] as const
@@ -69,6 +70,7 @@ export function CookiePreferencesForm({ services, settings }: Props) {
 
   return (
     <div className="px-6 pb-10 flex flex-col gap-6">
+      <SetWindowOptions disableMinimize />
       <div className="flex flex-col gap-2">
         <h1 className="text-2xl font-bold text-fg">{settings.title ?? 'Cookie Preferences'}</h1>
         {settings.description && (

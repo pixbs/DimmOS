@@ -24,7 +24,7 @@ function clamp(value: number, min: number, max: number): number {
 }
 
 export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerShellProps) {
-  const { title: contextTitle } = useWindowTitle()
+  const { title: contextTitle, disableMinimize } = useWindowTitle()
   const title = contextTitle || titleProp
 
   const [isOpen, setIsOpen] = useState(false)
@@ -41,8 +41,7 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
   function close() {
     setIsOpen(false)
     setTimeout(() => {
-      const openParam = new URLSearchParams(window.location.search).get('open')
-      router.push(openParam ? `/?open=${openParam}` : '/')
+      router.push('/')
     }, 300)
   }
 
@@ -184,6 +183,7 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
           onClose={close}
           onMinimize={() => minimize(slug)}
           onPointerDown={handlePointerDown}
+          disableMinimize={disableMinimize}
         />
 
         <div

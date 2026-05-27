@@ -1,17 +1,13 @@
 'use client'
 
 import { useState, useCallback, useRef, useEffect } from 'react'
-import { useSearchParams, usePathname } from 'next/navigation'
-import { useRouter } from 'next/navigation'
-import { parseOpenWindows, serializeOpenWindows } from '@/lib/window-state'
+import { usePathname, useRouter } from 'next/navigation'
+import { BASE_Z, loadWindowsFromSession, saveWindowsToSession } from '@/lib/window-state'
+import type { ManagedWindow } from '@/lib/window-state'
 
-export interface ManagedWindow {
-  slug: string
-  zIndex: number
-  minimized: boolean
-}
-
-export const BASE_Z = 50
+// Re-export so existing callsites continue to work without import path changes
+export type { ManagedWindow } from '@/lib/window-state'
+export { BASE_Z } from '@/lib/window-state'
 
 export interface WindowManager {
   windows: ManagedWindow[]
@@ -22,51 +18,93 @@ export interface WindowManager {
   minimize: (slug: string) => void
 }
 
+function updateCosmeticUrl(
+  wins: ManagedWindow[],
+  realPrimary: string | null,
+  cosmeticRef: { current: boolean },
+): void {
+  if (typeof window === 'undefined') return
+  if (realPrimary !== null) return     // real route active — leave URL alone
+  if (window.innerWidth < 1024) return
+
+  const visible = wins.filter((w) => !w.minimized)
+  const target =
+    visible.length === 0
+      ? '/'
+      : `/${visible.reduce((a, b) => (a.zIndex > b.zIndex ? a : b)).slug}`
+  // Only mark as cosmetic and replace if the URL is actually changing
+  if (window.location.pathname === target) return
+  cosmeticRef.current = true
+  window.history.replaceState(null, '', target)
+}
+
 export function useWindowManager(): WindowManager {
-  const searchParams = useSearchParams()
   const pathname = usePathname()
   const router = useRouter()
-  const primarySlug = pathname === '/' ? null : pathname.slice(1)
+  const pathSlug = pathname === '/' ? null : pathname.slice(1) // raw, may be cosmetic
 
-  const [windows, setWindows] = useState<ManagedWindow[]>(() => {
-    const secondaries = parseOpenWindows(searchParams).filter((s) => s !== primarySlug)
-    return [
-      ...(primarySlug ? [{ slug: primarySlug, zIndex: BASE_Z, minimized: false }] : []),
-      ...secondaries.map((slug, i) => ({ slug, zIndex: BASE_Z + 1 + i, minimized: false })),
-    ]
-  })
+  const [windows, setWindows] = useState<ManagedWindow[]>(() =>
+    pathSlug ? [{ slug: pathSlug, zIndex: BASE_Z, minimized: false }] : [],
+  )
+  // Tracks ACTUAL Next.js navigations; ignores cosmetic replaceState changes
+  const [realPrimarySlug, setRealPrimarySlug] = useState<string | null>(pathSlug)
 
   const windowsRef = useRef(windows)
   windowsRef.current = windows
 
-  const primarySlugRef = useRef(primarySlug)
-  primarySlugRef.current = primarySlug
+  const realPrimarySlugRef = useRef(realPrimarySlug)
+  realPrimarySlugRef.current = realPrimarySlug
 
-  // On real Next.js navigation: swap the primary entry, keep existing secondaries
-  const prevPrimaryRef = useRef(primarySlug)
+  const cosmeticChangeRef = useRef(false)
+
+  // Effect 1: restore floating windows from sessionStorage (mount only)
   useEffect(() => {
-    if (prevPrimaryRef.current === primarySlug) return
-    prevPrimaryRef.current = primarySlug
+    const stored = loadWindowsFromSession()
+    if (stored.length === 0) return
     setWindows((prev) => {
-      const secondaries = prev.filter((w) => w.slug !== primarySlug)
+      const curPrimary = realPrimarySlugRef.current
+      const toAdd = stored.filter(
+        (w) => !prev.some((p) => p.slug === w.slug) && w.slug !== curPrimary,
+      )
+      if (toAdd.length === 0) return prev
+      return [...prev, ...toAdd]
+    })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Effect 2: sync sessionStorage + cosmetic URL on every windows change
+  useEffect(() => {
+    saveWindowsToSession(windows)
+    updateCosmeticUrl(windows, realPrimarySlugRef.current, cosmeticChangeRef)
+  }, [windows])
+
+  // Effect 3: handle real Next.js navigation — swap primary, keep secondaries
+  const prevPathSlugRef = useRef(pathSlug)         // tracks raw pathname (may be cosmetic)
+  const prevRealPrimaryRef = useRef(realPrimarySlug) // tracks real primary only
+  useEffect(() => {
+    if (prevPathSlugRef.current === pathSlug) return
+
+    // Skip if triggered by our own cosmetic replaceState
+    if (cosmeticChangeRef.current) {
+      cosmeticChangeRef.current = false
+      prevPathSlugRef.current = pathSlug // keep raw ref in sync; prevRealPrimaryRef unchanged
+      return
+    }
+
+    const oldPrimary = prevRealPrimaryRef.current // real slug we're navigating AWAY from
+    prevPathSlugRef.current = pathSlug
+    prevRealPrimaryRef.current = pathSlug
+
+    setRealPrimarySlug(pathSlug)
+    setWindows((prev) => {
+      const remaining = prev.filter(
+        (w) => w.slug !== oldPrimary && w.slug !== pathSlug,
+      )
       return [
-        ...(primarySlug ? [{ slug: primarySlug, zIndex: BASE_Z, minimized: false }] : []),
-        ...secondaries,
+        ...(pathSlug ? [{ slug: pathSlug, zIndex: BASE_Z, minimized: false }] : []),
+        ...remaining,
       ]
     })
-  }, [primarySlug]) // eslint-disable-line react-hooks/exhaustive-deps
-
-  // Only updates ?open= search params — NEVER changes the pathname
-  const syncUrl = useCallback((wins: ManagedWindow[]) => {
-    const curPrimary = primarySlugRef.current
-    const secondaries = wins.filter((w) => w.slug !== curPrimary).map((w) => w.slug)
-    const openParam = serializeOpenWindows(secondaries)
-    window.history.replaceState(
-      null,
-      '',
-      `${window.location.pathname}${openParam ? `?open=${openParam}` : ''}`,
-    )
-  }, [])
+  }, [pathSlug]) // eslint-disable-line react-hooks/exhaustive-deps
 
   const open = useCallback(
     (slug: string) => {
@@ -74,8 +112,7 @@ export function useWindowManager(): WindowManager {
         router.push(`/${slug}`)
         return
       }
-      if (slug === primarySlugRef.current) {
-        // Primary already open — bring it to front
+      if (slug === realPrimarySlugRef.current) {
         const prev = windowsRef.current
         const maxZ = Math.max(...prev.map((w) => w.zIndex), BASE_Z - 1)
         setWindows(prev.map((w) => (w.slug === slug ? { ...w, zIndex: maxZ + 1, minimized: false } : w)))
@@ -91,29 +128,25 @@ export function useWindowManager(): WindowManager {
         next = [...prev, { slug, zIndex: maxZ + 1, minimized: false }]
       }
       setWindows(next)
-      syncUrl(next)
     },
-    [syncUrl],
+    [router],
   )
 
   const close = useCallback(
     (slug: string) => {
       const next = windowsRef.current.filter((w) => w.slug !== slug)
-      if (slug === primarySlugRef.current) {
-        const openParam = serializeOpenWindows(next.map((w) => w.slug))
-        router.push(openParam ? `/?open=${openParam}` : '/')
+      if (slug === realPrimarySlugRef.current) {
+        router.push('/')
       } else {
         setWindows(next)
-        syncUrl(next)
       }
     },
-    [syncUrl, router],
+    [router],
   )
 
   const focus = useCallback((slug: string) => {
     const prev = windowsRef.current
     const maxZ = Math.max(...prev.map((w) => w.zIndex), BASE_Z - 1)
-    // No URL change — changing pathname via history.replaceState triggers Next.js routing
     setWindows(prev.map((w) => (w.slug === slug ? { ...w, zIndex: maxZ + 1, minimized: false } : w)))
   }, [])
 
@@ -121,5 +154,5 @@ export function useWindowManager(): WindowManager {
     setWindows((prev) => prev.map((w) => (w.slug === slug ? { ...w, minimized: true } : w)))
   }, [])
 
-  return { windows, primarySlug, open, close, focus, minimize }
+  return { windows, primarySlug: realPrimarySlug, open, close, focus, minimize }
 }

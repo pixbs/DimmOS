@@ -35,7 +35,7 @@ test.describe('Taskbar', () => {
 
     test('taskbar shows an entry for an open secondary window', async ({ page }) => {
       // Navigate to a window then inject a secondary window via URL param
-      await page.goto(`${BASE_URL}/${SLUG}?open=${SLUG}`)
+      await page.goto(`${BASE_URL}/${SLUG}`)
       const taskbar = page.locator('[data-taskbar]')
       await expect(taskbar).toBeVisible({ timeout: 10000 })
       await expect(taskbar).toContainText(SLUG)
@@ -46,7 +46,7 @@ test.describe('Taskbar', () => {
     test.use({ viewport: { width: 375, height: 812 } })
 
     test('taskbar is not visible on mobile', async ({ page }) => {
-      await page.goto(`${BASE_URL}/${SLUG}?open=${SLUG}`)
+      await page.goto(`${BASE_URL}/${SLUG}`)
       // data-taskbar element has display:none on mobile
       const taskbar = page.locator('[data-taskbar]')
       // Either absent or not visible

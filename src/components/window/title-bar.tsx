@@ -7,6 +7,8 @@ interface TitleBarProps {
   onClose: () => void
   onMinimize?: () => void
   onPointerDown: PointerEventHandler<HTMLDivElement>
+  disableMinimize?: boolean
+  disableClose?: boolean
 }
 
 export function WindowTitleBar({
@@ -14,6 +16,8 @@ export function WindowTitleBar({
   onClose,
   onMinimize,
   onPointerDown,
+  disableMinimize,
+  disableClose,
 }: TitleBarProps) {
   return (
     <div
@@ -24,21 +28,35 @@ export function WindowTitleBar({
       {/* Traffic lights */}
       <div className="flex z-10" onPointerDown={(e) => e.stopPropagation()}>
         <button
-          onClick={onClose}
+          onClick={disableClose ? undefined : onClose}
           aria-label="Close"
+          disabled={disableClose}
           className="w-6 h-6 flex items-center justify-center group"
         >
-          <div className="w-3 h-3 rounded-full bg-[#FF5F57] hover:bg-[#FF3B30] transition-all flex items-center justify-center group-hover:scale-150">
-            <span className="opacity-0 group-hover:opacity-100 text-xs text-black/60 font-bold leading-none">×</span>
+          <div className={`w-3 h-3 rounded-full transition-all flex items-center justify-center ${
+            disableClose
+              ? 'bg-fg/10 cursor-not-allowed'
+              : 'bg-[#FF5F57] hover:bg-[#FF3B30] group-hover:scale-150'
+          }`}>
+            {!disableClose && (
+              <span className="opacity-0 group-hover:opacity-100 text-xs text-black/60 font-bold leading-none">×</span>
+            )}
           </div>
         </button>
         <button
-          onClick={onMinimize}
+          onClick={disableMinimize ? undefined : onMinimize}
           aria-label="Minimize"
+          disabled={disableMinimize}
           className="w-6 h-6 flex items-center justify-center group"
         >
-          <div className="w-3 h-3 rounded-full bg-[#FEBC2E] hover:bg-[#FF9500] transition-all flex items-center justify-center group-hover:scale-150">
-            <span className="opacity-0 group-hover:opacity-100 text-xs leading-none text-black/60 font-bold">–</span>
+          <div className={`w-3 h-3 rounded-full transition-all flex items-center justify-center ${
+            disableMinimize
+              ? 'bg-fg/10 cursor-not-allowed'
+              : 'bg-[#FEBC2E] hover:bg-[#FF9500] group-hover:scale-150'
+          }`}>
+            {!disableMinimize && (
+              <span className="opacity-0 group-hover:opacity-100 text-xs leading-none text-black/60 font-bold">–</span>
+            )}
           </div>
         </button>
         <button

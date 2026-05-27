@@ -15,3 +15,44 @@ export function parseOpenWindows(
 export function serializeOpenWindows(slugs: string[]): string {
   return slugs.filter(isValidSlug).join(',')
 }
+
+// --- Window session state ---
+
+export interface ManagedWindow {
+  slug: string
+  zIndex: number
+  minimized: boolean
+}
+
+export const BASE_Z = 50
+
+const SESSION_KEY = 'open-windows'
+
+export function loadWindowsFromSession(): ManagedWindow[] {
+  if (typeof window === 'undefined') return []
+  try {
+    const raw = window.sessionStorage.getItem(SESSION_KEY)
+    if (!raw) return []
+    const parsed = JSON.parse(raw)
+    if (!Array.isArray(parsed)) return []
+    return parsed.filter(
+      (w): w is ManagedWindow =>
+        typeof w === 'object' &&
+        w !== null &&
+        isValidSlug(w.slug) &&
+        typeof w.zIndex === 'number' &&
+        typeof w.minimized === 'boolean',
+    )
+  } catch {
+    return []
+  }
+}
+
+export function saveWindowsToSession(wins: ManagedWindow[]): void {
+  if (typeof window === 'undefined') return
+  try {
+    window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(wins))
+  } catch {
+    // quota exceeded or private browsing
+  }
+}

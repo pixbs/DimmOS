@@ -17,14 +17,12 @@ async function getConsent(page: Page) {
   }
 }
 
-// Drawers use CSS transform: translate-y-full (closed) / translate-y-0 (open).
-// Playwright considers off-screen translated elements as "visible", so we check the class.
 async function expectDrawerOpen(dialog: ReturnType<Page['locator']>) {
-  await expect(dialog).toHaveClass(/translate-y-0/, { timeout: 10000 })
+  await expect(dialog).toHaveAttribute('data-state', 'open', { timeout: 10000 })
 }
 
 async function expectDrawerClosed(dialog: ReturnType<Page['locator']>) {
-  await expect(dialog).toHaveClass(/translate-y-full/, { timeout: 5000 })
+  await expect(dialog).toHaveAttribute('data-state', 'closed', { timeout: 5000 })
 }
 
 test.describe('Cookie Banner', () => {
@@ -116,6 +114,11 @@ test.describe('Cookie Banner', () => {
     await expectDrawerOpen(banner)
     await page.getByRole('button', { name: 'Configure' }).click()
     await page.waitForURL(`${BASE_URL}/cookie-preferences`)
+
+    // Wait for the cookie notice banner to finish closing before interacting
+    // (suppressBanner becomes true once primarySlug updates; the 300ms CSS
+    // transition may still be running when waitForURL resolves)
+    await expectDrawerClosed(banner)
 
     // Essential toggle should be disabled (always on)
     const essentialToggle = page.getByRole('switch', { name: /Toggle Essential/i })
