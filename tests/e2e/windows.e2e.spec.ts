@@ -9,7 +9,7 @@ async function expectPanelOpen(page: Page) {
   await expect(panel).toHaveAttribute('data-state', 'open', { timeout: 10000 })
 }
 
-async function bypassCookieBanner(page: Page) {
+async function bypassCookieBanner({ page }: { page: Page }) {
   await page.addInitScript(() => {
     localStorage.setItem('cookie-consent', JSON.stringify({
       consentId: 'e2e-test',

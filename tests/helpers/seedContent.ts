@@ -10,6 +10,7 @@ export async function seedWindow(slug: string) {
     data: {
       title: `E2E ${slug}`,
       slug,
+      showShortcut: true,
       content: [
         {
           blockType: 'richText',

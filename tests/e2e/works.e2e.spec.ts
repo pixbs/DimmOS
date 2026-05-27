@@ -6,10 +6,11 @@ const BASE_URL = 'http://localhost:3000'
 
 async function expectDrawerOpen(page: Page) {
   const drawer = page.locator('[data-testid="page-drawer"]')
-  await expect(drawer).toHaveClass(/translate-y-0/, { timeout: 10000 })
+  await expect(drawer).toHaveAttribute('data-state', 'open', { timeout: 10000 })
 }
 
 test.describe('Works listing page', () => {
+  test.use({ viewport: { width: 375, height: 812 } })
   test.beforeAll(async () => {
     await seedArticle(SLUG)
   })

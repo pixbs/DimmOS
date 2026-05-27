@@ -193,7 +193,7 @@ export function CookiePreferencesForm({ services, settings }: Props) {
         >
           {saving ? 'Saving…' : 'Save Preferences'}
         </button>
-        <DrawerCloseButton className="w-full py-4 rounded-full bg-fg/5 text-fg font-semibold text-sm cursor-pointer">
+        <DrawerCloseButton className="w-full py-4 rounded-full bg-fg/5 text-fg font-semibold text-sm cursor-pointer" aria-label="dismiss">
           Close
         </DrawerCloseButton>
       </div>
