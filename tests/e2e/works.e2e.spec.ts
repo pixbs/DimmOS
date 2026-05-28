@@ -2,6 +2,7 @@ import { test, expect, Page } from '@playwright/test'
 import { seedArticle, cleanupArticle, seedWorks, cleanupWorks } from '../helpers/seedContent'
 
 const SLUG = 'e2e-test-case-study'
+const WORKS_SLUG = 'e2e-test-works'
 const BASE_URL = 'http://localhost:3000'
 
 async function expectDrawerOpen(page: Page) {
@@ -33,18 +34,18 @@ test.describe('Works listing page', () => {
   })
 
   test('navigating to /works opens the PageDrawer', async ({ page }) => {
-    await page.goto(`${BASE_URL}/works`)
+    await page.goto(`${BASE_URL}/${WORKS_SLUG}`)
     await expectDrawerOpen(page)
   })
 
   test('seeded case-study article appears as a card', async ({ page }) => {
-    await page.goto(`${BASE_URL}/works`)
+    await page.goto(`${BASE_URL}/${WORKS_SLUG}`)
     await expectDrawerOpen(page)
     await expect(page.locator('[data-article-card]').filter({ hasText: `E2E ${SLUG}` })).toBeVisible({ timeout: 10000 })
   })
 
   test('clicking an article card navigates to its slug page', async ({ page }) => {
-    await page.goto(`${BASE_URL}/works`)
+    await page.goto(`${BASE_URL}/${WORKS_SLUG}`)
     await expectDrawerOpen(page)
 
     const card = page.locator('[data-article-card]').filter({ hasText: `E2E ${SLUG}` })

@@ -62,13 +62,13 @@ export async function cleanupArticle(slug: string) {
 
 export async function seedWorks() {
   const payload = await getPayload({ config })
-  await payload.delete({ collection: 'windows', where: { slug: { equals: 'works' } }, overrideAccess: true })
+  await payload.delete({ collection: 'windows', where: { slug: { equals: 'e2e-test-works' } }, overrideAccess: true })
   return payload.create({
     collection: 'windows',
     overrideAccess: true,
     data: {
-      title: 'Works',
-      slug: 'works',
+      title: 'E2E Works',
+      slug: 'e2e-test-works',
       content: [
         {
           blockType: 'articleList',
@@ -84,5 +84,5 @@ export async function seedWorks() {
 
 export async function cleanupWorks() {
   const payload = await getPayload({ config })
-  await payload.delete({ collection: 'windows', where: { slug: { equals: 'works' } }, overrideAccess: true })
+  await payload.delete({ collection: 'windows', where: { slug: { equals: 'e2e-test-works' } }, overrideAccess: true })
 }
