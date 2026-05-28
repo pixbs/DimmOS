@@ -1,5 +1,5 @@
 import { test, expect, Page } from '@playwright/test'
-import { seedArticle, cleanupArticle } from '../helpers/seedContent'
+import { seedArticle, cleanupArticle, seedWorks, cleanupWorks } from '../helpers/seedContent'
 
 const SLUG = 'e2e-test-case-study'
 const BASE_URL = 'http://localhost:3000'
@@ -12,11 +12,13 @@ async function expectDrawerOpen(page: Page) {
 test.describe('Works listing page', () => {
   test.use({ viewport: { width: 375, height: 812 } })
   test.beforeAll(async () => {
+    await seedWorks()
     await seedArticle(SLUG)
   })
 
   test.afterAll(async () => {
     await cleanupArticle(SLUG)
+    await cleanupWorks()
   })
 
   test.beforeEach(async ({ page }) => {

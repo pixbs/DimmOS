@@ -45,6 +45,9 @@ jobs:
       - name: Run migrations
         run: bun payload migrate
 
+      - name: Seed E2E test data
+        run: bun run seed:e2e
+
       - name: Build
         run: bun run build
 
