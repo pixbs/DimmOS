@@ -29,27 +29,29 @@ export const Windows: CollectionConfig = {
     ],
   },
   fields: [
-    { name: 'title', type: 'text', required: true },
-    {
-      name: 'slug',
-      type: 'text',
-      required: true,
-      unique: true,
-      index: true,
-      admin: { description: 'URL path identifier, e.g. "about" → /about' },
-      validate: (value: string | null | undefined) => {
-        if (!value) return 'Slug is required'
-        if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value))
-          return 'Slug must be lowercase letters, numbers, and hyphens only'
-        return true
-      },
-    },
     {
       type: 'tabs',
       tabs: [
         {
           label: 'Content',
-          fields: [contentBlocksField],
+          fields: [
+            { name: 'title', type: 'text', required: true },
+            {
+              name: 'slug',
+              type: 'text',
+              required: true,
+              unique: true,
+              index: true,
+              admin: { description: 'URL path identifier, e.g. "about" → /about' },
+              validate: (value: string | null | undefined) => {
+                if (!value) return 'Slug is required'
+                if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value))
+                  return 'Slug must be lowercase letters, numbers, and hyphens only'
+                return true
+              },
+            },
+            contentBlocksField,
+          ],
         },
         {
           label: 'Shortcut',
@@ -67,6 +69,7 @@ export const Windows: CollectionConfig = {
             },
           ],
         },
+        // SEO tab appended here by @payloadcms/plugin-seo (tabbedUI: true)
       ],
     },
   ],

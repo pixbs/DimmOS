@@ -3,6 +3,7 @@ import Script from 'next/script'
 import { Onest } from 'next/font/google'
 import { getPayload } from 'payload'
 import config from '@payload-config'
+import type { Metadata } from 'next'
 import Header from '@/components/header'
 import CookieBanner from '@/components/cookie-banner'
 import { CookieConsentProvider } from '@/components/cookie-banner/context'
@@ -14,9 +15,11 @@ import 'remixicon/fonts/remixicon.css'
 
 const onest = Onest({ subsets: ['latin'] })
 
-export const metadata = {
-  description: "Dimm's OS is a portfolio website showcasing the projects and skills of Dimm, a product designer.",
-  title: "Dimm's OS - Portfolio website",
+export const metadata: Metadata = {
+  title: "Dimm's OS",
+  description: 'Interactive OS-style portfolio — an OS-metaphor desktop built on Next.js + Payload CMS.',
+  openGraph: { title: "Dimm's OS" },
+  twitter: { card: 'summary_large_image' },
 }
 
 const COLLECTION_META = {

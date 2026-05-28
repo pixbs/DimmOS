@@ -2,6 +2,7 @@ import { postgresAdapter } from '@payloadcms/db-postgres'
 import { resendAdapter } from '@payloadcms/email-resend'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { formBuilderPlugin } from '@payloadcms/plugin-form-builder'
+import { seoPlugin } from '@payloadcms/plugin-seo'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
@@ -145,6 +146,26 @@ export default buildConfig({
           beforeChange: [enforcePreDefinedEmailHook, verifyRecaptchaHook],
         },
       },
+    }),
+    seoPlugin({
+      collections: ['windows', 'articles'],
+      uploadsCollection: 'media',
+      tabbedUI: true,
+      generateTitle: ({ doc }: any) =>
+        doc?.title ? `${doc.title} — Dimm's OS` : "Dimm's OS",
+      generateURL: ({ doc }: any) => {
+        const base = process.env.NEXT_PUBLIC_SITE_URL ?? ''
+        return doc?.slug ? `${base}/${doc.slug}` : base
+      },
+      fields: ({ defaultFields }: any) => [
+        ...defaultFields,
+        {
+          name: 'noIndex',
+          type: 'checkbox' as const,
+          defaultValue: false,
+          admin: { description: 'Prevent search engines from indexing this page.' },
+        },
+      ],
     }),
   ],
 })

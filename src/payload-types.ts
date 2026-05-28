@@ -270,6 +270,18 @@ export interface Window {
    * Controls position across all shortcuts. Lower = earlier. Leave blank to append.
    */
   shortcutOrder?: number | null;
+  meta?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (number | null) | Media;
+    /**
+     * Prevent search engines from indexing this page.
+     */
+    noIndex?: boolean | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -367,6 +379,18 @@ export interface Article {
    * Controls position across all shortcuts. Lower = earlier. Leave blank to append.
    */
   shortcutOrder?: number | null;
+  meta?: {
+    title?: string | null;
+    description?: string | null;
+    /**
+     * Maximum upload file size: 12MB. Recommended file size for images is <500KB.
+     */
+    image?: (number | null) | Media;
+    /**
+     * Prevent search engines from indexing this page.
+     */
+    noIndex?: boolean | null;
+  };
   updatedAt: string;
   createdAt: string;
 }
@@ -783,6 +807,14 @@ export interface WindowsSelect<T extends boolean = true> {
   shortcutName?: T;
   shortcutIcon?: T;
   shortcutOrder?: T;
+  meta?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+        noIndex?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
@@ -861,6 +893,14 @@ export interface ArticlesSelect<T extends boolean = true> {
   shortcutName?: T;
   shortcutIcon?: T;
   shortcutOrder?: T;
+  meta?:
+    | T
+    | {
+        title?: T;
+        description?: T;
+        image?: T;
+        noIndex?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }

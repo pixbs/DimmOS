@@ -1,13 +1,40 @@
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import { notFound } from 'next/navigation'
+import type { Metadata } from 'next'
 import { FormComponent } from '@/components/form/FormComponent'
 import { WindowContent } from '@/components/window-content'
 import { ArticleContent } from '@/components/article-content'
 import { SetWindowTitle } from '@/components/window/title-context'
+import { generateMeta } from '@/utilities/generateMeta'
 
 interface PageProps {
   params: Promise<{ slug: string }>
+}
+
+export async function generateMetadata({ params }: PageProps): Promise<Metadata> {
+  const { slug } = await params
+  const payload = await getPayload({ config })
+
+  const [{ docs: windows }, { docs: articles }] = await Promise.all([
+    payload.find({
+      collection: 'windows',
+      where: { slug: { equals: slug } },
+      select: { title: true, meta: true } as const,
+      limit: 1,
+      depth: 1,
+    }),
+    payload.find({
+      collection: 'articles',
+      where: { slug: { equals: slug } },
+      select: { title: true, meta: true } as const,
+      limit: 1,
+      depth: 1,
+    }),
+  ])
+
+  const doc = windows[0] ?? articles[0] ?? null
+  return generateMeta(doc as any)
 }
 
 export default async function SlugPage({ params }: PageProps) {

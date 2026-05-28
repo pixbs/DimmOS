@@ -473,47 +473,34 @@ SEO precedes analytics: `generateMetadata` provides canonical URLs and Open Grap
 
 ### 3.1 SeoSettings global
 
-- [ ] Write `tests/int/seo-global.int.spec.ts` **first**:
-  - Create the global document; read it back with `overrideAccess: false`; confirm public read works
-- [ ] Create `src/globals/SeoSettings.ts`:
-  - Fields: `siteTitle` (text, required), `siteDescription` (textarea), `defaultOgImage` (upload rel to `media`, depth 1), `twitterHandle` (text), `canonicalBase` (text — validate no trailing slash)
-  - Access: `read: () => true`, `update: () => !!user`
-  - `afterChange` hook: `revalidatePath('/', 'layout')` to bust root layout cache
-  - Register in `payload.config.ts`; run `bun generate:types` + `bun payload migrate:create`
+- [x] ~~Custom `SeoSettings` global~~ — **replaced by `@payloadcms/plugin-seo`**. Per-document SEO is fully managed by the plugin. Site-level canonical base URL is read from `NEXT_PUBLIC_SITE_URL` env var; site title is a hardcoded constant `"Dimm's OS"` in `src/utilities/generateMeta.ts`.
 
 ### 3.2 Per-document SEO fields
 
-- [ ] Write `tests/int/seo-fields.int.spec.ts`: create a Windows document with `seo.noIndex: true`; confirm field persisted and returned
-- [ ] Create `src/fields/seoFields.ts` — a `group` field named `seo`:
-  - `metaTitle` (text, max 60 chars — add `validate`)
-  - `metaDescription` (textarea, max 160 chars — add `validate`)
-  - `ogImage` (upload rel to `media`)
-  - `noIndex` (checkbox, default `false`)
-- [ ] Add `seoFields` to `Windows.ts`, `Works.ts`, and Services; run `bun generate:types` + `bun payload migrate:create`
+- [x] Register `seoPlugin` in `payload.config.ts`:
+  - `collections: ['windows', 'articles']`, `uploadsCollection: 'media'`, `tabbedUI: true`
+  - Plugin injects a `meta` group (`title`, `description`, `image`) and appends an **SEO tab** to the existing Content / Shortcut tabs — giving `Content / Shortcut / SEO`.
+  - Extended with a `noIndex` checkbox via the plugin's `fields` option; stored as `meta_no_index` (schema-compatible with existing DB columns — no data migration needed).
+  - `generateTitle` and `generateURL` config functions power the admin's auto-generate buttons.
+- [x] `tests/int/seo-fields.int.spec.ts` — tests `meta.title`, `meta.description`, `meta.noIndex` round-trip on the Windows collection.
 
 ### 3.3 `generateMetadata` in routes
 
-- [ ] Update `src/app/(frontend)/(pages)/[slug]/page.tsx`:
-  - Export `generateMetadata` that fetches the document by slug using `select` for SEO fields only (do not re-fetch full content blocks)
-  - Falls back to `SeoSettings` global values when per-document fields are blank
-  - Returns `robots: { index: !seo?.noIndex }` based on the `noIndex` field
-- [ ] Update root layout to read `SeoSettings` global server-side via `payload.findGlobal()`
+- [x] `src/utilities/generateMeta.ts` — thin utility reading from `doc.meta` (plugin schema); no DB global dependency.
+- [x] `src/app/(frontend)/(pages)/[slug]/page.tsx` — `generateMetadata` fetches document by slug (windows then articles); calls `generateMeta(doc)` (one argument; no global fetch).
+- [x] `src/app/(frontend)/layout.tsx` — static `metadata` export with site title and description constants.
 
 ### 3.4 Sitemap and robots.txt
 
-- [ ] Write `tests/e2e/seo.e2e.spec.ts` **first**:
-  - `GET /sitemap.xml` returns 200 with `Content-Type: application/xml`; body contains the root URL
-  - A page with `seo.noIndex: true` has `<meta name="robots" content="noindex">` in its HTML
-  - Open Graph tags are present on the homepage
-- [ ] Create `src/app/sitemap.ts` — fetches all published slugs from windows, works, services; excludes `noIndex: true` documents
-- [ ] Create `src/app/robots.ts` — reads `canonicalBase` from `SeoSettings`
+- [x] `src/app/sitemap.ts` — fetches windows and articles where `meta.noIndex` is not true; canonical base from `process.env.NEXT_PUBLIC_SITE_URL`.
+- [x] `src/app/robots.ts` — synchronous; reads `NEXT_PUBLIC_SITE_URL` for sitemap URL.
+- [x] `tests/e2e/seo.e2e.spec.ts` — covers sitemap XML, robots.txt, `og:title`, and `meta.noIndex` → `robots: noindex`.
 
 **Tests required for Phase 3:**
-- `tests/int/seo-global.int.spec.ts`
-- `tests/int/seo-fields.int.spec.ts`
-- `tests/e2e/seo.e2e.spec.ts`
+- `tests/int/seo-fields.int.spec.ts` ✓
+- `tests/e2e/seo.e2e.spec.ts` ✓
 
-**Quality gate:** sitemap generated at build; no public-facing page has `robots: noindex` by default; `bun run build` clean.
+**Quality gate:** sitemap generated at build; no public-facing page has `robots: noindex` by default; `bun run build` clean. ✓ **All gates green.**
 
 ---
 
@@ -659,6 +646,7 @@ All three services integrate with the existing cookie consent system. No service
 | `RESEND_DEFAULT_FROM_ADDRESS` | Yes | Sender address for form submission emails |
 | `RECAPTCHA_SECRET_KEY` | Yes | reCAPTCHA v3 server-side secret |
 | `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` | Yes | reCAPTCHA v3 public site key |
+| `NEXT_PUBLIC_SITE_URL` | Phase 3 | Canonical base URL for sitemap and robots.txt (no trailing slash) |
 | `SENTRY_DSN` | Phase 4 | Sentry project DSN |
 | `NEXT_PUBLIC_POSTHOG_KEY` | Phase 4 | PostHog project API key |
 | `NEXT_PUBLIC_GTM_ID` | Phase 4 | Google Tag Manager container ID |
