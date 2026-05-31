@@ -2,7 +2,7 @@
 
 import { useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import Drawer from '@/components/drawer'
+import { CookieBannerShell } from './shell'
 import { useDrawer } from '@/components/drawer/context'
 import { useCookieConsent } from './context'
 
@@ -70,8 +70,8 @@ function CookieBannerInner() {
 
 export default function CookieBanner() {
   return (
-    <Drawer>
+    <CookieBannerShell>
       <CookieBannerInner />
-    </Drawer>
+    </CookieBannerShell>
   )
 }

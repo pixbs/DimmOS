@@ -41,6 +41,28 @@ export async function cleanupWindow(slug: string) {
   await payload.delete({ collection: 'windows', where: { slug: { equals: slug } }, overrideAccess: true })
 }
 
+export async function seedWindowWithBehavior(
+  slug: string,
+  behavior: {
+    windowCollapsible?: boolean
+    windowExpandable?: boolean
+    windowResizable?: boolean
+  },
+) {
+  const payload = await getPayload({ config })
+  await payload.delete({ collection: 'windows', where: { slug: { equals: slug } }, overrideAccess: true })
+  return payload.create({
+    collection: 'windows',
+    overrideAccess: true,
+    data: {
+      title: `E2E ${slug}`,
+      slug,
+      content: [],
+      ...behavior,
+    },
+  })
+}
+
 export async function seedArticle(slug: string) {
   const payload = await getPayload({ config })
   await payload.delete({ collection: 'articles', where: { slug: { equals: slug } }, overrideAccess: true })

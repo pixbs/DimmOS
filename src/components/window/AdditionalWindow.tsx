@@ -4,7 +4,9 @@ import { useEffect, useRef, useState } from 'react'
 import Image from 'next/image'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 import { getWindowContent, type WindowContentResult, type ResolvedBlock } from '@/actions/getWindowContent'
+import type { WindowBehaviorConfig } from '@/utilities/windowBehavior'
 import { WindowTitleBar } from './title-bar'
+import { ResizeHandles } from './ResizeHandles'
 import { useWindowManagerContext } from './manager-context'
 import { FormComponent } from '@/components/form/FormComponent'
 import type { Article, Media } from '@/payload-types'
@@ -18,6 +20,8 @@ interface AdditionalWindowProps {
   onMinimize: () => void
 }
 
+const DEFAULT_BEHAVIOR: WindowBehaviorConfig = { collapsible: true, expandable: false, resizable: true }
+
 function parsePx(el: HTMLElement, prop: string, fallback: number): number {
   const raw = el.style.getPropertyValue(prop)
   const n = parseFloat(raw)
@@ -26,6 +30,16 @@ function parsePx(el: HTMLElement, prop: string, fallback: number): number {
 
 function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)
+}
+
+type SavedPosition = { x?: number; y?: number; w?: number; h?: number }
+
+function mergePositionToStorage(key: string, updates: Partial<SavedPosition>) {
+  try {
+    const all = JSON.parse(localStorage.getItem('window-positions') ?? '{}') as Record<string, SavedPosition>
+    all[key] = { ...all[key], ...updates }
+    localStorage.setItem('window-positions', JSON.stringify(all))
+  } catch { /* ignore */ }
 }
 
 function BlockRenderer({ block }: { block: ResolvedBlock }) {
@@ -148,7 +162,12 @@ export function AdditionalWindow({
 }: AdditionalWindowProps) {
   const [data, setData] = useState<WindowContentResult>(null)
   const [loading, setLoading] = useState(true)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const preExpandRef = useRef<SavedPosition | null>(null)
   const panelRef = useRef<HTMLDivElement>(null)
+  const storageKey = `secondary:${slug}`
+
+  const behavior: WindowBehaviorConfig = data ? data.behavior : DEFAULT_BEHAVIOR
 
   useEffect(() => {
     getWindowContent(slug).then((result) => {
@@ -157,20 +176,55 @@ export function AdditionalWindow({
     })
   }, [slug])
 
-  // Set position imperatively so React re-renders (e.g. zIndex change) never reset --win-x/--win-y
+  // Restore saved position and size (imperative — avoids React re-render resetting CSS vars)
   useEffect(() => {
     const panel = panelRef.current
     if (!panel) return
     try {
-      const positions = JSON.parse(localStorage.getItem('window-positions') ?? '{}') as Record<string, { x: number; y: number }>
-      const saved = positions[`secondary:${slug}`]
+      const saved = (JSON.parse(localStorage.getItem('window-positions') ?? '{}') as Record<string, SavedPosition>)[storageKey]
       panel.style.setProperty('--win-x', `${saved?.x ?? 120}px`)
       panel.style.setProperty('--win-y', `${saved?.y ?? 80}px`)
+      if (saved?.w !== undefined) panel.style.setProperty('--win-w', `${saved.w}px`)
+      if (saved?.h !== undefined) panel.style.setProperty('--win-h', `${saved.h}px`)
     } catch {
       panel.style.setProperty('--win-x', '120px')
       panel.style.setProperty('--win-y', '80px')
     }
-  }, [slug])
+  }, [slug, storageKey])
+
+  function expand() {
+    const panel = panelRef.current
+    if (!panel) return
+    const headerH = document.querySelector('header')?.offsetHeight ?? 40
+    if (!isExpanded) {
+      preExpandRef.current = {
+        x: parsePx(panel, '--win-x', 120),
+        y: parsePx(panel, '--win-y', 80),
+        w: panel.offsetWidth,
+        h: panel.offsetHeight,
+      }
+      panel.style.setProperty('--win-x', '0px')
+      panel.style.setProperty('--win-y', '0px')
+      panel.style.setProperty('--win-w', `${window.innerWidth}px`)
+      panel.style.setProperty('--win-h', `${window.innerHeight - headerH}px`)
+    } else {
+      const prev = preExpandRef.current
+      if (prev) {
+        panel.style.setProperty('--win-x', `${prev.x ?? 120}px`)
+        panel.style.setProperty('--win-y', `${prev.y ?? 80}px`)
+        if (prev.w !== undefined) panel.style.setProperty('--win-w', `${prev.w}px`)
+        else panel.style.removeProperty('--win-w')
+        if (prev.h !== undefined) panel.style.setProperty('--win-h', `${prev.h}px`)
+        else panel.style.removeProperty('--win-h')
+      } else {
+        panel.style.removeProperty('--win-x')
+        panel.style.removeProperty('--win-y')
+        panel.style.removeProperty('--win-w')
+        panel.style.removeProperty('--win-h')
+      }
+    }
+    setIsExpanded((v) => !v)
+  }
 
   function handlePointerDown(e: React.PointerEvent) {
     const panel = panelRef.current
@@ -196,13 +250,10 @@ export function AdditionalWindow({
       panel!.removeEventListener('pointermove', onMove)
       panel!.removeEventListener('pointerup', onUp)
       panel!.removeAttribute('data-dragging')
-      const x = parsePx(panel!, '--win-x', 120)
-      const y = parsePx(panel!, '--win-y', 80)
-      try {
-        const positions = JSON.parse(localStorage.getItem('window-positions') ?? '{}') as Record<string, { x: number; y: number }>
-        positions[`secondary:${slug}`] = { x, y }
-        localStorage.setItem('window-positions', JSON.stringify(positions))
-      } catch { /* ignore */ }
+      mergePositionToStorage(storageKey, {
+        x: parsePx(panel!, '--win-x', 120),
+        y: parsePx(panel!, '--win-y', 80),
+      })
     }
 
     panel.addEventListener('pointermove', onMove)
@@ -229,7 +280,11 @@ export function AdditionalWindow({
         title={title}
         onClose={onClose}
         onMinimize={onMinimize}
+        onExpand={expand}
         onPointerDown={handlePointerDown}
+        disableMinimize={!behavior.collapsible}
+        expandable={behavior.expandable}
+        expanded={isExpanded}
       />
 
       <div className="flex-1 overflow-auto min-h-0">
@@ -253,6 +308,13 @@ export function AdditionalWindow({
           <FormComponent form={data.doc as any} />
         )}
       </div>
+
+      {behavior.resizable && !isExpanded && (
+        <ResizeHandles
+          panelRef={panelRef}
+          onResizeEnd={(w, h) => mergePositionToStorage(storageKey, { w, h })}
+        />
+      )}
     </div>
   )
 }

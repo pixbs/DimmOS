@@ -17,6 +17,7 @@ import { CookieConsents } from './collections/CookieConsents'
 import { CookieSettings } from './globals/CookieSettings'
 import { enforcePreDefinedEmailHook } from './hooks/forms/enforcePreDefinedEmail'
 import { verifyRecaptchaHook } from './hooks/forms/verifyRecaptcha'
+import { windowBehaviorFields } from './fields/windowBehavior'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -135,6 +136,10 @@ export default buildConfig({
                       },
                     },
                   ],
+                },
+                {
+                  label: 'Window',
+                  fields: windowBehaviorFields,
                 },
               ],
             },

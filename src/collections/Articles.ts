@@ -3,6 +3,7 @@
 import type { CollectionConfig } from 'payload'
 import { revalidatePath } from 'next/cache'
 import { contentBlocksField } from '@/fields/contentBlocks'
+import { windowBehaviorFields } from '@/fields/windowBehavior'
 
 export const Articles: CollectionConfig = {
   slug: 'articles',
@@ -82,6 +83,10 @@ export const Articles: CollectionConfig = {
               },
             },
           ],
+        },
+        {
+          label: 'Window',
+          fields: windowBehaviorFields,
         },
         // SEO tab appended here by @payloadcms/plugin-seo (tabbedUI: true)
       ],

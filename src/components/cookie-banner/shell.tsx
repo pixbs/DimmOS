@@ -1,0 +1,154 @@
+'use client'
+
+import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { DrawerContext } from '@/components/drawer/context'
+
+interface CookieBannerShellProps {
+  children: ReactNode
+}
+
+function parsePx(el: HTMLElement, prop: string, fallback: number): number {
+  const raw = el.style.getPropertyValue(prop)
+  const n = parseFloat(raw)
+  return Number.isFinite(n) ? n : fallback
+}
+
+function clamp(v: number, min: number, max: number) {
+  return Math.min(Math.max(v, min), max)
+}
+
+export function CookieBannerShell({ children }: CookieBannerShellProps) {
+  const [isOpen, setIsOpen] = useState(false)
+  const [mobileDragOffset, setMobileDragOffset] = useState(0)
+  const [isMobileDragging, setIsMobileDragging] = useState(false)
+  const mobileDragStartY = useRef(0)
+  const panelRef = useRef<HTMLDivElement>(null)
+
+  function close() { setIsOpen(false) }
+  function open()  { setIsOpen(true) }
+
+  useEffect(() => {
+    function onKeyDown(e: KeyboardEvent) {
+      if (e.key === 'Escape') close()
+    }
+    document.addEventListener('keydown', onKeyDown)
+    return () => document.removeEventListener('keydown', onKeyDown)
+  }, [])
+
+  // ─── Mobile drag-to-dismiss ──────────────────────────────────────────────
+
+  function handleMobilePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (window.innerWidth >= 1024) return
+    mobileDragStartY.current = e.clientY
+    setIsMobileDragging(true)
+    e.currentTarget.setPointerCapture(e.pointerId)
+  }
+
+  function handleMobilePointerMove(e: React.PointerEvent<HTMLDivElement>) {
+    if (!isMobileDragging) return
+    setMobileDragOffset(Math.max(0, e.clientY - mobileDragStartY.current))
+  }
+
+  function handleMobilePointerUp() {
+    if (!isMobileDragging) return
+    const panelH = panelRef.current?.offsetHeight ?? 200
+    if (mobileDragOffset > panelH * 0.4) close()
+    setIsMobileDragging(false)
+    setMobileDragOffset(0)
+  }
+
+  // ─── Desktop drag-to-move ────────────────────────────────────────────────
+
+  function handleDesktopTitlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
+    if (window.innerWidth < 1024) return
+    const panel = panelRef.current
+    if (!panel) return
+    e.preventDefault()
+
+    const startX = e.clientX
+    const startY = e.clientY
+    const startWinX = parsePx(panel, '--win-x', Math.max(20, window.innerWidth - 440))
+    const startWinY = parsePx(panel, '--win-y', 20)
+
+    panel.setPointerCapture(e.pointerId)
+    panel.setAttribute('data-dragging', '')
+
+    function onMove(ev: PointerEvent) {
+      const maxX = window.innerWidth - (panel!.offsetWidth || 420)
+      const maxY = window.innerHeight - (panel!.offsetHeight || 300)
+      panel!.style.setProperty('--win-x', `${clamp(startWinX + ev.clientX - startX, 0, Math.max(0, maxX))}px`)
+      panel!.style.setProperty('--win-y', `${clamp(startWinY + ev.clientY - startY, 0, Math.max(0, maxY))}px`)
+    }
+
+    function onUp() {
+      panel!.removeEventListener('pointermove', onMove)
+      panel!.removeEventListener('pointerup', onUp)
+      panel!.removeAttribute('data-dragging')
+    }
+
+    panel.addEventListener('pointermove', onMove)
+    panel.addEventListener('pointerup', onUp)
+  }
+
+  // On mobile, override transform during drag
+  const mobileDragStyle: React.CSSProperties | undefined = isMobileDragging
+    ? { transform: `translateY(${mobileDragOffset}px)`, transition: 'none' }
+    : undefined
+
+  return (
+    <DrawerContext.Provider value={{ close, open }}>
+      {/* Mobile backdrop — lg:hidden keeps it off desktop */}
+      <div
+        aria-hidden="true"
+        className={`fixed inset-0 z-199 bg-black/60 transition-opacity duration-300 lg:hidden ${
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
+        }`}
+        onClick={close}
+      />
+
+      <div
+        ref={panelRef}
+        role="dialog"
+        aria-modal="true"
+        aria-label="Cookie Notice"
+        data-window-panel=""
+        data-cookie-banner=""
+        data-state={isOpen ? 'open' : 'closed'}
+        style={{
+          '--win-z': '200',
+          '--win-w': '420px',
+          ...mobileDragStyle,
+        } as React.CSSProperties}
+      >
+        {/* Desktop title bar — .cookie-banner-titlebar is display:none on mobile */}
+        <div
+          className="cookie-banner-titlebar"
+          onPointerDown={handleDesktopTitlePointerDown}
+        >
+          <button
+            type="button"
+            aria-label="Close cookie notice"
+            onClick={close}
+            className="w-3 h-3 rounded-full shrink-0 transition-all hover:scale-125"
+            style={{ backgroundColor: '#FF5F57' }}
+          />
+          <span className="text-sm font-semibold text-fg/70 flex-1 text-center select-none">Cookie Notice</span>
+        </div>
+
+        {/* Mobile drag handle — .win-draghandle is display:none on desktop */}
+        <div
+          className="win-draghandle justify-center pt-3 pb-6 cursor-grab active:cursor-grabbing touch-none select-none"
+          onPointerDown={handleMobilePointerDown}
+          onPointerMove={handleMobilePointerMove}
+          onPointerUp={handleMobilePointerUp}
+        >
+          <div className="w-20 h-1 rounded-full bg-fg/20" />
+        </div>
+
+        <div className="flex-1 overflow-auto min-h-0">
+          {children}
+        </div>
+      </div>
+    </DrawerContext.Provider>
+  )
+}

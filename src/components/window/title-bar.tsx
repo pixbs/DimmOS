@@ -6,18 +6,24 @@ interface TitleBarProps {
   title: string
   onClose: () => void
   onMinimize?: () => void
+  onExpand?: () => void
   onPointerDown: PointerEventHandler<HTMLDivElement>
   disableMinimize?: boolean
   disableClose?: boolean
+  expandable?: boolean
+  expanded?: boolean
 }
 
 export function WindowTitleBar({
   title,
   onClose,
   onMinimize,
+  onExpand,
   onPointerDown,
   disableMinimize,
   disableClose,
+  expandable,
+  expanded,
 }: TitleBarProps) {
   return (
     <div
@@ -60,12 +66,21 @@ export function WindowTitleBar({
           </div>
         </button>
         <button
-          aria-label="Maximize (unavailable)"
-          disabled
+          onClick={expandable ? onExpand : undefined}
+          aria-label={expanded ? 'Restore window' : 'Expand to full screen'}
+          disabled={!expandable}
           className="w-6 h-6 flex items-center justify-center group"
         >
-          <div className="w-3 h-3 rounded-full bg-fg/10 cursor-default flex items-center justify-center group-hover:scale-150">
-            <span className="opacity-0 group-hover:opacity-100 text-xs text-black/60 font-bold leading-none"></span>
+          <div className={`w-3 h-3 rounded-full transition-all flex items-center justify-center ${
+            !expandable
+              ? 'bg-fg/10 cursor-default'
+              : 'bg-[#28C840] hover:bg-[#20B232] group-hover:scale-150'
+          }`}>
+            {expandable && (
+              <span className="opacity-0 group-hover:opacity-100 text-xs text-black/60 font-bold leading-none">
+                {expanded ? '↙' : '↗'}
+              </span>
+            )}
           </div>
         </button>
       </div>

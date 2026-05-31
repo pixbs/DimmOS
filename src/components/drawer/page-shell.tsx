@@ -6,6 +6,7 @@ import { DrawerContext } from './context'
 import { WindowTitleBar } from '@/components/window/title-bar'
 import { useWindowTitle } from '@/components/window/title-context'
 import { useWindowManagerContext } from '@/components/window/manager-context'
+import { ResizeHandles } from '@/components/window/ResizeHandles'
 import { BASE_Z } from '@/hooks/useWindowManager'
 
 interface PageDrawerShellProps {
@@ -23,11 +24,31 @@ function clamp(value: number, min: number, max: number): number {
   return Math.min(Math.max(value, min), max)
 }
 
+type SavedPosition = { x?: number; y?: number; w?: number; h?: number }
+
+function loadSavedPosition(slug: string): SavedPosition {
+  try {
+    return (JSON.parse(localStorage.getItem('window-positions') ?? '{}') as Record<string, SavedPosition>)[slug] ?? {}
+  } catch {
+    return {}
+  }
+}
+
+function mergePositionToStorage(slug: string, updates: Partial<SavedPosition>) {
+  try {
+    const all = JSON.parse(localStorage.getItem('window-positions') ?? '{}') as Record<string, SavedPosition>
+    all[slug] = { ...all[slug], ...updates }
+    localStorage.setItem('window-positions', JSON.stringify(all))
+  } catch { /* ignore */ }
+}
+
 export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerShellProps) {
-  const { title: contextTitle, disableMinimize } = useWindowTitle()
+  const { title: contextTitle, disableMinimize, resizable, expandable } = useWindowTitle()
   const title = contextTitle || titleProp
 
   const [isOpen, setIsOpen] = useState(false)
+  const [isExpanded, setIsExpanded] = useState(false)
+  const preExpandRef = useRef<SavedPosition | null>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const router = useRouter()
   const pathname = usePathname()
@@ -40,18 +61,48 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
 
   function close() {
     setIsOpen(false)
-    setTimeout(() => {
-      router.push('/')
-    }, 300)
+    setTimeout(() => router.push('/'), 300)
   }
 
   function open() {
     setIsOpen(true)
   }
 
-  useEffect(() => {
-    setIsOpen(true)
-  }, [])
+  function expand() {
+    const panel = panelRef.current
+    if (!panel) return
+    const headerH = document.querySelector('header')?.offsetHeight ?? 40
+    if (!isExpanded) {
+      preExpandRef.current = {
+        x: parsePx(panel, '--win-x', 80),
+        y: parsePx(panel, '--win-y', 40),
+        w: panel.offsetWidth,
+        h: panel.offsetHeight,
+      }
+      panel.style.setProperty('--win-x', '0px')
+      panel.style.setProperty('--win-y', '0px')
+      panel.style.setProperty('--win-w', `${window.innerWidth}px`)
+      panel.style.setProperty('--win-h', `${window.innerHeight - headerH}px`)
+    } else {
+      const prev = preExpandRef.current
+      if (prev) {
+        panel.style.setProperty('--win-x', `${prev.x ?? 80}px`)
+        panel.style.setProperty('--win-y', `${prev.y ?? 40}px`)
+        if (prev.w !== undefined) panel.style.setProperty('--win-w', `${prev.w}px`)
+        else panel.style.removeProperty('--win-w')
+        if (prev.h !== undefined) panel.style.setProperty('--win-h', `${prev.h}px`)
+        else panel.style.removeProperty('--win-h')
+      } else {
+        panel.style.removeProperty('--win-x')
+        panel.style.removeProperty('--win-y')
+        panel.style.removeProperty('--win-w')
+        panel.style.removeProperty('--win-h')
+      }
+    }
+    setIsExpanded((v) => !v)
+  }
+
+  useEffect(() => { setIsOpen(true) }, [])
 
   useEffect(() => {
     if (window.innerWidth < 1024) {
@@ -68,21 +119,28 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
     }
   }, [])
 
-  // Restore saved window position on desktop
+  // Remove data-page-drawer from body when viewport grows to desktop — prevents stale header tinting
+  useEffect(() => {
+    function onResize() {
+      if (window.innerWidth >= 1024) {
+        delete document.body.dataset.pageDrawer
+        document.body.style.removeProperty('--drawer-open-pct')
+      }
+    }
+    window.addEventListener('resize', onResize, { passive: true })
+    return () => window.removeEventListener('resize', onResize)
+  }, [])
+
+  // Restore saved position and size on desktop mount
   useEffect(() => {
     if (window.innerWidth < 1024) return
     const panel = panelRef.current
     if (!panel) return
-    try {
-      const positions = JSON.parse(localStorage.getItem('window-positions') ?? '{}') as Record<string, { x: number; y: number }>
-      const saved = positions[slug]
-      if (saved) {
-        panel.style.setProperty('--win-x', `${saved.x}px`)
-        panel.style.setProperty('--win-y', `${saved.y}px`)
-      }
-    } catch {
-      // localStorage unavailable
-    }
+    const saved = loadSavedPosition(slug)
+    if (saved.x !== undefined) panel.style.setProperty('--win-x', `${saved.x}px`)
+    if (saved.y !== undefined) panel.style.setProperty('--win-y', `${saved.y}px`)
+    if (saved.w !== undefined) panel.style.setProperty('--win-w', `${saved.w}px`)
+    if (saved.h !== undefined) panel.style.setProperty('--win-h', `${saved.h}px`)
   }, [slug])
 
   useEffect(() => {
@@ -134,13 +192,10 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
       panel!.removeAttribute('data-dragging')
 
       if (isDesktop) {
-        const x = parsePx(panel!, '--win-x', 80)
-        const y = parsePx(panel!, '--win-y', 40)
-        try {
-          const saved = JSON.parse(localStorage.getItem('window-positions') ?? '{}') as Record<string, { x: number; y: number }>
-          saved[slug] = { x, y }
-          localStorage.setItem('window-positions', JSON.stringify(saved))
-        } catch { /* ignore */ }
+        mergePositionToStorage(slug, {
+          x: parsePx(panel!, '--win-x', 80),
+          y: parsePx(panel!, '--win-y', 40),
+        })
       } else {
         const willClose = mobileOffset > (panel!.offsetHeight || 400) * 0.25
         panel!.style.transform = ''
@@ -182,8 +237,11 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
           title={title}
           onClose={close}
           onMinimize={() => minimize(slug)}
+          onExpand={expand}
           onPointerDown={handlePointerDown}
           disableMinimize={disableMinimize}
+          expandable={expandable}
+          expanded={isExpanded}
         />
 
         <div
@@ -194,6 +252,13 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
         </div>
 
         <div className="flex-1 overflow-auto min-h-0">{children}</div>
+
+        {resizable && !isExpanded && (
+          <ResizeHandles
+            panelRef={panelRef}
+            onResizeEnd={(w, h) => mergePositionToStorage(slug, { w, h })}
+          />
+        )}
       </div>
     </DrawerContext.Provider>
   )

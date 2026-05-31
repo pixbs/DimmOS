@@ -153,7 +153,7 @@ test.describe('Cookie Banner', () => {
     await expect(page.getByRole('button', { name: 'Save Preferences' })).toBeVisible()
 
     // Close without saving
-    await page.getByRole('button', { name: 'Close' }).click()
+    await page.getByRole('button', { name: 'Close', exact: true }).click()
     await page.waitForURL(BASE_URL, { timeout: 5000 })
 
     // Banner should reappear since no consent was saved

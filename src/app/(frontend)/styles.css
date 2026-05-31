@@ -139,10 +139,15 @@ body[data-page-drawer] header {
     z-index: var(--win-z, 30);
     transform: scale(0.96) translateY(6px);
     opacity: 0;
-    transition: transform 180ms ease, opacity 180ms ease;
+    transition: transform 180ms ease, opacity 180ms ease,
+      left 220ms ease, top 220ms ease,
+      width 220ms ease, height 220ms ease,
+      border-radius 220ms ease;
   }
   [data-window-panel][data-state="open"]  { transform: none; opacity: 1; }
+  /* Suppress transitions during drag and resize to follow pointer directly */
   [data-window-panel][data-dragging]      { transition: none; cursor: grabbing; user-select: none; }
+  [data-window-panel][data-resizing]      { transition: none; }
 }
 
 /* Title bar — desktop only */
@@ -157,6 +162,52 @@ body[data-page-drawer] header {
 /* Taskbar — desktop only */
 [data-taskbar] { display: none; }
 @media (min-width: 1024px) { [data-taskbar] { display: flex; } }
+
+/* Resize handles — desktop only */
+.win-resize-handle { display: none; }
+@media (min-width: 1024px) {
+  .win-resize-handle {
+    display: block;
+    position: absolute;
+    z-index: 10;
+  }
+  /* East (right) edge — drag to change width */
+  .win-resize-handle--e  { right: 0; top: 8px; bottom: 8px; width: 6px; cursor: ew-resize; }
+  /* South (bottom) edge — drag to change height */
+  .win-resize-handle--s  { bottom: 0; left: 8px; right: 8px; height: 6px; cursor: ns-resize; }
+  /* South-east corner — drag to change both */
+  .win-resize-handle--se { right: 0; bottom: 0; width: 16px; height: 16px; cursor: nwse-resize; }
+  .win-resize-handle:focus-visible {
+    outline: 2px solid var(--color-brand);
+    outline-offset: -2px;
+    border-radius: 2px;
+  }
+}
+
+/* Cookie banner panel overrides */
+/* On mobile the panel rides above PageDrawerShell (z-30) */
+@media (max-width: 1023px) {
+  [data-cookie-banner][data-window-panel] { z-index: 200; }
+}
+/* Desktop title bar — hidden on mobile, shown on desktop */
+.cookie-banner-titlebar { display: none; }
+@media (min-width: 1024px) {
+  .cookie-banner-titlebar {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    cursor: grab;
+    flex-shrink: 0;
+    border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
+  }
+  .cookie-banner-titlebar:active { cursor: grabbing; }
+  /* Position bottom-right by default; js overwrites --win-x/y on drag */
+  [data-cookie-banner][data-window-panel] {
+    --win-x: calc(100vw - 440px);
+    --win-y: 20px;
+  }
+}
 
 .grecaptcha-badge {
   visibility: hidden !important;

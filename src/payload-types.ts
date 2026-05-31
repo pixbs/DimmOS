@@ -270,6 +270,18 @@ export interface Window {
    * Controls position across all shortcuts. Lower = earlier. Leave blank to append.
    */
   shortcutOrder?: number | null;
+  /**
+   * Show minimize button in the title bar (default: on). Uncheck to hide it.
+   */
+  windowCollapsible?: boolean | null;
+  /**
+   * Show full-screen expand button in the title bar (default: off).
+   */
+  windowExpandable?: boolean | null;
+  /**
+   * Allow the window to be resized by dragging its edges (default: on).
+   */
+  windowResizable?: boolean | null;
   meta?: {
     title?: string | null;
     description?: string | null;
@@ -379,6 +391,18 @@ export interface Article {
    * Controls position across all shortcuts. Lower = earlier. Leave blank to append.
    */
   shortcutOrder?: number | null;
+  /**
+   * Show minimize button in the title bar (default: on). Uncheck to hide it.
+   */
+  windowCollapsible?: boolean | null;
+  /**
+   * Show full-screen expand button in the title bar (default: off).
+   */
+  windowExpandable?: boolean | null;
+  /**
+   * Allow the window to be resized by dragging its edges (default: on).
+   */
+  windowResizable?: boolean | null;
   meta?: {
     title?: string | null;
     description?: string | null;
@@ -575,6 +599,18 @@ export interface Form {
    * Controls position across all shortcuts. Lower = earlier. Leave blank to append.
    */
   shortcutOrder?: number | null;
+  /**
+   * Show minimize button in the title bar (default: on). Uncheck to hide it.
+   */
+  windowCollapsible?: boolean | null;
+  /**
+   * Show full-screen expand button in the title bar (default: off).
+   */
+  windowExpandable?: boolean | null;
+  /**
+   * Allow the window to be resized by dragging its edges (default: on).
+   */
+  windowResizable?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -807,6 +843,9 @@ export interface WindowsSelect<T extends boolean = true> {
   shortcutName?: T;
   shortcutIcon?: T;
   shortcutOrder?: T;
+  windowCollapsible?: T;
+  windowExpandable?: T;
+  windowResizable?: T;
   meta?:
     | T
     | {
@@ -893,6 +932,9 @@ export interface ArticlesSelect<T extends boolean = true> {
   shortcutName?: T;
   shortcutIcon?: T;
   shortcutOrder?: T;
+  windowCollapsible?: T;
+  windowExpandable?: T;
+  windowResizable?: T;
   meta?:
     | T
     | {
@@ -1009,6 +1051,9 @@ export interface FormsSelect<T extends boolean = true> {
   shortcutName?: T;
   shortcutIcon?: T;
   shortcutOrder?: T;
+  windowCollapsible?: T;
+  windowExpandable?: T;
+  windowResizable?: T;
   updatedAt?: T;
   createdAt?: T;
 }

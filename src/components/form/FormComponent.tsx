@@ -14,17 +14,17 @@ declare global {
 type FormField = {
   blockType: 'email' | 'text' | 'textarea'
   name: string
-  label?: string
-  placeholder?: string
-  required?: boolean
-  defaultValue?: string
-  isPreDefined?: boolean
+  label?: string | null
+  placeholder?: string | null
+  required?: boolean | null
+  defaultValue?: string | null
+  isPreDefined?: boolean | null
 }
 
 type FormData = {
   id: string | number
   title: string
-  fields?: FormField[]
+  fields?: FormField[] | null
 }
 
 export function FormComponent({ form }: { form: FormData }) {
@@ -110,7 +110,7 @@ export function FormComponent({ form }: { form: FormData }) {
               <input
                 type={field.blockType === 'email' ? 'email' : 'text'}
                 name={field.name}
-                required={field.required}
+                required={field.required ?? undefined}
                 placeholder={field.placeholder || ''}
                 value={values[field.name] || ''}
                 onChange={(e) => setValue(field.name, e.target.value)}
@@ -126,7 +126,7 @@ export function FormComponent({ form }: { form: FormData }) {
         <div className="flex-1 px-4 py-3 border-b border-fg/10">
           <textarea
             name={bodyField.name}
-            required={bodyField.required}
+            required={bodyField.required ?? undefined}
             placeholder={bodyField.placeholder || ''}
             value={values[bodyField.name] || ''}
             onChange={(e) => setValue(bodyField.name, e.target.value)}

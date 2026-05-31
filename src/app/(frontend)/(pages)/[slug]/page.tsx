@@ -5,8 +5,9 @@ import type { Metadata } from 'next'
 import { FormComponent } from '@/components/form/FormComponent'
 import { WindowContent } from '@/components/window-content'
 import { ArticleContent } from '@/components/article-content'
-import { SetWindowTitle } from '@/components/window/title-context'
+import { SetWindowTitle, SetWindowOptions } from '@/components/window/title-context'
 import { generateMeta } from '@/utilities/generateMeta'
+import { extractBehavior } from '@/utilities/windowBehavior'
 
 interface PageProps {
   params: Promise<{ slug: string }>
@@ -41,44 +42,72 @@ export default async function SlugPage({ params }: PageProps) {
   const { slug } = await params
   const payload = await getPayload({ config })
 
-  const { docs: windows } = await payload.find({
-    collection: 'windows',
-    where: { slug: { equals: slug } },
-    limit: 1,
-    depth: 1,
-  })
+  const [{ docs: windows }, { docs: articles }, { docs: forms }] = await Promise.all([
+    payload.find({
+      collection: 'windows',
+      where: { slug: { equals: slug } },
+      limit: 1,
+      depth: 1,
+    }),
+    payload.find({
+      collection: 'articles',
+      where: { slug: { equals: slug } },
+      limit: 1,
+      depth: 1,
+    }),
+    payload.find({
+      collection: 'forms',
+      where: { slug: { equals: slug } },
+      limit: 1,
+      depth: 1,
+    }),
+  ])
+
   if (windows.length) {
+    const doc = windows[0]
+    const behavior = extractBehavior(doc)
     return (
       <>
-        <SetWindowTitle title={windows[0].title} />
-        <WindowContent blocks={windows[0].content ?? []} />
+        <SetWindowTitle title={doc.title} />
+        <SetWindowOptions
+          disableMinimize={!behavior.collapsible}
+          expandable={behavior.expandable}
+          resizable={behavior.resizable}
+        />
+        <WindowContent blocks={doc.content ?? []} />
       </>
     )
   }
 
-  const { docs: articles } = await payload.find({
-    collection: 'articles',
-    where: { slug: { equals: slug } },
-    limit: 1,
-    depth: 1,
-  })
   if (articles.length) {
+    const doc = articles[0]
+    const behavior = extractBehavior(doc)
     return (
       <>
-        <SetWindowTitle title={articles[0].title} />
-        <ArticleContent article={articles[0]} />
+        <SetWindowTitle title={doc.title} />
+        <SetWindowOptions
+          disableMinimize={!behavior.collapsible}
+          expandable={behavior.expandable}
+          resizable={behavior.resizable}
+        />
+        <ArticleContent article={doc} />
       </>
     )
   }
 
-  const { docs: forms } = await payload.find({
-    collection: 'forms',
-    where: { slug: { equals: slug } },
-    limit: 1,
-    depth: 1,
-  })
   if (forms.length) {
-    return <FormComponent form={forms[0] as any} />
+    const form = forms[0]
+    const behavior = extractBehavior(form)
+    return (
+      <>
+        <SetWindowOptions
+          disableMinimize={!behavior.collapsible}
+          expandable={behavior.expandable}
+          resizable={behavior.resizable}
+        />
+        <FormComponent form={form} />
+      </>
+    )
   }
 
   notFound()
@@ -94,6 +123,6 @@ export async function generateStaticParams() {
   return [
     ...windows.docs.map((d) => ({ slug: d.slug })),
     ...articles.docs.map((d) => ({ slug: d.slug })),
-    ...forms.docs.map((d) => ({ slug: (d as any).slug as string })),
+    ...forms.docs.map((d) => ({ slug: d.slug })),
   ]
 }

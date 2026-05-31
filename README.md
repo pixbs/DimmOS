@@ -422,6 +422,45 @@ Revalidation lands here alongside content blocks so that admin saves immediately
 
 Currently all routes open as bottom-sheet drawers on all screen sizes. On desktop (≥ 1024 px) content should open as draggable, resizable floating windows.
 
+### 2.0 Window behavior configuration fields
+
+Every content collection (`windows`, `articles`, `forms`) now has a **Window** tab with three checkboxes controlling how content renders in the desktop floating-window system.
+
+| Field | Type | Default | Effect |
+|-------|------|---------|--------|
+| `windowCollapsible` | checkbox | `true` | Shows minimize button in title bar |
+| `windowExpandable` | checkbox | `false` | Shows full-screen expand button (green traffic light) |
+| `windowResizable` | checkbox | `true` | Renders E / S / SE resize handles on desktop |
+
+**Adding to a new collection:**
+
+```ts
+import { windowBehaviorFields } from '@/fields/windowBehavior'
+
+// Inside the tabs array:
+{ label: 'Window', fields: windowBehaviorFields },
+```
+
+**Reading in the page route (`[slug]/page.tsx`):**
+
+```tsx
+<SetWindowOptions
+  disableMinimize={doc.windowCollapsible === false}
+  expandable={doc.windowExpandable === true}
+  resizable={doc.windowResizable !== false}
+/>
+```
+
+Secondary windows opened via `useWindowManager.open(slug)` get behavior automatically from `getWindowContent` which returns `behavior: WindowBehaviorConfig` alongside the content.
+
+**Resize implementation** uses pointer capture on each handle (`role="separator"`, keyboard arrow keys, `data-resizing` attribute suppresses CSS transitions during drag). Size is persisted to `localStorage['window-positions'][slug]` as `{ x, y, w, h }`.
+
+- [x] `src/fields/windowBehavior.ts` — shared field definitions
+- [x] `src/components/window/ResizeHandles.tsx` — E / S / SE handles with ARIA + keyboard
+- [x] `src/components/window/title-context.tsx` — added `resizable` / `expandable` to context
+- [x] `src/components/window/title-bar.tsx` — green button activates when `expandable: true`
+- [x] `tests/int/window-behavior.int.spec.ts` — round-trip for all three fields on Windows + Articles
+
 ### 2.1 Window state management
 
 - [ ] Write unit tests for the URL state parsing util:
