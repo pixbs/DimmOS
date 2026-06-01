@@ -4,9 +4,12 @@ import { Onest } from 'next/font/google'
 import { getPayload } from 'payload'
 import config from '@payload-config'
 import type { Metadata } from 'next'
+import { PostHogProvider, PostHogPageView } from '@posthog/next'
 import Header from '@/components/header'
 import CookieBanner from '@/components/cookie-banner'
 import { CookieConsentProvider } from '@/components/cookie-banner/context'
+import { PostHogConsentGate } from '@/components/analytics/PostHogConsentGate'
+import { SentryReplayProvider } from '@/components/analytics/SentryReplayProvider'
 import { ShortcutGrid } from '@/components/shortcut/grid'
 import { ShortcutRegistryProvider } from '@/components/shortcut/registry-context'
 import { WindowManagerProvider } from '@/components/window/WindowManagerProvider'
@@ -82,22 +85,27 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
       <body>
         {/* Google Consent Mode v2 — fires before hydration, Next.js injects this into <head> */}
         <Script src="/consent-init.js" strategy="beforeInteractive" />
-        <CookieConsentProvider>
-          <Suspense>
-            <ShortcutRegistryProvider shortcuts={registryEntries}>
-              <WindowManagerProvider>
-                <Header />
-                <main>
-                  <div className="grid grid-cols-[repeat(var(--cols),var(--tile))] auto-rows-[calc(2*var(--tile))]">
-                    <ShortcutGrid shortcuts={shortcuts} />
-                  </div>
-                  {children}
-                </main>
-                <CookieBanner />
-              </WindowManagerProvider>
-            </ShortcutRegistryProvider>
-          </Suspense>
-        </CookieConsentProvider>
+        <PostHogProvider clientOptions={{ opt_out_capturing_by_default: true }}>
+          <CookieConsentProvider>
+            <PostHogConsentGate />
+            <SentryReplayProvider />
+            <PostHogPageView />
+            <Suspense>
+              <ShortcutRegistryProvider shortcuts={registryEntries}>
+                <WindowManagerProvider>
+                  <Header />
+                  <main>
+                    <div className="grid grid-cols-[repeat(var(--cols),var(--tile))] auto-rows-[calc(2*var(--tile))]">
+                      <ShortcutGrid shortcuts={shortcuts} />
+                    </div>
+                    {children}
+                  </main>
+                  <CookieBanner />
+                </WindowManagerProvider>
+              </ShortcutRegistryProvider>
+            </Suspense>
+          </CookieConsentProvider>
+        </PostHogProvider>
       </body>
     </html>
   )

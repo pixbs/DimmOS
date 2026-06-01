@@ -95,7 +95,7 @@ export function CookiePreferencesForm({ services, settings }: Props) {
                   aria-label={`Toggle ${CATEGORY_LABELS[category]}`}
                   disabled={isEssential}
                   onClick={() => toggle(category)}
-                  className={`relative w-10 h-6 rounded-full transition-colors flex-shrink-0 ${
+                  className={`relative w-10 h-6 rounded-full transition-colors shrink-0 ${
                     isSelected ? 'bg-brand' : 'bg-fg/20'
                   } ${isEssential ? 'opacity-60 cursor-not-allowed' : 'cursor-pointer'}`}
                 >
@@ -120,7 +120,7 @@ export function CookiePreferencesForm({ services, settings }: Props) {
                   <button
                     type="button"
                     onClick={() => setExpanded(isExpanded ? null : category)}
-                    className="text-fg/40 text-xs cursor-pointer flex-shrink-0"
+                    className="text-fg/40 text-xs cursor-pointer shrink-0"
                     aria-expanded={isExpanded}
                   >
                     {categoryServices.length} {categoryServices.length === 1 ? 'service' : 'services'}{' '}

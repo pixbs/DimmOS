@@ -3,6 +3,8 @@ import { resendAdapter } from '@payloadcms/email-resend'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { formBuilderPlugin } from '@payloadcms/plugin-form-builder'
 import { seoPlugin } from '@payloadcms/plugin-seo'
+import { sentryPlugin } from '@payloadcms/plugin-sentry'
+import * as Sentry from '@sentry/nextjs'
 import path from 'path'
 import { buildConfig } from 'payload'
 import { fileURLToPath } from 'url'
@@ -152,6 +154,7 @@ export default buildConfig({
         },
       },
     }),
+    sentryPlugin({ Sentry }),
     seoPlugin({
       collections: ['windows', 'articles'],
       uploadsCollection: 'media',
