@@ -13,6 +13,7 @@ import { SentryReplayProvider } from '@/components/analytics/SentryReplayProvide
 import { ShortcutGrid } from '@/components/shortcut/grid'
 import { ShortcutRegistryProvider } from '@/components/shortcut/registry-context'
 import { WindowManagerProvider } from '@/components/window/WindowManagerProvider'
+import { DesktopWallpaper } from '@/components/desktop-wallpaper'
 import './styles.css'
 import 'remixicon/fonts/remixicon.css'
 
@@ -95,7 +96,8 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
                 <WindowManagerProvider>
                   <Header />
                   <main>
-                    <div className="grid grid-cols-[repeat(var(--cols),var(--tile))] auto-rows-[calc(2*var(--tile))]">
+                    <DesktopWallpaper />
+                    <div className="relative z-1 grid grid-cols-[repeat(var(--cols),var(--tile))] auto-rows-[calc(2*var(--tile))]">
                       <ShortcutGrid shortcuts={shortcuts} />
                     </div>
                     {children}
