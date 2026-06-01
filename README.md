@@ -17,6 +17,8 @@ Interactive OS-style portfolio built on Next.js + Payload CMS. The UI metaphor i
 | Email | `@payloadcms/email-resend` | — |
 | Styling | Tailwind CSS | 4.2.4 |
 | Icons | Remixicon | 4.9.1 |
+| Analytics | `@posthog/next` | — |
+| Error tracking | `@sentry/nextjs` + `@payloadcms/plugin-sentry` | — |
 | E2E tests | Playwright | 1.58.2 |
 | Unit/int tests | Vitest | 4.0.18 |
 | Runtime | Bun | — |
@@ -169,6 +171,7 @@ bun test:e2e     # Playwright — tests/e2e/**/*.e2e.spec.ts
 |---|---|
 | `tests/int/cookie-consents.int.spec.ts` | Hook unit test, consent creation, access control, unique constraint |
 | `tests/int/cookie-services.int.spec.ts` | Service creation, public read, admin-only write |
+| `tests/int/cookie-manifest.int.spec.ts` | All manifest entries seed correctly and are publicly readable |
 | `tests/int/windows.int.spec.ts` | Window creation with each block type, optional content, access control |
 | `tests/int/articles.int.spec.ts` | Article creation, type discriminator (`case-study`/`service`), slug uniqueness, access control |
 | `tests/int/windows-revalidation.int.spec.ts` | `revalidatePath` called on `afterChange`/`afterDelete`; `skipHooks` re-entry guard |
@@ -177,6 +180,7 @@ bun test:e2e     # Playwright — tests/e2e/**/*.e2e.spec.ts
 | `tests/e2e/frontend.e2e.spec.ts` | Homepage title + load |
 | `tests/e2e/windows.e2e.spec.ts` | Navigating to a window slug opens PageDrawer; richText block renders |
 | `tests/e2e/works.e2e.spec.ts` | `/works` listing: PageDrawer open, article card visible, clicking card navigates to detail |
+| `tests/e2e/analytics.e2e.spec.ts` | PostHog consent gating (opted in/out via `ph_*` localStorage); cookie audit (no undeclared keys); services API |
 
 **Integration test access control pattern.** Always pass `overrideAccess: false` together with a `user` object to exercise real access control. Use `overrideAccess: true` only in test setup/teardown helpers. See `tests/int/cookie-services.int.spec.ts` — setup uses `overrideAccess: true` and assertions use `overrideAccess: false` — as the model to follow.
 
@@ -545,38 +549,46 @@ SEO precedes analytics: `generateMetadata` provides canonical URLs and Open Grap
 
 ## Phase 4 — Analytics and error tracking
 
-All three services integrate with the existing cookie consent system. No service may fire events or set cookies before the user's consent categories are confirmed.
+All services integrate with the existing cookie consent system. No service fires events or writes storage before the user's consent categories are confirmed.
+
+**Note on GTM:** A separate GTM container was not added. `public/consent-init.js` already initialises `window.dataLayer` and `window.gtag` for Google Consent Mode v2 signals, which is all that's needed. PostHog handles analytics directly.
+
+### 4.0 Cookie manifest and audit automation
+
+Every cookie/storage item the site writes is declared in a canonical manifest. An E2E audit test catches any undeclared key that appears after a library update.
+
+- [x] Create `src/data/cookieManifest.ts` — single source of truth for all `CookieService` entries (essential, functional, analytics)
+- [x] Create `tests/helpers/seedCookieServices.ts` — delete-first idempotent seeder (matches project pattern from `seedContent.ts`)
+- [x] `bun run seed:cookies` script populates a fresh local DB from the manifest
+- [x] `tests/int/cookie-manifest.int.spec.ts` — verifies all manifest entries seed and are publicly readable
+- [x] Cookie audit test in `tests/e2e/analytics.e2e.spec.ts` — accept all consent → collect every `document.cookie` name + localStorage + sessionStorage key → assert each matches a declared manifest entry (prefix patterns like `ph_*` and `__ph_*` supported)
 
 ### 4.1 PostHog
 
-- [ ] Write `tests/e2e/analytics.e2e.spec.ts` **first**:
-  - After accepting `analytics` category: `window.posthog` is defined and not opted out
-  - After rejecting: PostHog is opted out or not loaded
-- [ ] Install `posthog-js`; create `src/components/analytics/PostHogProvider.tsx` (`'use client'`):
-  - Initialise inside a `useEffect` gated on `consent.categories.includes('analytics')`
-  - On consent change: call `posthog.opt_in_capturing()` or `posthog.opt_out_capturing()`
-  - Track route changes via `usePathname()` + `useEffect`
-  - Add `NEXT_PUBLIC_POSTHOG_KEY` to `.env.example`
+- [x] Install `@posthog/next` (official unified package — handles client + server, provides `PostHogProvider` and `PostHogPageView`)
+- [x] `src/components/analytics/PostHogConsentGate.tsx` (`'use client'`) — bridges `useCookieConsent()` to `posthog.opt_in_capturing()` / `posthog.opt_out_capturing()`; initialised with `opt_out_capturing_by_default: true`
+- [x] `PostHogProvider` + `PostHogPageView` wired into root layout; `PostHogConsentGate` sits inside both providers
+- [x] `NEXT_PUBLIC_POSTHOG_KEY` and `NEXT_PUBLIC_POSTHOG_HOST` added to `.env.example`
 
 ### 4.2 Google Tag Manager
 
-- [ ] Write E2E test: after accepting analytics, `window.dataLayer` contains a `consent_update` event with `analytics_storage: 'granted'`
-- [ ] Load GTM via `<Script strategy="afterInteractive">` only after consent (not `beforeInteractive`)
-  - Push `{ event: 'consent_update', ...signals }` to `dataLayer` inside `saveConsent()`
-  - `consent-init.js` remains unchanged — it is the Consent Mode v2 default setter, not GTM
-  - Add `NEXT_PUBLIC_GTM_ID` to `.env.example`
+**Replaced by PostHog.** The existing `public/consent-init.js` covers all Google Consent Mode v2 signal updates (`analytics_storage`, `ad_storage`, etc.) via `window.gtag`. No GTM container script is needed.
 
 ### 4.3 Sentry
 
-- [ ] Write E2E test: basic navigation after accepting `functional` cookies throws no unhandled errors; session replay is not active when functional consent is denied
-- [ ] Install `@sentry/nextjs`; run the Sentry wizard to generate `sentry.client.config.ts` and `sentry.server.config.ts`
-  - Wrap session replay init with `consent.categories.includes('functional')` check before enabling replays
-  - Add `SENTRY_DSN` to `.env.example`
+- [x] Install `@sentry/nextjs` (Next.js SDK) + `@payloadcms/plugin-sentry@3.84.1` (Payload admin instrumentation)
+- [x] Manual setup (no wizard): `instrumentation-client.ts`, `sentry.server.config.ts`, `sentry.edge.config.ts`, `instrumentation.ts` (registers server/edge, exports `onRequestError`)
+- [x] `src/app/global-error.tsx` — React error boundary calling `Sentry.captureException`
+- [x] `src/components/analytics/SentryReplayProvider.tsx` — dynamically loads `@sentry/browser`'s `replayIntegration` only when `functional` consent is granted
+- [x] `sentryPlugin({ Sentry })` added to `payload.config.ts` plugins array
+- [x] `withSentryConfig` wrapping `next.config.ts`
+- [x] `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT` added to `.env.example`
 
 **Tests required for Phase 4:**
-- `tests/e2e/analytics.e2e.spec.ts`
+- `tests/int/cookie-manifest.int.spec.ts` ✓
+- `tests/e2e/analytics.e2e.spec.ts` ✓ (PostHog consent gating via `ph_*` localStorage side-effects; cookie audit; services API)
 
-**Quality gate:** no analytics tool sets cookies or fires events when the user rejects all optional categories.
+**Quality gate:** no analytics tool writes storage or fires events when the user rejects all optional categories; cookie audit test fails if a library update introduces an undeclared key. ✓ **All gates green.**
 
 ---
 
@@ -661,7 +673,7 @@ All three services integrate with the existing cookie consent system. No service
 ## Phase 7 — Production hardening
 
 - [ ] Ensure `.env.example` lists every variable with an inline comment (purpose + where to obtain the value)
-- [ ] Verify the Environment Variables table below matches `.env.example` exactly — add `SENTRY_DSN`, `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_GTM_ID` rows if not yet present
+- [x] Environment Variables table updated — `NEXT_PUBLIC_POSTHOG_KEY`, `NEXT_PUBLIC_POSTHOG_HOST`, `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT` added; `NEXT_PUBLIC_GTM_ID` not needed (GTM replaced by PostHog)
 - [ ] Audit all `payload.find()` and `payload.findByID()` calls in the codebase for missing `select`, `depth`, and `limit`; open a tracking issue per instance; fix before quality gate
 - [ ] Confirm all migration files are committed and `bun payload migrate` runs clean from a fresh database
 
@@ -686,6 +698,8 @@ All three services integrate with the existing cookie consent system. No service
 | `RECAPTCHA_SECRET_KEY` | Yes | reCAPTCHA v3 server-side secret |
 | `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` | Yes | reCAPTCHA v3 public site key |
 | `NEXT_PUBLIC_SITE_URL` | Phase 3 | Canonical base URL for sitemap and robots.txt (no trailing slash) |
-| `SENTRY_DSN` | Phase 4 | Sentry project DSN |
-| `NEXT_PUBLIC_POSTHOG_KEY` | Phase 4 | PostHog project API key |
-| `NEXT_PUBLIC_GTM_ID` | Phase 4 | Google Tag Manager container ID |
+| `NEXT_PUBLIC_POSTHOG_KEY` | Phase 4 | PostHog project API key (`phc_…`) |
+| `NEXT_PUBLIC_POSTHOG_HOST` | Phase 4 | PostHog ingest host (e.g. `https://eu.i.posthog.com`) |
+| `NEXT_PUBLIC_SENTRY_DSN` | Phase 4 | Sentry project DSN |
+| `SENTRY_ORG` | Phase 4 | Sentry organisation slug (for source map uploads in CI) |
+| `SENTRY_PROJECT` | Phase 4 | Sentry project slug |
