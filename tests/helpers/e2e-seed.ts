@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { seedWindow } from './seedContent'
 
 await seedWindow('e2e-test-window')

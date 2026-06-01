@@ -1,3 +1,4 @@
+import 'dotenv/config'
 import { seedCookieServices } from '../../tests/helpers/seedCookieServices.js'
 
 await seedCookieServices()
