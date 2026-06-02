@@ -23,16 +23,17 @@ export function WindowManagerProvider({ children }: { children: ReactNode }) {
     <WindowManagerContextProvider manager={manager}>
       {children}
       {isDesktop && manager.windows
-        .filter((win) => win.slug !== manager.primarySlug)
+        .filter((win) => win.slug !== manager.primarySlug && !win.minimized)
         .map((win) => (
           <AdditionalWindow
             key={win.slug}
             slug={win.slug}
             zIndex={win.zIndex}
-            minimized={win.minimized}
+            cascadeIndex={win.cascadeIndex}
+            pendingMinimize={win.pendingMinimize}
             onClose={() => manager.close(win.slug)}
             onFocus={() => manager.focus(win.slug)}
-            onMinimize={() => manager.minimize(win.slug)}
+            onMinimize={() => manager.actualMinimize(win.slug)}
           />
         ))}
       {isDesktop && <Taskbar />}

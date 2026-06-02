@@ -6,6 +6,12 @@
   --color-bg: #111111;
   --color-bgs: #070707;
   --color-brand: #F22F57;
+  --color-win-close: #FF5F57;
+  --color-win-close-hover: #FF3B30;
+  --color-win-minimize: #FEBC2E;
+  --color-win-minimize-hover: #FF9500;
+  --color-win-expand: #28C840;
+  --color-win-expand-hover: #20B232;
   --border: 1.5px;
 }
 
@@ -137,15 +143,26 @@ body[data-page-drawer] header {
     height: var(--win-h, min(600px, calc(100vh - var(--header-height) - 80px)));
     border-radius: 24px;
     z-index: var(--win-z, 30);
-    transform: scale(0.96) translateY(6px);
-    opacity: 0;
-    transition: transform 180ms ease, opacity 180ms ease,
+    transition:
       left 220ms ease, top 220ms ease,
       width 220ms ease, height 220ms ease,
       border-radius 220ms ease;
   }
-  [data-window-panel][data-state="open"]  { transform: none; opacity: 1; }
-  /* Suppress transitions during drag and resize to follow pointer directly */
+  /* CSS-driven open/close for primary window and cookie banner.
+     Secondary windows ([data-secondary-window]) are animated by Framer Motion instead. */
+  [data-window-panel]:not([data-secondary-window]) {
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 180ms ease,
+      left 220ms ease, top 220ms ease,
+      width 220ms ease, height 220ms ease,
+      border-radius 220ms ease;
+  }
+  [data-window-panel]:not([data-secondary-window])[data-state="open"] {
+    opacity: 1;
+    pointer-events: auto;
+  }
+  /* Suppress position/size transitions during drag and resize to follow pointer directly */
   [data-window-panel][data-dragging]      { transition: none; cursor: grabbing; user-select: none; }
   [data-window-panel][data-resizing]      { transition: none; }
 }

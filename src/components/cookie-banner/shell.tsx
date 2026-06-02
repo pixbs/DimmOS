@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { cn } from '@/lib/utils'
 import { DrawerContext } from '@/components/drawer/context'
 
 interface CookieBannerShellProps {
@@ -100,9 +101,10 @@ export function CookieBannerShell({ children }: CookieBannerShellProps) {
       {/* Mobile backdrop — lg:hidden keeps it off desktop */}
       <div
         aria-hidden="true"
-        className={`fixed inset-0 z-199 bg-black/60 transition-opacity duration-300 lg:hidden ${
-          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
+        className={cn(
+          'fixed inset-0 z-199 bg-black/60 transition-opacity duration-300 lg:hidden',
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
+        )}
         onClick={close}
       />
 
@@ -129,8 +131,8 @@ export function CookieBannerShell({ children }: CookieBannerShellProps) {
             type="button"
             aria-label="Close cookie notice"
             onClick={close}
-            className="w-3 h-3 rounded-full shrink-0 transition-all hover:scale-125"
-            style={{ backgroundColor: '#FF5F57' }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="w-3 h-3 rounded-full shrink-0 transition-all hover:scale-125 bg-win-close"
           />
           <span className="text-sm font-semibold text-fg/70 flex-1 text-center select-none">Cookie Notice</span>
         </div>

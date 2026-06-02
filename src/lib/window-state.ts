@@ -22,6 +22,9 @@ export interface ManagedWindow {
   slug: string
   zIndex: number
   minimized: boolean
+  cascadeIndex: number
+  /** Set to true to signal the window component to run its collapse animation before minimizing */
+  pendingMinimize: boolean
 }
 
 export const BASE_Z = 50
@@ -35,14 +38,22 @@ export function loadWindowsFromSession(): ManagedWindow[] {
     if (!raw) return []
     const parsed = JSON.parse(raw)
     if (!Array.isArray(parsed)) return []
-    return parsed.filter(
-      (w): w is ManagedWindow =>
-        typeof w === 'object' &&
-        w !== null &&
-        isValidSlug(w.slug) &&
-        typeof w.zIndex === 'number' &&
-        typeof w.minimized === 'boolean',
-    )
+    return parsed
+      .filter(
+        (w): boolean =>
+          typeof w === 'object' &&
+          w !== null &&
+          isValidSlug(w.slug) &&
+          typeof w.zIndex === 'number' &&
+          typeof w.minimized === 'boolean',
+      )
+      .map((w): ManagedWindow => ({
+        slug: w.slug,
+        zIndex: w.zIndex,
+        minimized: w.minimized,
+        cascadeIndex: typeof w.cascadeIndex === 'number' ? w.cascadeIndex : 0,
+        pendingMinimize: false, // always reset; mid-animation state must not persist
+      }))
   } catch {
     return []
   }

@@ -15,7 +15,10 @@ export interface WindowManager {
   open: (slug: string) => void
   close: (slug: string) => void
   focus: (slug: string) => void
+  /** Sets pendingMinimize=true — the window component runs its animation then calls actualMinimize */
   minimize: (slug: string) => void
+  /** Completes minimize: sets minimized=true, clears pendingMinimize */
+  actualMinimize: (slug: string) => void
 }
 
 function updateCosmeticUrl(
@@ -44,13 +47,16 @@ export function useWindowManager(): WindowManager {
   const pathSlug = pathname === '/' ? null : pathname.slice(1) // raw, may be cosmetic
 
   const [windows, setWindows] = useState<ManagedWindow[]>(() =>
-    pathSlug ? [{ slug: pathSlug, zIndex: BASE_Z, minimized: false }] : [],
+    pathSlug ? [{ slug: pathSlug, zIndex: BASE_Z, minimized: false, cascadeIndex: 0, pendingMinimize: false }] : [],
   )
   // Tracks ACTUAL Next.js navigations; ignores cosmetic replaceState changes
   const [realPrimarySlug, setRealPrimarySlug] = useState<string | null>(pathSlug)
 
   const windowsRef = useRef(windows)
   windowsRef.current = windows
+
+  // Monotonically increments to assign a unique cascade offset to every new slug
+  const openCountRef = useRef(0)
 
   const realPrimarySlugRef = useRef(realPrimarySlug)
   realPrimarySlugRef.current = realPrimarySlug
@@ -100,7 +106,7 @@ export function useWindowManager(): WindowManager {
         (w) => w.slug !== oldPrimary && w.slug !== pathSlug,
       )
       return [
-        ...(pathSlug ? [{ slug: pathSlug, zIndex: BASE_Z, minimized: false }] : []),
+        ...(pathSlug ? [{ slug: pathSlug, zIndex: BASE_Z, minimized: false, cascadeIndex: 0, pendingMinimize: false }] : []),
         ...remaining,
       ]
     })
@@ -125,7 +131,8 @@ export function useWindowManager(): WindowManager {
         next = prev.map((w) => (w.slug === slug ? { ...w, zIndex: maxZ + 1, minimized: false } : w))
       } else {
         const maxZ = Math.max(...prev.map((w) => w.zIndex), BASE_Z - 1)
-        next = [...prev, { slug, zIndex: maxZ + 1, minimized: false }]
+        const cascadeIndex = openCountRef.current++
+        next = [...prev, { slug, zIndex: maxZ + 1, minimized: false, cascadeIndex, pendingMinimize: false }]
       }
       setWindows(next)
     },
@@ -151,8 +158,12 @@ export function useWindowManager(): WindowManager {
   }, [])
 
   const minimize = useCallback((slug: string) => {
-    setWindows((prev) => prev.map((w) => (w.slug === slug ? { ...w, minimized: true } : w)))
+    setWindows((prev) => prev.map((w) => (w.slug === slug ? { ...w, pendingMinimize: true } : w)))
   }, [])
 
-  return { windows, primarySlug: realPrimarySlug, open, close, focus, minimize }
+  const actualMinimize = useCallback((slug: string) => {
+    setWindows((prev) => prev.map((w) => (w.slug === slug ? { ...w, minimized: true, pendingMinimize: false } : w)))
+  }, [])
+
+  return { windows, primarySlug: realPrimarySlug, open, close, focus, minimize, actualMinimize }
 }

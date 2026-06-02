@@ -1,6 +1,7 @@
 'use client'
 
 import { Fragment } from 'react'
+import { cn } from '@/lib/utils'
 import { useWindowManagerContext } from '@/components/window/manager-context'
 import { useShortcutRegistry } from '@/components/shortcut/registry-context'
 
@@ -54,12 +55,15 @@ export function Taskbar() {
             return (
               <div key={win.slug} className="group relative">
                 <button
+                  data-window-id={win.slug}
                   onClick={() => (win.minimized ? focus(win.slug) : minimize(win.slug))}
-                  className="w-12 h-12 rounded-2xl flex items-center justify-center transition-opacity active:opacity-70"
+                  className={cn(
+                    'w-12 h-12 rounded-2xl flex items-center justify-center transition-opacity active:opacity-70',
+                    win.minimized && 'opacity-40',
+                  )}
                   style={{
                     background: `color-mix(in srgb, ${color} 10%, transparent)`,
                     color,
-                    opacity: win.minimized ? 0.4 : 1,
                   }}
                   aria-label={name}
                 >

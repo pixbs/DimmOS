@@ -1,7 +1,8 @@
 'use client'
 
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import Image from 'next/image'
+import { motion, useAnimationControls } from 'framer-motion'
 import { RichText } from '@payloadcms/richtext-lexical/react'
 import { getWindowContent, type WindowContentResult, type ResolvedBlock } from '@/actions/getWindowContent'
 import type { WindowBehaviorConfig } from '@/utilities/windowBehavior'
@@ -10,17 +11,20 @@ import { ResizeHandles } from './ResizeHandles'
 import { useWindowManagerContext } from './manager-context'
 import { FormComponent } from '@/components/form/FormComponent'
 import type { Article, Media } from '@/payload-types'
+import { useState } from 'react'
 
 interface AdditionalWindowProps {
   slug: string
   zIndex: number
-  minimized: boolean
+  cascadeIndex: number
+  pendingMinimize: boolean
   onClose: () => void
   onFocus: () => void
   onMinimize: () => void
 }
 
 const DEFAULT_BEHAVIOR: WindowBehaviorConfig = { collapsible: true, expandable: false, resizable: true }
+const CASCADE_STEP = 32
 
 function parsePx(el: HTMLElement, prop: string, fallback: number): number {
   const raw = el.style.getPropertyValue(prop)
@@ -155,7 +159,8 @@ function ArticleBlockContent({ article }: { article: Article }) {
 export function AdditionalWindow({
   slug,
   zIndex,
-  minimized,
+  cascadeIndex,
+  pendingMinimize,
   onClose,
   onFocus,
   onMinimize,
@@ -167,6 +172,14 @@ export function AdditionalWindow({
   const panelRef = useRef<HTMLDivElement>(null)
   const storageKey = `secondary:${slug}`
 
+  // Keep latest callbacks in refs so animation closures are always fresh
+  const onMinimizeRef = useRef(onMinimize)
+  onMinimizeRef.current = onMinimize
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+
+  const controls = useAnimationControls()
+
   const behavior: WindowBehaviorConfig = data ? data.behavior : DEFAULT_BEHAVIOR
 
   useEffect(() => {
@@ -176,21 +189,105 @@ export function AdditionalWindow({
     })
   }, [slug])
 
-  // Restore saved position and size (imperative — avoids React re-render resetting CSS vars)
-  useEffect(() => {
+  // ── 1. Restore saved position BEFORE first paint (useLayoutEffect) ──────────
+  useLayoutEffect(() => {
     const panel = panelRef.current
     if (!panel) return
     try {
       const saved = (JSON.parse(localStorage.getItem('window-positions') ?? '{}') as Record<string, SavedPosition>)[storageKey]
-      panel.style.setProperty('--win-x', `${saved?.x ?? 120}px`)
-      panel.style.setProperty('--win-y', `${saved?.y ?? 80}px`)
+      panel.style.setProperty('--win-x', `${saved?.x ?? (80 + cascadeIndex * CASCADE_STEP)}px`)
+      panel.style.setProperty('--win-y', `${saved?.y ?? (60 + cascadeIndex * CASCADE_STEP)}px`)
       if (saved?.w !== undefined) panel.style.setProperty('--win-w', `${saved.w}px`)
       if (saved?.h !== undefined) panel.style.setProperty('--win-h', `${saved.h}px`)
     } catch {
-      panel.style.setProperty('--win-x', '120px')
-      panel.style.setProperty('--win-y', '80px')
+      panel.style.setProperty('--win-x', `${80 + cascadeIndex * CASCADE_STEP}px`)
+      panel.style.setProperty('--win-y', `${60 + cascadeIndex * CASCADE_STEP}px`)
     }
-  }, [slug, storageKey])
+  }, [storageKey, cascadeIndex])
+
+  // ── 2. Mount animation: grow from taskbar icon to window position ───────────
+  useLayoutEffect(() => {
+    const el = panelRef.current
+    if (!el) return
+
+    const btn = document.querySelector<HTMLElement>(`[data-window-id="${slug}"]`)
+
+    if (btn) {
+      const elRect = el.getBoundingClientRect()
+      const btnRect = btn.getBoundingClientRect()
+      const startX = btnRect.left + btnRect.width / 2 - (elRect.left + elRect.width / 2)
+      const startY = btnRect.top + btnRect.height / 2 - (elRect.top + elRect.height / 2)
+
+      // Set initial position at taskbar icon (before first paint)
+      controls.set({ x: startX, y: startY, scale: 0.08, opacity: 0 })
+      controls.start({ x: 0, y: 0, scale: 1, opacity: 1, transition: { duration: 0.4, ease: [0.32, 0.72, 0, 1] } })
+    } else {
+      // No taskbar icon yet (first open): simple grow-in
+      controls.set({ scale: 0.82, opacity: 0 })
+      controls.start({ scale: 1, opacity: 1, transition: { type: 'spring', stiffness: 340, damping: 28, mass: 0.9 } })
+    }
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── 3. Collapse animation — triggered by pendingMinimize ────────────────────
+  useEffect(() => {
+    if (!pendingMinimize) return
+
+    const el = panelRef.current
+    const btn = document.querySelector<HTMLElement>(`[data-window-id="${slug}"]`)
+
+    if (!el || !btn) {
+      onMinimizeRef.current()
+      return
+    }
+
+    const elRect = el.getBoundingClientRect()
+    const btnRect = btn.getBoundingClientRect()
+    const targetX = btnRect.left + btnRect.width / 2 - (elRect.left + elRect.width / 2)
+    const targetY = btnRect.top + btnRect.height / 2 - (elRect.top + elRect.height / 2)
+
+    controls.start({
+      x: targetX,
+      y: targetY,
+      scale: 0.08,
+      opacity: 0,
+      transition: { duration: 0.32, ease: [0.32, 0.72, 0, 1] },
+    }).then(() => {
+      onMinimizeRef.current()
+    })
+  }, [pendingMinimize, slug]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  async function handleClose() {
+    await controls.start({ scale: 0.82, opacity: 0, transition: { duration: 0.2, ease: 'easeIn' } })
+    onCloseRef.current()
+  }
+
+  // Window title-bar minimize button — sets pendingMinimize via minimize(), which triggers the effect above
+  // We pass this through so both paths (taskbar + button) converge on the same pendingMinimize effect
+  function handleMinimizeButton() {
+    // Directly run the animation and call onMinimize (skips the pendingMinimize round-trip)
+    const el = panelRef.current
+    const btn = document.querySelector<HTMLElement>(`[data-window-id="${slug}"]`)
+
+    if (!el || !btn) {
+      onMinimizeRef.current()
+      return
+    }
+
+    const elRect = el.getBoundingClientRect()
+    const btnRect = btn.getBoundingClientRect()
+    const targetX = btnRect.left + btnRect.width / 2 - (elRect.left + elRect.width / 2)
+    const targetY = btnRect.top + btnRect.height / 2 - (elRect.top + elRect.height / 2)
+
+    controls.start({
+      x: targetX,
+      y: targetY,
+      scale: 0.08,
+      opacity: 0,
+      transition: { duration: 0.32, ease: [0.32, 0.72, 0, 1] },
+    }).then(() => {
+      onMinimizeRef.current()
+    })
+  }
 
   function expand() {
     const panel = panelRef.current
@@ -198,8 +295,8 @@ export function AdditionalWindow({
     const headerH = document.querySelector('header')?.offsetHeight ?? 40
     if (!isExpanded) {
       preExpandRef.current = {
-        x: parsePx(panel, '--win-x', 120),
-        y: parsePx(panel, '--win-y', 80),
+        x: parsePx(panel, '--win-x', 80),
+        y: parsePx(panel, '--win-y', 60),
         w: panel.offsetWidth,
         h: panel.offsetHeight,
       }
@@ -210,8 +307,8 @@ export function AdditionalWindow({
     } else {
       const prev = preExpandRef.current
       if (prev) {
-        panel.style.setProperty('--win-x', `${prev.x ?? 120}px`)
-        panel.style.setProperty('--win-y', `${prev.y ?? 80}px`)
+        panel.style.setProperty('--win-x', `${prev.x ?? 80}px`)
+        panel.style.setProperty('--win-y', `${prev.y ?? 60}px`)
         if (prev.w !== undefined) panel.style.setProperty('--win-w', `${prev.w}px`)
         else panel.style.removeProperty('--win-w')
         if (prev.h !== undefined) panel.style.setProperty('--win-h', `${prev.h}px`)
@@ -233,8 +330,8 @@ export function AdditionalWindow({
 
     const startX = e.clientX
     const startY = e.clientY
-    const startWinX = parsePx(panel, '--win-x', 120)
-    const startWinY = parsePx(panel, '--win-y', 80)
+    const startWinX = parsePx(panel, '--win-x', 80)
+    const startWinY = parsePx(panel, '--win-y', 60)
 
     panel.setPointerCapture(e.pointerId)
     panel.setAttribute('data-dragging', '')
@@ -251,8 +348,8 @@ export function AdditionalWindow({
       panel!.removeEventListener('pointerup', onUp)
       panel!.removeAttribute('data-dragging')
       mergePositionToStorage(storageKey, {
-        x: parsePx(panel!, '--win-x', 120),
-        y: parsePx(panel!, '--win-y', 80),
+        x: parsePx(panel!, '--win-x', 80),
+        y: parsePx(panel!, '--win-y', 60),
       })
     }
 
@@ -262,10 +359,8 @@ export function AdditionalWindow({
 
   const title = data?.type === 'window' ? data.title : data?.type === 'article' ? data.doc.title : slug
 
-  if (minimized) return null
-
   return (
-    <div
+    <motion.div
       ref={panelRef}
       role="dialog"
       aria-modal="true"
@@ -275,11 +370,12 @@ export function AdditionalWindow({
       style={{ '--win-z': String(zIndex) } as React.CSSProperties}
       onPointerDown={onFocus}
       className="w-full"
+      animate={controls}
     >
       <WindowTitleBar
         title={title}
-        onClose={onClose}
-        onMinimize={onMinimize}
+        onClose={handleClose}
+        onMinimize={handleMinimizeButton}
         onExpand={expand}
         onPointerDown={handlePointerDown}
         disableMinimize={!behavior.collapsible}
@@ -315,6 +411,6 @@ export function AdditionalWindow({
           onResizeEnd={(w, h) => mergePositionToStorage(storageKey, { w, h })}
         />
       )}
-    </div>
+    </motion.div>
   )
 }

@@ -1,6 +1,7 @@
 'use client'
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { cn } from '@/lib/utils'
 import { DrawerContext } from './context'
 
 interface DrawerShellProps {
@@ -64,9 +65,10 @@ export function DrawerShell({ children, autoOpen, trigger }: DrawerShellProps) {
 
       <div
         aria-hidden="true"
-        className={`fixed inset-0 z-40 bg-black/60 transition-opacity duration-300 ${
-          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none'
-        }`}
+        className={cn(
+          'fixed inset-0 z-40 bg-black/60 transition-opacity duration-300',
+          isOpen ? 'opacity-100 pointer-events-auto' : 'opacity-0 pointer-events-none',
+        )}
         onClick={close}
       />
 
@@ -75,9 +77,10 @@ export function DrawerShell({ children, autoOpen, trigger }: DrawerShellProps) {
         role="dialog"
         aria-modal="true"
         data-state={isOpen ? 'open' : 'closed'}
-        className={`fixed bottom-0 left-0 right-0 w-full z-50 rounded-t-2xl bg-bg will-change-transform border-t-2 border-fg/10 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)] ${
-          isOpen ? 'translate-y-0' : 'translate-y-full'
-        }`}
+        className={cn(
+          'fixed bottom-0 left-0 right-0 w-full z-50 rounded-t-2xl bg-bg will-change-transform border-t-2 border-fg/10 transition-transform duration-300 ease-[cubic-bezier(0.32,0.72,0,1)]',
+          isOpen ? 'translate-y-0' : 'translate-y-full',
+        )}
         style={panelStyle}
       >
         <div

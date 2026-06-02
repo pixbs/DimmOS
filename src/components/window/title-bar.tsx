@@ -1,6 +1,7 @@
 'use client'
 
 import type { PointerEventHandler } from 'react'
+import { cn } from '@/lib/utils'
 
 interface TitleBarProps {
   title: string
@@ -12,6 +13,39 @@ interface TitleBarProps {
   disableClose?: boolean
   expandable?: boolean
   expanded?: boolean
+}
+
+interface TrafficLightButtonProps {
+  label: string
+  symbol: string
+  activeColor: string
+  hoverColor: string
+  disabled?: boolean
+  onClick?: () => void
+}
+
+function TrafficLightButton({ label, symbol, activeColor, hoverColor, disabled, onClick }: TrafficLightButtonProps) {
+  return (
+    <button
+      onClick={disabled ? undefined : onClick}
+      aria-label={label}
+      disabled={disabled}
+      className="w-6 h-6 flex items-center justify-center group"
+    >
+      <div className={cn(
+        'w-3 h-3 rounded-full transition-all flex items-center justify-center',
+        disabled
+          ? 'bg-fg/10 cursor-not-allowed'
+          : `${activeColor} ${hoverColor} group-hover:scale-150`,
+      )}>
+        {!disabled && (
+          <span className="opacity-0 group-hover:opacity-100 text-xs text-black/60 font-bold leading-none">
+            {symbol}
+          </span>
+        )}
+      </div>
+    </button>
+  )
 }
 
 export function WindowTitleBar({
@@ -31,61 +65,33 @@ export function WindowTitleBar({
       style={{ height: '2.25rem' }}
       onPointerDown={onPointerDown}
     >
-      {/* Traffic lights */}
       <div className="flex z-10" onPointerDown={(e) => e.stopPropagation()}>
-        <button
-          onClick={disableClose ? undefined : onClose}
-          aria-label="Close"
+        <TrafficLightButton
+          label="Close"
+          symbol="×"
+          activeColor="bg-win-close"
+          hoverColor="hover:bg-win-close-hover"
           disabled={disableClose}
-          className="w-6 h-6 flex items-center justify-center group"
-        >
-          <div className={`w-3 h-3 rounded-full transition-all flex items-center justify-center ${
-            disableClose
-              ? 'bg-fg/10 cursor-not-allowed'
-              : 'bg-[#FF5F57] hover:bg-[#FF3B30] group-hover:scale-150'
-          }`}>
-            {!disableClose && (
-              <span className="opacity-0 group-hover:opacity-100 text-xs text-black/60 font-bold leading-none">×</span>
-            )}
-          </div>
-        </button>
-        <button
-          onClick={disableMinimize ? undefined : onMinimize}
-          aria-label="Minimize"
+          onClick={onClose}
+        />
+        <TrafficLightButton
+          label="Minimize"
+          symbol="–"
+          activeColor="bg-win-minimize"
+          hoverColor="hover:bg-win-minimize-hover"
           disabled={disableMinimize}
-          className="w-6 h-6 flex items-center justify-center group"
-        >
-          <div className={`w-3 h-3 rounded-full transition-all flex items-center justify-center ${
-            disableMinimize
-              ? 'bg-fg/10 cursor-not-allowed'
-              : 'bg-[#FEBC2E] hover:bg-[#FF9500] group-hover:scale-150'
-          }`}>
-            {!disableMinimize && (
-              <span className="opacity-0 group-hover:opacity-100 text-xs leading-none text-black/60 font-bold">–</span>
-            )}
-          </div>
-        </button>
-        <button
-          onClick={expandable ? onExpand : undefined}
-          aria-label={expanded ? 'Restore window' : 'Expand to full screen'}
+          onClick={onMinimize}
+        />
+        <TrafficLightButton
+          label={expanded ? 'Restore window' : 'Expand to full screen'}
+          symbol={expanded ? '↙' : '↗'}
+          activeColor="bg-win-expand"
+          hoverColor="hover:bg-win-expand-hover"
           disabled={!expandable}
-          className="w-6 h-6 flex items-center justify-center group"
-        >
-          <div className={`w-3 h-3 rounded-full transition-all flex items-center justify-center ${
-            !expandable
-              ? 'bg-fg/10 cursor-default'
-              : 'bg-[#28C840] hover:bg-[#20B232] group-hover:scale-150'
-          }`}>
-            {expandable && (
-              <span className="opacity-0 group-hover:opacity-100 text-xs text-black/60 font-bold leading-none">
-                {expanded ? '↙' : '↗'}
-              </span>
-            )}
-          </div>
-        </button>
+          onClick={expandable ? onExpand : undefined}
+        />
       </div>
 
-      {/* Centred title */}
       <span className="absolute left-0 right-0 text-center text-xs tracking-wide opacity-40 pointer-events-none truncate px-16">
         {title}
       </span>
