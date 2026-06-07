@@ -1,11 +1,13 @@
 'use client'
 
-import { useEffect, useRef, useState, type ReactNode } from 'react'
+import { useEffect, useRef, useState, useCallback, type ReactNode } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { DrawerContext } from './context'
 import { WindowTitleBar } from '@/components/window/title-bar'
 import { useWindowTitle } from '@/components/window/title-context'
 import { useWindowManagerContext } from '@/components/window/manager-context'
+import { WindowToolbarProvider } from '@/components/window/window-toolbar-context'
+import { WindowToolbar } from '@/components/window/WindowToolbar'
 import { ResizeHandles } from '@/components/window/ResizeHandles'
 import { BASE_Z } from '@/hooks/useWindowManager'
 
@@ -43,7 +45,10 @@ function mergePositionToStorage(slug: string, updates: Partial<SavedPosition>) {
 }
 
 export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerShellProps) {
-  const { title: contextTitle, disableMinimize, resizable, expandable } = useWindowTitle()
+  const {
+    title: contextTitle, disableMinimize, resizable, expandable,
+    displaySearch, displayViewToggle, defaultView, displayHistory,
+  } = useWindowTitle()
   const title = contextTitle || titleProp
 
   const [isOpen, setIsOpen] = useState(false)
@@ -67,6 +72,15 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
   function open() {
     setIsOpen(true)
   }
+
+  // Toolbar navigation: open a new page for the navigated slug, use browser back for history
+  const handleToolbarNavigate = useCallback((newSlug: string) => {
+    router.push('/' + newSlug)
+  }, [router])
+
+  const handleToolbarBack = useCallback(() => {
+    router.back()
+  }, [router])
 
   function expand() {
     const panel = panelRef.current
@@ -251,7 +265,17 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
           <div className="w-20 h-1 rounded-full bg-fg/20" />
         </div>
 
-        <div className="flex-1 overflow-auto min-h-0">{children}</div>
+        <WindowToolbarProvider
+          behavior={{ displaySearch, displayViewToggle, defaultView, displayHistory }}
+          canGoBack={true}
+          canGoForward={false}
+          onBack={handleToolbarBack}
+          onForward={() => {}}
+          onNavigate={handleToolbarNavigate}
+        >
+          <WindowToolbar />
+          <div className="flex-1 overflow-auto min-h-0">{children}</div>
+        </WindowToolbarProvider>
 
         {resizable && !isExpanded && (
           <ResizeHandles

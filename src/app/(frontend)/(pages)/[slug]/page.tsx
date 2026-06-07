@@ -5,7 +5,7 @@ import type { Metadata } from 'next'
 import { FormComponent } from '@/components/form/FormComponent'
 import { WindowContent } from '@/components/window-content'
 import { ArticleContent } from '@/components/article-content'
-import { SetWindowTitle, SetWindowOptions } from '@/components/window/title-context'
+import { SetWindowTitle, SetWindowOptions, SetWindowToolbar } from '@/components/window/title-context'
 import { generateMeta } from '@/utilities/generateMeta'
 import { extractBehavior } from '@/utilities/windowBehavior'
 
@@ -74,6 +74,12 @@ export default async function SlugPage({ params }: PageProps) {
           expandable={behavior.expandable}
           resizable={behavior.resizable}
         />
+        <SetWindowToolbar
+          displaySearch={behavior.displaySearch}
+          displayViewToggle={behavior.displayViewToggle}
+          defaultView={behavior.defaultView}
+          displayHistory={behavior.displayHistory}
+        />
         <WindowContent blocks={doc.content ?? []} />
       </>
     )
@@ -90,6 +96,12 @@ export default async function SlugPage({ params }: PageProps) {
           expandable={behavior.expandable}
           resizable={behavior.resizable}
         />
+        <SetWindowToolbar
+          displaySearch={behavior.displaySearch}
+          displayViewToggle={behavior.displayViewToggle}
+          defaultView={behavior.defaultView}
+          displayHistory={behavior.displayHistory}
+        />
         <ArticleContent article={doc} />
       </>
     )
@@ -104,6 +116,12 @@ export default async function SlugPage({ params }: PageProps) {
           disableMinimize={!behavior.collapsible}
           expandable={behavior.expandable}
           resizable={behavior.resizable}
+        />
+        <SetWindowToolbar
+          displaySearch={behavior.displaySearch}
+          displayViewToggle={behavior.displayViewToggle}
+          defaultView={behavior.defaultView}
+          displayHistory={behavior.displayHistory}
         />
         <FormComponent form={form} />
       </>

@@ -2,6 +2,7 @@ import { describe, it, beforeAll, afterAll, expect, vi, beforeEach } from 'vites
 
 vi.mock('next/cache', () => ({
   revalidatePath: vi.fn(),
+  revalidateTag: vi.fn(),
 }))
 
 import { getPayload, Payload } from 'payload'

@@ -13,6 +13,7 @@ import { SentryReplayProvider } from '@/components/analytics/SentryReplayProvide
 import { ShortcutGrid } from '@/components/shortcut/grid'
 import { ShortcutRegistryProvider } from '@/components/shortcut/registry-context'
 import { WindowManagerProvider } from '@/components/window/WindowManagerProvider'
+import { fetchAllShortcutContents } from '@/lib/windowContent'
 import { DesktopWallpaper } from '@/components/desktop-wallpaper'
 import './styles.css'
 import 'remixicon/fonts/remixicon.css'
@@ -74,12 +75,15 @@ async function fetchData() {
       category: doc._col,
     }))
 
-  return { shortcuts, registryEntries }
+  const shortcutSlugs = shortcuts.map((s) => s.slug)
+  const preloadedContents = await fetchAllShortcutContents(shortcutSlugs)
+
+  return { shortcuts, registryEntries, shortcutSlugs, preloadedContents }
 }
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
-  const { shortcuts, registryEntries } = await fetchData()
+  const { shortcuts, registryEntries, shortcutSlugs, preloadedContents } = await fetchData()
 
   return (
     <html lang="en" className={onest.className}>
@@ -93,7 +97,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             <PostHogPageView />
             <Suspense>
               <ShortcutRegistryProvider shortcuts={registryEntries}>
-                <WindowManagerProvider>
+                <WindowManagerProvider preloadedContents={preloadedContents} shortcutSlugs={shortcutSlugs}>
                   <Header />
                   <main>
                     <DesktopWallpaper />

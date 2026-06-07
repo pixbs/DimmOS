@@ -52,15 +52,31 @@ src/
 │   └── contentBlocks.ts         # Shared blocks field: richText, image, gallery, embed, cta
 ├── globals/
 │   └── CookieSettings.ts        # Banner copy + consentVersion
+├── actions/
+│   └── getWindowContent.ts      # 'use server' re-export of fetchWindowContent
+├── lib/
+│   └── windowContent.ts         # server-only: unstable_cache fetch; WindowContentResult type; resolveBlocks
 ├── components/
 │   ├── drawer/                  # Drawer system (see mechanics below)
 │   ├── cookie-banner/           # Consent banner + context
 │   ├── header/                  # Logo + Clock
+│   ├── preloader/               # Boot preloader progress bar + context
 │   ├── shortcut/                # Desktop icon tiles
 │   ├── form/                    # Dynamic form renderer
+│   ├── taskbar/                 # Desktop taskbar (window list)
+│   ├── window/
+│   │   ├── AdditionalWindow.tsx         # Floating window: owns history stack, content loading, animations
+│   │   ├── WindowManagerProvider.tsx    # Mounts pre-rendered + on-demand windows; renders Taskbar
+│   │   ├── WindowToolbar.tsx            # Toolbar UI (back/forward, search, grid/table toggle)
+│   │   ├── window-toolbar-context.tsx   # WindowToolbarProvider + useWindowToolbar()
+│   │   ├── title-context.tsx            # Per-route title + chrome flags + toolbar flags (SetWindowOptions / SetWindowToolbar)
+│   │   ├── title-bar.tsx                # Window chrome: traffic-light buttons + drag handle
+│   │   ├── manager-context.tsx          # useWindowManagerContext() (open/close/focus/minimize)
+│   │   └── ResizeHandles.tsx            # E / S / SE resize handles with pointer capture
 │   ├── window-content/          # Block renderer for Windows collection content
 │   └── article-content/         # Block renderer for Articles collection content
 ├── hooks/
+│   ├── useWindowManager.ts      # Window open/close/focus/minimize state
 │   ├── cookies/captureRequestMetadata.ts
 │   └── forms/verifyRecaptcha.ts
 └── migrations/                  # Auto-generated Payload migrations
@@ -147,7 +163,9 @@ Use `data-testid="page-drawer"` (set on `PageDrawerShell`) rather than `[role="d
 | `cookie-consents` | Audit log | Create: endpoint only; read/update/delete: admin |
 | `cookie-settings` (global) | Config | Read: public; update: admin |
 
-**Windows and Articles** both support five content block types via `src/fields/contentBlocks.ts`: `richText`, `image`, `gallery`, `embed`, `cta`. Both collections have `afterChange`/`afterDelete` hooks that call `revalidatePath` for instant cache busting on save.
+**Windows and Articles** both support six content block types via `src/fields/contentBlocks.ts`: `richText`, `image`, `gallery`, `embed`, `cta`, and `articleList`. The `articleList` block queries articles by `type` at render time (server-side via `resolveBlocks` in `src/lib/windowContent.ts`) and passes a resolved `articles` array to the client; it never fetches on the client. Both collections have `afterChange`/`afterDelete` hooks that call `revalidateTag('window-content')` + `revalidatePath` for instant cache busting on save.
+
+**Window toolbar fields** (`windowDisplaySearch`, `windowDisplayViewToggle`, `windowDefaultView`, `windowDisplayHistory`) are on all three collections via `windowBehaviorFields`. See [Phase 2.5](#25-window-toolbar--search-view-toggle-in-window-history) for architecture details.
 
 **Querying conventions:**
 - Always pass `select` to limit returned fields in listing queries. Use `as const` so TypeScript infers literal `true` values required by Payload's `select` type.
@@ -428,13 +446,24 @@ Currently all routes open as bottom-sheet drawers on all screen sizes. On deskto
 
 ### 2.0 Window behavior configuration fields
 
-Every content collection (`windows`, `articles`, `forms`) now has a **Window** tab with three checkboxes controlling how content renders in the desktop floating-window system.
+Every content collection (`windows`, `articles`, `forms`) now has a **Window** tab with checkboxes controlling how content renders in the desktop floating-window system.
+
+**Chrome behavior fields**
 
 | Field | Type | Default | Effect |
 |-------|------|---------|--------|
 | `windowCollapsible` | checkbox | `true` | Shows minimize button in title bar |
 | `windowExpandable` | checkbox | `false` | Shows full-screen expand button (green traffic light) |
 | `windowResizable` | checkbox | `true` | Renders E / S / SE resize handles on desktop |
+
+**Toolbar behavior fields**
+
+| Field | Type | Default | Effect |
+|-------|------|---------|--------|
+| `windowDisplaySearch` | checkbox | `false` | Renders a search input in the window toolbar (desktop); sections that receive the context (`articleList`) filter content client-side |
+| `windowDisplayViewToggle` | checkbox | `false` | Renders grid / table toggle buttons (`ri-layout-grid-line` / `ri-table-view`) |
+| `windowDefaultView` | select (`grid`/`table`) | `grid` | Initial view mode when `windowDisplayViewToggle` is true |
+| `windowDisplayHistory` | checkbox | `false` | Renders back / forward buttons; article links navigate in-window instead of opening new windows |
 
 **Adding to a new collection:**
 
@@ -453,17 +482,24 @@ import { windowBehaviorFields } from '@/fields/windowBehavior'
   expandable={doc.windowExpandable === true}
   resizable={doc.windowResizable !== false}
 />
+<SetWindowToolbar
+  displaySearch={behavior.displaySearch}
+  displayViewToggle={behavior.displayViewToggle}
+  defaultView={behavior.defaultView}
+  displayHistory={behavior.displayHistory}
+/>
 ```
 
 Secondary windows opened via `useWindowManager.open(slug)` get behavior automatically from `getWindowContent` which returns `behavior: WindowBehaviorConfig` alongside the content.
 
 **Resize implementation** uses pointer capture on each handle (`role="separator"`, keyboard arrow keys, `data-resizing` attribute suppresses CSS transitions during drag). Size is persisted to `localStorage['window-positions'][slug]` as `{ x, y, w, h }`.
 
-- [x] `src/fields/windowBehavior.ts` — shared field definitions
+- [x] `src/fields/windowBehavior.ts` — shared field definitions (chrome + toolbar)
 - [x] `src/components/window/ResizeHandles.tsx` — E / S / SE handles with ARIA + keyboard
-- [x] `src/components/window/title-context.tsx` — added `resizable` / `expandable` to context
+- [x] `src/components/window/title-context.tsx` — holds chrome + toolbar flags; exposes `SetWindowOptions` and `SetWindowToolbar` setter components
 - [x] `src/components/window/title-bar.tsx` — green button activates when `expandable: true`
 - [x] `tests/int/window-behavior.int.spec.ts` — round-trip for all three fields on Windows + Articles
+- [x] `tests/int/window-toolbar-fields.int.spec.ts` — round-trip for all four toolbar fields + `extractBehavior` defaults
 
 ### 2.1 Window state management
 
@@ -501,10 +537,108 @@ Secondary windows opened via `useWindowManager.open(slug)` get behavior automati
 
 - [ ] Add `generateMetadata` stub to `src/app/(frontend)/(pages)/[slug]/page.tsx` — flesh out fully in Phase 3.3 with SEO fields
 
+### 2.5 Window toolbar — search, view toggle, in-window history
+
+Per-window toolbar rendered between the title bar and content. Toolbar state is isolated per window via React Context — search params were explicitly rejected because they collide across multiple open windows.
+
+**Architecture:**
+
+```
+Payload fields (windowDisplaySearch / windowDisplayViewToggle / windowDefaultView / windowDisplayHistory)
+        ↓ extractBehavior() → WindowBehaviorConfig
+AdditionalWindow (owns history stack: { stack: string[]; index: number })
+        ↓ canGoBack / canGoForward / navigate / back / forward (memoised with useCallback)
+WindowToolbarProvider (owns searchQuery, viewMode; forwards nav callbacks to context)
+        ↓
+WindowToolbar (renders back/forward, search input, grid/table buttons based on behavior flags)
+        ↓
+ArticleListBlock (consumes context: filters by searchQuery, renders in viewMode, calls navigate() instead of open() when displayHistory is true)
+```
+
+**History lifecycle rules:**
+- History stack lives in `AdditionalWindow`, not in the context provider — this is the single source of truth.
+- `displaySlug` is derived from `historyStack[historyIndex]`; there is no separate `displaySlug` state.
+- On back navigation to the initial slug of a pre-rendered window, `preloadedData` is explicitly restored (the content effect must NOT early-return without setting `data`).
+- Pre-rendered shortcut windows are always-mounted. When `isVisible` transitions to `false` (window closed), the history resets to `{ stack: [slug], index: 0 }` so the window is pristine on next open.
+- For the primary route (`PageDrawerShell`), `canGoBack=true` always and `onBack = router.back()` — browser history is used instead of an in-window stack.
+
+**View mode:**
+- `viewMode` in the context uses `userViewMode ?? behavior.defaultView`. `null` means "follow the CMS default"; an explicit value means the user has toggled it.
+- This ensures a non-preloaded window with `windowDefaultView: 'table'` shows the correct mode as soon as data loads, without resetting a user's explicit choice.
+
+**Mobile:** back button always visible when `displayHistory` is true. Search input, forward button, and view toggle buttons are `hidden lg:flex` (desktop-only).
+
+**Data freshness note:** `preloadedData` is frozen at SSR time. Enabling a toolbar flag in Payload admin invalidates `unstable_cache` via `revalidateTag('window-content')`, but the already-rendered `preloadedContents` prop in the client tree reflects the change only after a full page reload.
+
+- [x] `src/lib/windowContent.ts` — `fetchWindowContent` (server-only, `unstable_cache`); `WindowContentResult` type includes `behavior: WindowBehaviorConfig`
+- [x] `src/actions/getWindowContent.ts` — thin `'use server'` re-export of `fetchWindowContent`
+- [x] `src/components/window/window-toolbar-context.tsx` — `WindowToolbarProvider` + `useWindowToolbar()`
+- [x] `src/components/window/WindowToolbar.tsx` — toolbar UI (`data-window-toolbar`, `data-view-mode` attributes for E2E targeting)
+- [x] `src/components/window/AdditionalWindow.tsx` — owns history state; resets on close; `ArticleListBlock` sub-component consumes toolbar context
+- [x] `src/components/drawer/page-shell.tsx` — wraps primary route content with `WindowToolbarProvider` using browser navigation callbacks
+- [x] `tests/int/window-toolbar-fields.int.spec.ts` — 13 integration tests for field defaults, mapping, and all three collections
+- [x] `tests/e2e/window-toolbar.e2e.spec.ts` — E2E tests: toolbar visibility, view toggle, articleList search, in-window history, mobile
+
+### 2.6 Window pre-rendering and boot preloader
+
+Shortcut windows (those with `showShortcut: true`) are pre-fetched on the server, always mounted in the DOM, and CSS-hidden until opened. This eliminates the "Loading…" flash every time a window is opened.
+
+**Server-side caching (`src/lib/windowContent.ts`)**
+
+`fetchWindowContent(slug)` is wrapped in Next.js `unstable_cache` keyed to the `['window-content']` tag with `revalidate: false`. It is server-only (imported via `'server-only'`). `src/actions/getWindowContent.ts` is a thin `'use server'` re-export for use from Server Components.
+
+Cache invalidation: `Windows.ts` and `Articles.ts` `afterChange`/`afterDelete` hooks call `revalidateTag('window-content')` alongside the existing `revalidatePath` calls. A CMS save immediately invalidates the cache for all window content.
+
+`src/app/(frontend)/layout.tsx` calls `fetchAllShortcutContents(shortcutSlugs)` — a `Promise.all` over each slug — and passes the result as `preloadedContents` to `WindowManagerProvider`.
+
+**Always-mounted DOM (`WindowManagerProvider.tsx` + `AdditionalWindow.tsx`)**
+
+`WindowManagerInner` renders one `AdditionalWindow` per shortcut slug inside a `<div style={{ display: 'none' }}>` wrapper when not visible. The window is never unmounted — `isVisible` (derived from `manager.windows`) controls the Framer Motion animation instead of mount/unmount. Closing a preloaded window calls `manager.close(slug)` AND adds the slug to a `closedSlugs` Set in the provider.
+
+On-demand windows (opened via `useWindowManager.open(slug)` for slugs not in `shortcutSlugs`) still use traditional mount/unmount. `AdditionalWindow` has a module-level `contentCache` Map for these — it persists across mounts within the same page session.
+
+**Boot preloader (`src/components/preloader/`)**
+
+`PreloaderProvider` tracks progress toward a `total` target using a `readyCount` counter. Each pre-rendered `AdditionalWindow` calls `onReady()` once on mount, incrementing the counter. `PagePreloader` shows a full-screen overlay with a `{percentage}%` counter; `AnimatePresence` fades it out when `isComplete` becomes true.
+
+`total` is `number | null`:
+- `null` — viewport not yet checked; preloader shows at 0% (SSR/hydration initial state)
+- `0` — mobile viewport confirmed; `isComplete = true` immediately (nothing to pre-render)
+- `N` — desktop viewport confirmed; waits for N `reportReady()` calls
+
+**Mobile / desktop split**
+
+`isDesktop` (`window.innerWidth >= 1024`) is determined in `WindowManagerProvider` (outer component) via `useEffect`, initialised as `null`. This runs before `PreloaderProvider` receives its `total`, so mobile correctly gets `total = 0` and never blocks on windows that will not be rendered. `WindowManagerInner` receives `isDesktop` as a prop.
+
+```
+null  → total = null  → isComplete = false  (SSR / first render)
+false → total = 0     → isComplete = true   (mobile: exit immediately)
+true  → total = N     → waits for N ready   (desktop: count up to 100%)
+```
+
+Pre-rendered windows and the Taskbar only render when `isDesktop === true`. On mobile, all content is served via the `PageDrawerShell` route system as before.
+
+**Key files:**
+- `src/lib/windowContent.ts` — server-only `unstable_cache` fetch + `WindowContentResult` type
+- `src/actions/getWindowContent.ts` — `'use server'` re-export
+- `src/app/(frontend)/layout.tsx` — calls `fetchAllShortcutContents`, passes `preloadedContents` + `shortcutSlugs`
+- `src/components/preloader/preloader-context.tsx` — `PreloaderProvider` + `usePreloader()`
+- `src/components/preloader/PagePreloader.tsx` — full-screen overlay with `AnimatePresence` exit
+- `src/components/window/WindowManagerProvider.tsx` — owns `isDesktop` state; computes `total`; renders pre-rendered + on-demand windows
+
+- [x] `src/lib/windowContent.ts` — server-only cached fetcher
+- [x] `src/components/preloader/` — `PreloaderProvider` + `PagePreloader`
+- [x] `src/components/window/WindowManagerProvider.tsx` — `isDesktop`-aware `total` computation; always-mounted shortcut windows
+- [x] `src/components/window/AdditionalWindow.tsx` — `preloadedData`, `isVisible`, `onReady` props; module-level `contentCache`
+- [x] `tests/e2e/preloader.e2e.spec.ts` — 6 tests: preloader visible on load, counts to 100%, exits on completion, skipped on mobile
+
 **Tests required for Phase 2:**
 - `tests/int/window-state.int.spec.ts`
+- `tests/int/window-toolbar-fields.int.spec.ts` ✓
 - `tests/e2e/windows.e2e.spec.ts` (extend with desktop viewport assertions)
 - `tests/e2e/taskbar.e2e.spec.ts`
+- `tests/e2e/window-toolbar.e2e.spec.ts` ✓
+- `tests/e2e/preloader.e2e.spec.ts` ✓
 
 **Quality gate:** Phase 1 tests still pass; no mobile regression; `bun run build` clean.
 

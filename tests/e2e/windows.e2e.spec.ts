@@ -188,6 +188,22 @@ test.describe('Windows — shared setup', () => {
       expect(winH).toBe('400px')
     })
 
+    test('pre-rendered shortcut window is in DOM before being opened', async ({ page }) => {
+      await page.goto(BASE_URL)
+      // Always-mounted: the motion.div with data-secondary-window is in the DOM even before the window is opened
+      await expect(page.locator(`[data-secondary-window="${SLUG}"]`)).toHaveCount(1, { timeout: 5000 })
+    })
+
+    test('opening a pre-rendered window shows content without Loading state', async ({ page }) => {
+      await page.goto(BASE_URL)
+      await page.locator('[data-testid="preloader"]').waitFor({ state: 'hidden', timeout: 10000 })
+      await page.locator(`a[href="/${SLUG}"]`).click()
+      const win = page.locator(`[data-secondary-window="${SLUG}"]`)
+      await expect(win).toBeVisible({ timeout: 2000 })
+      await expect(page.locator('[data-block-type="richText"]').first()).toBeVisible({ timeout: 2000 })
+      await expect(page.locator('text=Loading…')).toHaveCount(0)
+    })
+
     test('clicking a shortcut on desktop opens it as secondary window without navigating', async ({ page }) => {
       await page.goto(BASE_URL)
       await page.locator(`a[href="/${SLUG}"]`).click()

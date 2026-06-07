@@ -282,6 +282,22 @@ export interface Window {
    * Allow the window to be resized by dragging its edges (default: on).
    */
   windowResizable?: boolean | null;
+  /**
+   * Show a search bar in the window toolbar. Sections that support search (e.g. article lists) will filter their content.
+   */
+  windowDisplaySearch?: boolean | null;
+  /**
+   * Show grid / table view toggle buttons in the toolbar.
+   */
+  windowDisplayViewToggle?: boolean | null;
+  /**
+   * Initial layout when the window is opened.
+   */
+  windowDefaultView?: ('grid' | 'table') | null;
+  /**
+   * Allow back / forward navigation within the window. Links that would open a new window will instead navigate in-place and build a per-window history.
+   */
+  windowDisplayHistory?: boolean | null;
   meta?: {
     title?: string | null;
     description?: string | null;
@@ -403,6 +419,22 @@ export interface Article {
    * Allow the window to be resized by dragging its edges (default: on).
    */
   windowResizable?: boolean | null;
+  /**
+   * Show a search bar in the window toolbar. Sections that support search (e.g. article lists) will filter their content.
+   */
+  windowDisplaySearch?: boolean | null;
+  /**
+   * Show grid / table view toggle buttons in the toolbar.
+   */
+  windowDisplayViewToggle?: boolean | null;
+  /**
+   * Initial layout when the window is opened.
+   */
+  windowDefaultView?: ('grid' | 'table') | null;
+  /**
+   * Allow back / forward navigation within the window. Links that would open a new window will instead navigate in-place and build a per-window history.
+   */
+  windowDisplayHistory?: boolean | null;
   meta?: {
     title?: string | null;
     description?: string | null;
@@ -611,6 +643,22 @@ export interface Form {
    * Allow the window to be resized by dragging its edges (default: on).
    */
   windowResizable?: boolean | null;
+  /**
+   * Show a search bar in the window toolbar. Sections that support search (e.g. article lists) will filter their content.
+   */
+  windowDisplaySearch?: boolean | null;
+  /**
+   * Show grid / table view toggle buttons in the toolbar.
+   */
+  windowDisplayViewToggle?: boolean | null;
+  /**
+   * Initial layout when the window is opened.
+   */
+  windowDefaultView?: ('grid' | 'table') | null;
+  /**
+   * Allow back / forward navigation within the window. Links that would open a new window will instead navigate in-place and build a per-window history.
+   */
+  windowDisplayHistory?: boolean | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -846,6 +894,10 @@ export interface WindowsSelect<T extends boolean = true> {
   windowCollapsible?: T;
   windowExpandable?: T;
   windowResizable?: T;
+  windowDisplaySearch?: T;
+  windowDisplayViewToggle?: T;
+  windowDefaultView?: T;
+  windowDisplayHistory?: T;
   meta?:
     | T
     | {
@@ -935,6 +987,10 @@ export interface ArticlesSelect<T extends boolean = true> {
   windowCollapsible?: T;
   windowExpandable?: T;
   windowResizable?: T;
+  windowDisplaySearch?: T;
+  windowDisplayViewToggle?: T;
+  windowDefaultView?: T;
+  windowDisplayHistory?: T;
   meta?:
     | T
     | {
@@ -1054,6 +1110,10 @@ export interface FormsSelect<T extends boolean = true> {
   windowCollapsible?: T;
   windowExpandable?: T;
   windowResizable?: T;
+  windowDisplaySearch?: T;
+  windowDisplayViewToggle?: T;
+  windowDefaultView?: T;
+  windowDisplayHistory?: T;
   updatedAt?: T;
   createdAt?: T;
 }

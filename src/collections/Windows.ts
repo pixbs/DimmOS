@@ -1,7 +1,7 @@
 // Windows = general content pages (about, contact, welcome).
 // Portfolio work and services live in the Articles collection.
 import type { CollectionConfig } from 'payload'
-import { revalidatePath } from 'next/cache'
+import { revalidatePath, revalidateTag } from 'next/cache'
 import { contentBlocksField } from '@/fields/contentBlocks'
 import { windowBehaviorFields } from '@/fields/windowBehavior'
 
@@ -14,6 +14,7 @@ export const Windows: CollectionConfig = {
         if (req.context.skipHooks) return
         req.context.skipHooks = true
         try {
+          revalidateTag('window-content')
           revalidatePath(`/${doc.slug}`)
           revalidatePath('/')
         } catch {}
@@ -23,6 +24,7 @@ export const Windows: CollectionConfig = {
     afterDelete: [
       async ({ doc }) => {
         try {
+          revalidateTag('window-content')
           revalidatePath(`/${doc.slug}`)
           revalidatePath('/')
         } catch {}

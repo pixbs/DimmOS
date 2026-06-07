@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useRef } from 'react'
+import { useEffect, useLayoutEffect, useRef, useCallback } from 'react'
 import Image from 'next/image'
 import { motion, useAnimationControls } from 'framer-motion'
 import { RichText } from '@payloadcms/richtext-lexical/react'
@@ -9,9 +9,14 @@ import type { WindowBehaviorConfig } from '@/utilities/windowBehavior'
 import { WindowTitleBar } from './title-bar'
 import { ResizeHandles } from './ResizeHandles'
 import { useWindowManagerContext } from './manager-context'
+import { WindowToolbarProvider, useWindowToolbar } from './window-toolbar-context'
+import { WindowToolbar } from './WindowToolbar'
 import { FormComponent } from '@/components/form/FormComponent'
 import type { Article, Media } from '@/payload-types'
 import { useState } from 'react'
+
+// Module-level cache for on-demand (non-shortcut) windows so re-opens skip re-fetch
+const contentCache = new Map<string, WindowContentResult>()
 
 interface AdditionalWindowProps {
   slug: string
@@ -21,9 +26,16 @@ interface AdditionalWindowProps {
   onClose: () => void
   onFocus: () => void
   onMinimize: () => void
+  // Pre-rendering props — all optional; undefined = traditional mount/unmount behavior
+  preloadedData?: WindowContentResult | null
+  isVisible?: boolean
+  onReady?: () => void
 }
 
-const DEFAULT_BEHAVIOR: WindowBehaviorConfig = { collapsible: true, expandable: false, resizable: true }
+const DEFAULT_BEHAVIOR: WindowBehaviorConfig = {
+  collapsible: true, expandable: false, resizable: true,
+  displaySearch: false, displayViewToggle: false, defaultView: 'grid', displayHistory: false,
+}
 const CASCADE_STEP = 32
 
 function parsePx(el: HTMLElement, prop: string, fallback: number): number {
@@ -46,9 +58,61 @@ function mergePositionToStorage(key: string, updates: Partial<SavedPosition>) {
   } catch { /* ignore */ }
 }
 
-function BlockRenderer({ block }: { block: ResolvedBlock }) {
+function ArticleListBlock({ block }: { block: ResolvedBlock & { blockType: 'articleList' } }) {
   const { open } = useWindowManagerContext()
+  const { behavior, searchQuery, viewMode, navigate } = useWindowToolbar()
 
+  const filtered = searchQuery
+    ? block.articles.filter((a) => a.title.toLowerCase().includes(searchQuery.toLowerCase()))
+    : block.articles
+
+  const handleClick = (slug: string) => {
+    if (behavior.displayHistory) {
+      navigate(slug)
+    } else {
+      open(slug)
+    }
+  }
+
+  return (
+    <div data-block-type="articleList" data-view-mode={viewMode} className="flex flex-col gap-2">
+      {block.heading && <h2 className="text-lg font-semibold px-2">{block.heading}</h2>}
+      {viewMode === 'grid' ? (
+        <div className="flex flex-col gap-2">
+          {filtered.map((a) => (
+            <button
+              key={a.id}
+              data-article-item=""
+              onClick={() => handleClick(a.slug)}
+              className="flex items-center gap-3 rounded-xl bg-white/5 p-4 hover:bg-white/10 transition-colors w-full text-left"
+            >
+              <i className={`${a.shortcutIcon ?? 'ri-folder-fill'} text-2xl`} />
+              <span className="font-medium text-fg">{a.title}</span>
+            </button>
+          ))}
+        </div>
+      ) : (
+        <ul className="flex flex-col">
+          {filtered.map((a) => (
+            <li key={a.id}>
+              <button
+                data-article-item=""
+                onClick={() => handleClick(a.slug)}
+                className="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-white/8 transition-colors text-left"
+              >
+                <i className={`${a.shortcutIcon ?? 'ri-folder-fill'} text-base text-fg/60`} />
+                <span className="flex-1 text-sm text-fg">{a.title}</span>
+                <i className="ri-arrow-right-s-line text-fg/30" />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </div>
+  )
+}
+
+function BlockRenderer({ block }: { block: ResolvedBlock }) {
   switch (block.blockType) {
     case 'richText':
       return (
@@ -119,21 +183,7 @@ function BlockRenderer({ block }: { block: ResolvedBlock }) {
         </div>
       )
     case 'articleList':
-      return (
-        <div data-block-type="articleList" className="flex flex-col gap-3">
-          {block.heading && <h2 className="text-lg font-semibold">{block.heading}</h2>}
-          {block.articles.map((a) => (
-            <button
-              key={a.id}
-              onClick={() => open(a.slug)}
-              className="flex items-center gap-3 rounded-xl bg-white/5 p-4 hover:bg-white/10 transition-colors w-full text-left"
-            >
-              <i className={`${a.shortcutIcon ?? 'ri-folder-fill'} text-2xl`} />
-              <span className="font-medium text-fg">{a.title}</span>
-            </button>
-          ))}
-        </div>
-      )
+      return <ArticleListBlock block={block} />
     default:
       return null
   }
@@ -164,32 +214,100 @@ export function AdditionalWindow({
   onClose,
   onFocus,
   onMinimize,
+  preloadedData,
+  isVisible,
+  onReady,
 }: AdditionalWindowProps) {
-  const [data, setData] = useState<WindowContentResult>(null)
-  const [loading, setLoading] = useState(true)
+  const isPreloaded = preloadedData !== undefined
+
+  // ── Navigation history — single source of truth ───────────────────────────
+  // displaySlug is derived from this; no separate state needed.
+  const [history, setHistory] = useState<{ stack: string[]; index: number }>({
+    stack: [slug],
+    index: 0,
+  })
+  const displaySlug = history.stack[history.index]
+  const canGoBack = history.index > 0
+  const canGoForward = history.index < history.stack.length - 1
+
+  // Functional updates — stable references, no stale-closure issues
+  const navigate = useCallback((newSlug: string) => {
+    setHistory((prev) => ({
+      stack: [...prev.stack.slice(0, prev.index + 1), newSlug],
+      index: prev.index + 1,
+    }))
+  }, [])
+
+  const back = useCallback(() => {
+    setHistory((prev) => prev.index > 0 ? { ...prev, index: prev.index - 1 } : prev)
+  }, [])
+
+  const forward = useCallback(() => {
+    setHistory((prev) =>
+      prev.index < prev.stack.length - 1 ? { ...prev, index: prev.index + 1 } : prev,
+    )
+  }, [])
+
+  // Reset navigation when a pre-rendered window is closed so it reopens fresh
+  useEffect(() => {
+    if (isVisible === false && isPreloaded) {
+      setHistory({ stack: [slug], index: 0 })
+    }
+  }, [isVisible, isPreloaded, slug])
+
+  // ── Content state ─────────────────────────────────────────────────────────
+  const [data, setData] = useState<WindowContentResult>(isPreloaded ? (preloadedData ?? null) : null)
+  const [loading, setLoading] = useState(!isPreloaded)
   const [isExpanded, setIsExpanded] = useState(false)
   const preExpandRef = useRef<SavedPosition | null>(null)
   const panelRef = useRef<HTMLDivElement>(null)
   const storageKey = `secondary:${slug}`
 
-  // Keep latest callbacks in refs so animation closures are always fresh
   const onMinimizeRef = useRef(onMinimize)
   onMinimizeRef.current = onMinimize
   const onCloseRef = useRef(onClose)
   onCloseRef.current = onClose
 
+  const prevIsVisibleRef = useRef<boolean | undefined>(undefined)
   const controls = useAnimationControls()
 
   const behavior: WindowBehaviorConfig = data ? data.behavior : DEFAULT_BEHAVIOR
 
+  // ── Content loading ───────────────────────────────────────────────────────
+  // Runs whenever displaySlug changes (navigation forward/back).
+  // For a pre-rendered window going back to its root slug, we restore preloadedData
+  // instead of skipping — this is what makes the back button work correctly.
   useEffect(() => {
-    getWindowContent(slug).then((result) => {
+    if (isPreloaded && displaySlug === slug) {
+      // Restore the pre-loaded initial content (covers both initial mount and back navigation)
+      setData(preloadedData ?? null)
+      setLoading(false)
+      return
+    }
+
+    const cached = contentCache.get(displaySlug)
+    if (cached !== undefined) {
+      setData(cached)
+      setLoading(false)
+      return
+    }
+
+    setLoading(true)
+    getWindowContent(displaySlug).then((result) => {
+      contentCache.set(displaySlug, result)
       setData(result)
       setLoading(false)
     })
-  }, [slug])
+  }, [displaySlug, isPreloaded, slug, preloadedData])
 
-  // ── 1. Restore saved position BEFORE first paint (useLayoutEffect) ──────────
+  // ── onReady reporting — fires once on mount ───────────────────────────────
+  const onReadyRef = useRef(onReady)
+  onReadyRef.current = onReady
+  useEffect(() => {
+    onReadyRef.current?.()
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── 1. Restore saved position BEFORE first paint ──────────────────────────
   useLayoutEffect(() => {
     const panel = panelRef.current
     if (!panel) return
@@ -205,30 +323,41 @@ export function AdditionalWindow({
     }
   }, [storageKey, cascadeIndex])
 
-  // ── 2. Mount animation: grow from taskbar icon to window position ───────────
+  // ── 2. Open animation ─────────────────────────────────────────────────────
   useLayoutEffect(() => {
+    if (!isPreloaded) {
+      runOpenAnimation()
+      return
+    }
+
+    const wasVisible = prevIsVisibleRef.current
+    prevIsVisibleRef.current = isVisible
+
+    if (isVisible && wasVisible !== true) {
+      runOpenAnimation()
+    } else if (!isVisible && wasVisible !== undefined) {
+      controls.set({ scale: 0.82, opacity: 0 })
+    }
+  }, [isVisible]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  function runOpenAnimation() {
     const el = panelRef.current
     if (!el) return
-
     const btn = document.querySelector<HTMLElement>(`[data-window-id="${slug}"]`)
-
     if (btn) {
       const elRect = el.getBoundingClientRect()
       const btnRect = btn.getBoundingClientRect()
       const startX = btnRect.left + btnRect.width / 2 - (elRect.left + elRect.width / 2)
       const startY = btnRect.top + btnRect.height / 2 - (elRect.top + elRect.height / 2)
-
-      // Set initial position at taskbar icon (before first paint)
       controls.set({ x: startX, y: startY, scale: 0.08, opacity: 0 })
       controls.start({ x: 0, y: 0, scale: 1, opacity: 1, transition: { duration: 0.4, ease: [0.32, 0.72, 0, 1] } })
     } else {
-      // No taskbar icon yet (first open): simple grow-in
       controls.set({ scale: 0.82, opacity: 0 })
       controls.start({ scale: 1, opacity: 1, transition: { type: 'spring', stiffness: 340, damping: 28, mass: 0.9 } })
     }
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }
 
-  // ── 3. Collapse animation — triggered by pendingMinimize ────────────────────
+  // ── 3. Collapse animation ─────────────────────────────────────────────────
   useEffect(() => {
     if (!pendingMinimize) return
 
@@ -261,10 +390,7 @@ export function AdditionalWindow({
     onCloseRef.current()
   }
 
-  // Window title-bar minimize button — sets pendingMinimize via minimize(), which triggers the effect above
-  // We pass this through so both paths (taskbar + button) converge on the same pendingMinimize effect
   function handleMinimizeButton() {
-    // Directly run the animation and call onMinimize (skips the pendingMinimize round-trip)
     const el = panelRef.current
     const btn = document.querySelector<HTMLElement>(`[data-window-id="${slug}"]`)
 
@@ -357,7 +483,7 @@ export function AdditionalWindow({
     panel.addEventListener('pointerup', onUp)
   }
 
-  const title = data?.type === 'window' ? data.title : data?.type === 'article' ? data.doc.title : slug
+  const title = data?.type === 'window' ? data.title : data?.type === 'article' ? data.doc.title : displaySlug
 
   return (
     <motion.div
@@ -383,27 +509,37 @@ export function AdditionalWindow({
         expanded={isExpanded}
       />
 
-      <div className="flex-1 overflow-auto min-h-0">
-        {loading && (
-          <div className="flex items-center justify-center h-32 opacity-30 text-sm">Loading…</div>
-        )}
-        {!loading && data === null && (
-          <div className="px-6 py-8 opacity-40 text-sm">Content not found.</div>
-        )}
-        {!loading && data?.type === 'window' && (
-          <div className="flex flex-col gap-6 px-6 py-8">
-            {data.blocks.map((block, i) => (
-              <BlockRenderer key={i} block={block} />
-            ))}
-          </div>
-        )}
-        {!loading && data?.type === 'article' && (
-          <ArticleBlockContent article={data.doc} />
-        )}
-        {!loading && data?.type === 'form' && (
-          <FormComponent form={data.doc as any} />
-        )}
-      </div>
+      <WindowToolbarProvider
+        behavior={behavior}
+        canGoBack={canGoBack}
+        canGoForward={canGoForward}
+        onBack={back}
+        onForward={forward}
+        onNavigate={navigate}
+      >
+        <WindowToolbar />
+        <div className="flex-1 overflow-auto min-h-0">
+          {loading && (
+            <div className="flex items-center justify-center h-32 opacity-30 text-sm">Loading…</div>
+          )}
+          {!loading && data === null && (
+            <div className="px-6 py-8 opacity-40 text-sm">Content not found.</div>
+          )}
+          {!loading && data?.type === 'window' && (
+            <div className="flex flex-col gap-6 px-6 py-8">
+              {data.blocks.map((block, i) => (
+                <BlockRenderer key={i} block={block} />
+              ))}
+            </div>
+          )}
+          {!loading && data?.type === 'article' && (
+            <ArticleBlockContent article={data.doc} />
+          )}
+          {!loading && data?.type === 'form' && (
+            <FormComponent form={data.doc as any} />
+          )}
+        </div>
+      </WindowToolbarProvider>
 
       {behavior.resizable && !isExpanded && (
         <ResizeHandles
