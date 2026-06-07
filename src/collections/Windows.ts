@@ -14,7 +14,7 @@ export const Windows: CollectionConfig = {
         if (req.context.skipHooks) return
         req.context.skipHooks = true
         try {
-          revalidateTag('window-content')
+          revalidateTag('window-content', {})
           revalidatePath(`/${doc.slug}`)
           revalidatePath('/')
         } catch {}
@@ -24,7 +24,7 @@ export const Windows: CollectionConfig = {
     afterDelete: [
       async ({ doc }) => {
         try {
-          revalidateTag('window-content')
+          revalidateTag('window-content', {})
           revalidatePath(`/${doc.slug}`)
           revalidatePath('/')
         } catch {}

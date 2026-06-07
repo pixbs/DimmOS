@@ -14,7 +14,7 @@ export const Articles: CollectionConfig = {
         if (req.context.skipHooks) return
         req.context.skipHooks = true
         try {
-          revalidateTag('window-content')
+          revalidateTag('window-content', {})
           revalidatePath(`/${doc.slug}`)
           revalidatePath('/')
           revalidatePath('/works')
@@ -26,7 +26,7 @@ export const Articles: CollectionConfig = {
     afterDelete: [
       async ({ doc }) => {
         try {
-          revalidateTag('window-content')
+          revalidateTag('window-content', {})
           revalidatePath(`/${doc.slug}`)
           revalidatePath('/')
           revalidatePath('/works')
