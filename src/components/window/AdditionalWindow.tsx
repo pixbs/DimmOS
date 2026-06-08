@@ -137,7 +137,7 @@ export function AdditionalWindow({
         setCurrentTitle((data.doc as any).title ?? slug)
         setCurrentBehavior(data.behavior)
       } else {
-        setCurrentTitle(slug)
+        setCurrentTitle(slug.charAt(0).toUpperCase() + slug.slice(1))
         setCurrentBehavior(DEFAULT_BEHAVIOR)
       }
     },
@@ -383,6 +383,7 @@ export function AdditionalWindow({
               key={slug}
               promise={currentPromise}
               onDataReady={handleDataReady}
+              slug={slug}
             />
           </Suspense>
         </div>

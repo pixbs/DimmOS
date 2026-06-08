@@ -19,6 +19,45 @@ const FALLBACK_COLORS: Record<string, string> = {
   forms:    '#E3465A',
 }
 
+function TaskbarButton({
+  win,
+  icon,
+  color,
+  name,
+  onFocus,
+  onMinimize,
+}: {
+  win: { rootSlug: string; minimized: boolean }
+  icon: string
+  color: string
+  name: string
+  onFocus: () => void
+  onMinimize: () => void
+}) {
+  return (
+    <div className="group relative">
+      <button
+        data-window-id={win.rootSlug}
+        onClick={() => (win.minimized ? onFocus() : onMinimize())}
+        className={cn(
+          'w-12 h-12 rounded-2xl flex items-center justify-center transition-opacity active:opacity-70',
+          win.minimized && 'opacity-40',
+        )}
+        style={{
+          background: `color-mix(in srgb, ${color} 10%, transparent)`,
+          color,
+        }}
+        aria-label={name}
+      >
+        <i className={`${icon} text-2xl leading-none`} />
+      </button>
+      <span className="pointer-events-none absolute bottom-[110%] left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg px-2 py-1 text-xs text-fg bg-bgs opacity-0 group-hover:opacity-100 transition-opacity border-0">
+        {name}
+      </span>
+    </div>
+  )
+}
+
 export function Taskbar() {
   const { windows, focus, minimize } = useWindowManagerContext()
   const registry = useShortcutRegistry()
@@ -28,14 +67,22 @@ export function Taskbar() {
 
   const maxZ = Math.max(50, ...openWindows.map((w) => w.zIndex))
 
-  // Group by rootSlug's category (stable identity); fall back to slug's category for unregistered rootSlugs.
-  // Using rootSlug ensures a navigated window stays in its original group, not the article's group.
+  // Windows not in the CMS registry (e.g. a 404'd slug)
+  const orphanWindows = openWindows.filter((w) => {
+    const meta = registry.get(w.rootSlug) ?? registry.get(w.slug)
+    return !meta
+  })
+
+  // Group registered windows by CMS category
   const groups = CATEGORY_ORDER
     .map((cat) => openWindows.filter((w) => {
       const meta = registry.get(w.rootSlug) ?? registry.get(w.slug)
       return meta?.category === cat
     }))
     .filter((g) => g.length > 0)
+
+  const hasRegular = groups.length > 0
+  const hasOrphan = orphanWindows.length > 0
 
   return (
     <div
@@ -52,38 +99,44 @@ export function Taskbar() {
             />
           )}
           {group.map((win) => {
-            // Use current content slug for icon/name; fall back to rootSlug if no registry entry
             const meta = registry.get(win.slug) ?? registry.get(win.rootSlug)
             const icon  = meta?.icon  ?? FALLBACK_ICONS[meta?.category ?? '']  ?? 'ri-window-fill'
             const color = meta?.color ?? FALLBACK_COLORS[meta?.category ?? ''] ?? '#4A9EFF'
             const name  = meta?.name  ?? win.slug
-
             return (
-              <div key={win.rootSlug} className="group relative">
-                <button
-                  data-window-id={win.rootSlug}
-                  onClick={() => (win.minimized ? focus(win.rootSlug) : minimize(win.rootSlug))}
-                  className={cn(
-                    'w-12 h-12 rounded-2xl flex items-center justify-center transition-opacity active:opacity-70',
-                    win.minimized && 'opacity-40',
-                  )}
-                  style={{
-                    background: `color-mix(in srgb, ${color} 10%, transparent)`,
-                    color,
-                  }}
-                  aria-label={name}
-                >
-                  <i className={`${icon} text-2xl leading-none`} />
-                </button>
-                <span
-                  className="pointer-events-none absolute bottom-[110%] left-1/2 -translate-x-1/2 mb-2 whitespace-nowrap rounded-lg px-2 py-1 text-xs text-fg bg-bgs opacity-0 group-hover:opacity-100 transition-opacity border-0"
-                >
-                  {name}
-                </span>
-              </div>
+              <TaskbarButton
+                key={win.rootSlug}
+                win={win}
+                icon={icon}
+                color={color}
+                name={name}
+                onFocus={() => focus(win.rootSlug)}
+                onMinimize={() => minimize(win.rootSlug)}
+              />
             )
           })}
         </Fragment>
+      ))}
+
+      {/* Separator before unregistered windows */}
+      {hasRegular && hasOrphan && (
+        <div
+          className="w-px h-8 self-center"
+          style={{ background: 'color-mix(in srgb, white 15%, transparent)' }}
+        />
+      )}
+
+      {/* Unregistered windows — shown as error (e.g. 404'd route) */}
+      {orphanWindows.map((win) => (
+        <TaskbarButton
+          key={win.rootSlug}
+          win={win}
+          icon="ri-error-warning-fill"
+          color="#F22F57"
+          name={win.rootSlug}
+          onFocus={() => focus(win.rootSlug)}
+          onMinimize={() => minimize(win.rootSlug)}
+        />
       ))}
     </div>
   )
