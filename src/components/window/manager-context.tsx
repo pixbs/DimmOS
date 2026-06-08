@@ -13,6 +13,9 @@ const WindowManagerContext = createContext<WindowManager>({
   focus: noop,
   minimize: noop,
   actualMinimize: noop,
+  navigateInWindow: noop,
+  backInWindow: noop,
+  forwardInWindow: noop,
 })
 
 export function WindowManagerContextProvider({

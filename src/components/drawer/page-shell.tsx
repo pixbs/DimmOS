@@ -1,6 +1,6 @@
 'use client'
 
-import { useEffect, useRef, useState, useCallback, type ReactNode } from 'react'
+import { useEffect, useRef, useState, Suspense, useTransition, useCallback } from 'react'
 import { useRouter, usePathname } from 'next/navigation'
 import { DrawerContext } from './context'
 import { WindowTitleBar } from '@/components/window/title-bar'
@@ -9,7 +9,11 @@ import { useWindowManagerContext } from '@/components/window/manager-context'
 import { WindowToolbarProvider } from '@/components/window/window-toolbar-context'
 import { WindowToolbar } from '@/components/window/WindowToolbar'
 import { ResizeHandles } from '@/components/window/ResizeHandles'
+import { ContentView } from '@/components/window/content-view'
 import { BASE_Z } from '@/hooks/useWindowManager'
+import { promiseCache, getOrCreatePromise } from '@/lib/window-promise-cache'
+import type { WindowContentResult } from '@/actions/getWindowContent'
+import type { ReactNode } from 'react'
 
 interface PageDrawerShellProps {
   children: ReactNode
@@ -49,7 +53,6 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
     title: contextTitle, disableMinimize, resizable, expandable,
     displaySearch, displayViewToggle, defaultView, displayHistory,
   } = useWindowTitle()
-  const title = contextTitle || titleProp
 
   const [isOpen, setIsOpen] = useState(false)
   const [isExpanded, setIsExpanded] = useState(false)
@@ -59,10 +62,56 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
   const pathname = usePathname()
   const slug = pathname.replace(/^\//, '') || 'home'
 
-  const { windows, focus, minimize } = useWindowManagerContext()
-  const win = windows.find((w) => w.slug === slug)
+  const { windows, focus, minimize, navigateInWindow, backInWindow, forwardInWindow } = useWindowManagerContext()
+  const win = windows.find((w) => w.rootSlug === slug)
   const winZ = win?.zIndex ?? BASE_Z
   const winMinimized = win?.minimized ?? false
+
+  const currentSlug = win?.slug ?? slug
+  const isAtRoot = currentSlug === slug
+  const canGoBack    = (win?.historyIndex ?? 0) > 0
+  const canGoForward = (win?.historyIndex ?? 0) < (win?.historyStack.length ?? 1) - 1
+
+  // ── Promise management for navigated content ──────────────────────────────
+  const [currentSlugSnapshot, setCurrentSlugSnapshot] = useState(currentSlug)
+  const [currentPromise, setCurrentPromise] = useState<Promise<WindowContentResult>>(
+    () => promiseCache.get(currentSlug) ?? new Promise<WindowContentResult>(() => {}),
+  )
+
+  if (currentSlugSnapshot !== currentSlug) {
+    setCurrentSlugSnapshot(currentSlug)
+    const p = promiseCache.get(currentSlug)
+    if (p) setCurrentPromise(p)
+  }
+
+  useEffect(() => {
+    if (!isAtRoot && !promiseCache.has(currentSlug)) {
+      setCurrentPromise(getOrCreatePromise(currentSlug))
+    }
+  }, [currentSlug, isAtRoot])
+
+  // ── Navigation with transition ────────────────────────────────────────────
+  const [isPending, startTransition] = useTransition()
+  const handleNavigate = useCallback(
+    (s: string) => startTransition(() => navigateInWindow(slug, s)),
+    [slug, navigateInWindow],
+  )
+  const handleBack    = useCallback(() => startTransition(() => backInWindow(slug)), [slug, backInWindow])
+  const handleForward = useCallback(() => startTransition(() => forwardInWindow(slug)), [slug, forwardInWindow])
+
+  // ── Title — driven by ContentView onDataReady when navigated ──────────────
+  const [navTitle, setNavTitle] = useState('')
+  const title = isAtRoot ? (contextTitle || titleProp) : navTitle
+
+  const handleDataReady = useCallback(
+    (data: WindowContentResult) => {
+      if (data?.type === 'article') setNavTitle(data.doc.title)
+      else if (data?.type === 'window') setNavTitle(data.title)
+      else if (data?.type === 'form') setNavTitle((data.doc as any).title ?? currentSlug)
+      else setNavTitle(currentSlug)
+    },
+    [currentSlug],
+  )
 
   function close() {
     setIsOpen(false)
@@ -72,15 +121,6 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
   function open() {
     setIsOpen(true)
   }
-
-  // Toolbar navigation: open a new page for the navigated slug, use browser back for history
-  const handleToolbarNavigate = useCallback((newSlug: string) => {
-    router.push('/' + newSlug)
-  }, [router])
-
-  const handleToolbarBack = useCallback(() => {
-    router.back()
-  }, [router])
 
   function expand() {
     const panel = panelRef.current
@@ -267,14 +307,32 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
 
         <WindowToolbarProvider
           behavior={{ displaySearch, displayViewToggle, defaultView, displayHistory }}
-          canGoBack={true}
-          canGoForward={false}
-          onBack={handleToolbarBack}
-          onForward={() => {}}
-          onNavigate={handleToolbarNavigate}
+          canGoBack={canGoBack}
+          canGoForward={canGoForward}
+          onBack={handleBack}
+          onForward={handleForward}
+          onNavigate={handleNavigate}
         >
           <WindowToolbar />
-          <div className="flex-1 overflow-auto min-h-0">{children}</div>
+          <div
+            className={`flex-1 overflow-auto min-h-0 transition-opacity ${isPending ? 'opacity-60' : ''}`}
+          >
+            {isAtRoot ? (
+              children
+            ) : (
+              <Suspense
+                fallback={
+                  <div className="flex items-center justify-center h-32 opacity-30 text-sm">Loading…</div>
+                }
+              >
+                <ContentView
+                  key={currentSlug}
+                  promise={currentPromise}
+                  onDataReady={handleDataReady}
+                />
+              </Suspense>
+            )}
+          </div>
         </WindowToolbarProvider>
 
         {resizable && !isExpanded && (

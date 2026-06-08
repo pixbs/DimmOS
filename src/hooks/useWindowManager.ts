@@ -4,6 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { BASE_Z, loadWindowsFromSession, saveWindowsToSession } from '@/lib/window-state'
 import type { ManagedWindow } from '@/lib/window-state'
+import { getOrCreatePromise } from '@/lib/window-promise-cache'
 
 // Re-export so existing callsites continue to work without import path changes
 export type { ManagedWindow } from '@/lib/window-state'
@@ -19,6 +20,25 @@ export interface WindowManager {
   minimize: (slug: string) => void
   /** Completes minimize: sets minimized=true, clears pendingMinimize */
   actualMinimize: (slug: string) => void
+  /** Push newSlug onto the window's history stack and make it the current content */
+  navigateInWindow: (rootSlug: string, newSlug: string) => void
+  /** Go back one step in the window's history stack */
+  backInWindow: (rootSlug: string) => void
+  /** Go forward one step in the window's history stack */
+  forwardInWindow: (rootSlug: string) => void
+}
+
+function newWindowEntry(slug: string, zIndex: number, cascadeIndex: number): ManagedWindow {
+  return {
+    rootSlug: slug,
+    slug,
+    historyStack: [slug],
+    historyIndex: 0,
+    zIndex,
+    minimized: false,
+    cascadeIndex,
+    pendingMinimize: false,
+  }
 }
 
 function updateCosmeticUrl(
@@ -34,8 +54,7 @@ function updateCosmeticUrl(
   const target =
     visible.length === 0
       ? '/'
-      : `/${visible.reduce((a, b) => (a.zIndex > b.zIndex ? a : b)).slug}`
-  // Only mark as cosmetic and replace if the URL is actually changing
+      : `/${visible.reduce((a, b) => (a.zIndex > b.zIndex ? a : b)).rootSlug}`
   if (window.location.pathname === target) return
   cosmeticRef.current = true
   window.history.replaceState(null, '', target)
@@ -44,18 +63,16 @@ function updateCosmeticUrl(
 export function useWindowManager(): WindowManager {
   const pathname = usePathname()
   const router = useRouter()
-  const pathSlug = pathname === '/' ? null : pathname.slice(1) // raw, may be cosmetic
+  const pathSlug = pathname === '/' ? null : pathname.slice(1)
 
   const [windows, setWindows] = useState<ManagedWindow[]>(() =>
-    pathSlug ? [{ slug: pathSlug, zIndex: BASE_Z, minimized: false, cascadeIndex: 0, pendingMinimize: false }] : [],
+    pathSlug ? [newWindowEntry(pathSlug, BASE_Z, 0)] : [],
   )
-  // Tracks ACTUAL Next.js navigations; ignores cosmetic replaceState changes
   const [realPrimarySlug, setRealPrimarySlug] = useState<string | null>(pathSlug)
 
   const windowsRef = useRef(windows)
   windowsRef.current = windows
 
-  // Monotonically increments to assign a unique cascade offset to every new slug
   const openCountRef = useRef(0)
 
   const realPrimarySlugRef = useRef(realPrimarySlug)
@@ -70,7 +87,7 @@ export function useWindowManager(): WindowManager {
     setWindows((prev) => {
       const curPrimary = realPrimarySlugRef.current
       const toAdd = stored.filter(
-        (w) => !prev.some((p) => p.slug === w.slug) && w.slug !== curPrimary,
+        (w) => !prev.some((p) => p.rootSlug === w.rootSlug) && w.rootSlug !== curPrimary,
       )
       if (toAdd.length === 0) return prev
       return [...prev, ...toAdd]
@@ -84,29 +101,28 @@ export function useWindowManager(): WindowManager {
   }, [windows])
 
   // Effect 3: handle real Next.js navigation — swap primary, keep secondaries
-  const prevPathSlugRef = useRef(pathSlug)         // tracks raw pathname (may be cosmetic)
-  const prevRealPrimaryRef = useRef(realPrimarySlug) // tracks real primary only
+  const prevPathSlugRef = useRef(pathSlug)
+  const prevRealPrimaryRef = useRef(realPrimarySlug)
   useEffect(() => {
     if (prevPathSlugRef.current === pathSlug) return
 
-    // Skip if triggered by our own cosmetic replaceState
     if (cosmeticChangeRef.current) {
       cosmeticChangeRef.current = false
-      prevPathSlugRef.current = pathSlug // keep raw ref in sync; prevRealPrimaryRef unchanged
+      prevPathSlugRef.current = pathSlug
       return
     }
 
-    const oldPrimary = prevRealPrimaryRef.current // real slug we're navigating AWAY from
+    const oldPrimary = prevRealPrimaryRef.current
     prevPathSlugRef.current = pathSlug
     prevRealPrimaryRef.current = pathSlug
 
     setRealPrimarySlug(pathSlug)
     setWindows((prev) => {
       const remaining = prev.filter(
-        (w) => w.slug !== oldPrimary && w.slug !== pathSlug,
+        (w) => w.rootSlug !== oldPrimary && w.rootSlug !== pathSlug,
       )
       return [
-        ...(pathSlug ? [{ slug: pathSlug, zIndex: BASE_Z, minimized: false, cascadeIndex: 0, pendingMinimize: false }] : []),
+        ...(pathSlug ? [newWindowEntry(pathSlug, BASE_Z, 0)] : []),
         ...remaining,
       ]
     })
@@ -121,27 +137,31 @@ export function useWindowManager(): WindowManager {
       if (slug === realPrimarySlugRef.current) {
         const prev = windowsRef.current
         const maxZ = Math.max(...prev.map((w) => w.zIndex), BASE_Z - 1)
-        setWindows(prev.map((w) => (w.slug === slug ? { ...w, zIndex: maxZ + 1, minimized: false } : w)))
+        setWindows(prev.map((w) => (w.rootSlug === slug ? { ...w, zIndex: maxZ + 1, minimized: false } : w)))
         return
       }
       const prev = windowsRef.current
-      let next: ManagedWindow[]
-      if (prev.some((w) => w.slug === slug)) {
+      if (prev.some((w) => w.rootSlug === slug)) {
         const maxZ = Math.max(...prev.map((w) => w.zIndex), BASE_Z - 1)
-        next = prev.map((w) => (w.slug === slug ? { ...w, zIndex: maxZ + 1, minimized: false } : w))
+        // Reset navigation to root — shortcut represents the root content of the window.
+        setWindows(prev.map((w) =>
+          w.rootSlug === slug
+            ? { ...w, zIndex: maxZ + 1, minimized: false, slug: w.rootSlug, historyStack: [w.rootSlug], historyIndex: 0 }
+            : w,
+        ))
       } else {
         const maxZ = Math.max(...prev.map((w) => w.zIndex), BASE_Z - 1)
         const cascadeIndex = openCountRef.current++
-        next = [...prev, { slug, zIndex: maxZ + 1, minimized: false, cascadeIndex, pendingMinimize: false }]
+        getOrCreatePromise(slug) // pre-seed promise before setWindows
+        setWindows([...prev, newWindowEntry(slug, maxZ + 1, cascadeIndex)])
       }
-      setWindows(next)
     },
     [router],
   )
 
   const close = useCallback(
     (slug: string) => {
-      const next = windowsRef.current.filter((w) => w.slug !== slug)
+      const next = windowsRef.current.filter((w) => w.rootSlug !== slug)
       if (slug === realPrimarySlugRef.current) {
         router.push('/')
       } else {
@@ -154,16 +174,61 @@ export function useWindowManager(): WindowManager {
   const focus = useCallback((slug: string) => {
     const prev = windowsRef.current
     const maxZ = Math.max(...prev.map((w) => w.zIndex), BASE_Z - 1)
-    setWindows(prev.map((w) => (w.slug === slug ? { ...w, zIndex: maxZ + 1, minimized: false } : w)))
+    setWindows(prev.map((w) => (w.rootSlug === slug ? { ...w, zIndex: maxZ + 1, minimized: false } : w)))
   }, [])
 
   const minimize = useCallback((slug: string) => {
-    setWindows((prev) => prev.map((w) => (w.slug === slug ? { ...w, pendingMinimize: true } : w)))
+    setWindows((prev) => prev.map((w) => (w.rootSlug === slug ? { ...w, pendingMinimize: true } : w)))
   }, [])
 
   const actualMinimize = useCallback((slug: string) => {
-    setWindows((prev) => prev.map((w) => (w.slug === slug ? { ...w, minimized: true, pendingMinimize: false } : w)))
+    setWindows((prev) => prev.map((w) => (w.rootSlug === slug ? { ...w, minimized: true, pendingMinimize: false } : w)))
   }, [])
 
-  return { windows, primarySlug: realPrimarySlug, open, close, focus, minimize, actualMinimize }
+  const navigateInWindow = useCallback((rootSlug: string, newSlug: string) => {
+    getOrCreatePromise(newSlug) // pre-seed in event handler context
+    setWindows((prev) =>
+      prev.map((w) => {
+        if (w.rootSlug !== rootSlug) return w
+        const truncated = w.historyStack.slice(0, w.historyIndex + 1)
+        const newStack = [...truncated, newSlug]
+        return { ...w, slug: newSlug, historyStack: newStack, historyIndex: newStack.length - 1 }
+      }),
+    )
+  }, [])
+
+  const backInWindow = useCallback((rootSlug: string) => {
+    setWindows((prev) =>
+      prev.map((w) => {
+        if (w.rootSlug !== rootSlug) return w
+        if (w.historyIndex <= 0) return w
+        const newIndex = w.historyIndex - 1
+        return { ...w, historyIndex: newIndex, slug: w.historyStack[newIndex] }
+      }),
+    )
+  }, [])
+
+  const forwardInWindow = useCallback((rootSlug: string) => {
+    setWindows((prev) =>
+      prev.map((w) => {
+        if (w.rootSlug !== rootSlug) return w
+        if (w.historyIndex >= w.historyStack.length - 1) return w
+        const newIndex = w.historyIndex + 1
+        return { ...w, historyIndex: newIndex, slug: w.historyStack[newIndex] }
+      }),
+    )
+  }, [])
+
+  return {
+    windows,
+    primarySlug: realPrimarySlug,
+    open,
+    close,
+    focus,
+    minimize,
+    actualMinimize,
+    navigateInWindow,
+    backInWindow,
+    forwardInWindow,
+  }
 }

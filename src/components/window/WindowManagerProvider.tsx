@@ -62,15 +62,11 @@ function WindowManagerInner({
 }) {
   const manager = useWindowManager()
   const { reportReady } = usePreloader()
-  const [closedSlugs, setClosedSlugs] = useState<Set<string>>(new Set())
+  const [, setClosedSlugs] = useState<Set<string>>(new Set())
 
-  // A pre-loaded window is visible when it is open (in manager.windows),
-  // not minimized, and not the primary route window.
-  // pendingMinimize is intentionally NOT checked — the collapse animation
-  // needs the window visible while it's playing.
-  function isWindowVisible(slug: string): boolean {
-    if (slug === manager.primarySlug) return false
-    const win = manager.windows.find((w) => w.slug === slug)
+  function isWindowVisible(rootSlug: string): boolean {
+    if (rootSlug === manager.primarySlug) return false
+    const win = manager.windows.find((w) => w.rootSlug === rootSlug)
     if (!win) return false
     if (win.minimized) return false
     return true
@@ -82,29 +78,35 @@ function WindowManagerInner({
       {children}
 
       {/* Pre-rendered shortcut windows — always mounted, CSS-hidden when not open */}
-      {isDesktop && shortcutSlugs.map((slug) => {
-        const win = manager.windows.find((w) => w.slug === slug)
-        const visible = isWindowVisible(slug)
+      {isDesktop && shortcutSlugs.map((rootSlug) => {
+        const win = manager.windows.find((w) => w.rootSlug === rootSlug)
+        const visible = isWindowVisible(rootSlug)
 
         return (
           <div
-            key={slug}
+            key={rootSlug}
             style={!visible ? { display: 'none' } : undefined}
           >
             <AdditionalWindow
-              slug={slug}
+              rootSlug={rootSlug}
+              slug={win?.slug ?? rootSlug}
+              canGoBack={(win?.historyIndex ?? 0) > 0}
+              canGoForward={(win?.historyIndex ?? 0) < (win?.historyStack.length ?? 1) - 1}
+              onNavigate={(s) => manager.navigateInWindow(rootSlug, s)}
+              onBack={() => manager.backInWindow(rootSlug)}
+              onForward={() => manager.forwardInWindow(rootSlug)}
               zIndex={win?.zIndex ?? BASE_Z}
               cascadeIndex={win?.cascadeIndex ?? 0}
               pendingMinimize={win?.pendingMinimize ?? false}
-              preloadedData={preloadedContents[slug] ?? null}
+              preloadedData={preloadedContents[rootSlug] ?? null}
               isVisible={visible}
               onReady={reportReady}
               onClose={() => {
-                setClosedSlugs((p) => new Set([...p, slug]))
-                manager.close(slug)
+                setClosedSlugs((p) => new Set([...p, rootSlug]))
+                manager.close(rootSlug)
               }}
-              onFocus={() => manager.focus(slug)}
-              onMinimize={() => manager.actualMinimize(slug)}
+              onFocus={() => manager.focus(rootSlug)}
+              onMinimize={() => manager.actualMinimize(rootSlug)}
             />
           </div>
         )
@@ -114,20 +116,26 @@ function WindowManagerInner({
       {isDesktop && manager.windows
         .filter(
           (win) =>
-            win.slug !== manager.primarySlug &&
+            win.rootSlug !== manager.primarySlug &&
             !win.minimized &&
-            !shortcutSlugs.includes(win.slug),
+            !shortcutSlugs.includes(win.rootSlug),
         )
         .map((win) => (
           <AdditionalWindow
-            key={win.slug}
+            key={win.rootSlug}
+            rootSlug={win.rootSlug}
             slug={win.slug}
+            canGoBack={win.historyIndex > 0}
+            canGoForward={win.historyIndex < win.historyStack.length - 1}
+            onNavigate={(s) => manager.navigateInWindow(win.rootSlug, s)}
+            onBack={() => manager.backInWindow(win.rootSlug)}
+            onForward={() => manager.forwardInWindow(win.rootSlug)}
             zIndex={win.zIndex}
             cascadeIndex={win.cascadeIndex}
             pendingMinimize={win.pendingMinimize}
-            onClose={() => manager.close(win.slug)}
-            onFocus={() => manager.focus(win.slug)}
-            onMinimize={() => manager.actualMinimize(win.slug)}
+            onClose={() => manager.close(win.rootSlug)}
+            onFocus={() => manager.focus(win.rootSlug)}
+            onMinimize={() => manager.actualMinimize(win.rootSlug)}
           />
         ))}
 

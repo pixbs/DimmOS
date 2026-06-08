@@ -19,7 +19,14 @@ export function serializeOpenWindows(slugs: string[]): string {
 // --- Window session state ---
 
 export interface ManagedWindow {
+  /** Stable identity: preloading, localStorage key, animation targets. Never changes. */
+  rootSlug: string
+  /** Current content slug — changes on in-window navigation. What the taskbar shows. */
   slug: string
+  /** Full navigation stack, e.g. ['services', 'web-design'] */
+  historyStack: string[]
+  /** Current position in historyStack */
+  historyIndex: number
   zIndex: number
   minimized: boolean
   cascadeIndex: number
@@ -48,11 +55,14 @@ export function loadWindowsFromSession(): ManagedWindow[] {
           typeof w.minimized === 'boolean',
       )
       .map((w): ManagedWindow => ({
+        rootSlug: w.slug,   // saved as 'slug' for backward compat; always restore at root
         slug: w.slug,
+        historyStack: [w.slug],
+        historyIndex: 0,
         zIndex: w.zIndex,
         minimized: w.minimized,
         cascadeIndex: typeof w.cascadeIndex === 'number' ? w.cascadeIndex : 0,
-        pendingMinimize: false, // always reset; mid-animation state must not persist
+        pendingMinimize: false,
       }))
   } catch {
     return []
@@ -62,7 +72,18 @@ export function loadWindowsFromSession(): ManagedWindow[] {
 export function saveWindowsToSession(wins: ManagedWindow[]): void {
   if (typeof window === 'undefined') return
   try {
-    window.sessionStorage.setItem(SESSION_KEY, JSON.stringify(wins))
+    // Save rootSlug as 'slug' for backward compat; history not persisted (always restores fresh)
+    window.sessionStorage.setItem(
+      SESSION_KEY,
+      JSON.stringify(
+        wins.map((w) => ({
+          slug: w.rootSlug,
+          zIndex: w.zIndex,
+          minimized: w.minimized,
+          cascadeIndex: w.cascadeIndex,
+        })),
+      ),
+    )
   } catch {
     // quota exceeded or private browsing
   }

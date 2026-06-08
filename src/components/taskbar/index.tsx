@@ -28,8 +28,13 @@ export function Taskbar() {
 
   const maxZ = Math.max(50, ...openWindows.map((w) => w.zIndex))
 
+  // Group by rootSlug's category (stable identity); fall back to slug's category for unregistered rootSlugs.
+  // Using rootSlug ensures a navigated window stays in its original group, not the article's group.
   const groups = CATEGORY_ORDER
-    .map((cat) => openWindows.filter((w) => registry.get(w.slug)?.category === cat))
+    .map((cat) => openWindows.filter((w) => {
+      const meta = registry.get(w.rootSlug) ?? registry.get(w.slug)
+      return meta?.category === cat
+    }))
     .filter((g) => g.length > 0)
 
   return (
@@ -47,16 +52,17 @@ export function Taskbar() {
             />
           )}
           {group.map((win) => {
-            const meta = registry.get(win.slug)
+            // Use current content slug for icon/name; fall back to rootSlug if no registry entry
+            const meta = registry.get(win.slug) ?? registry.get(win.rootSlug)
             const icon  = meta?.icon  ?? FALLBACK_ICONS[meta?.category ?? '']  ?? 'ri-window-fill'
             const color = meta?.color ?? FALLBACK_COLORS[meta?.category ?? ''] ?? '#4A9EFF'
             const name  = meta?.name  ?? win.slug
 
             return (
-              <div key={win.slug} className="group relative">
+              <div key={win.rootSlug} className="group relative">
                 <button
-                  data-window-id={win.slug}
-                  onClick={() => (win.minimized ? focus(win.slug) : minimize(win.slug))}
+                  data-window-id={win.rootSlug}
+                  onClick={() => (win.minimized ? focus(win.rootSlug) : minimize(win.rootSlug))}
                   className={cn(
                     'w-12 h-12 rounded-2xl flex items-center justify-center transition-opacity active:opacity-70',
                     win.minimized && 'opacity-40',
