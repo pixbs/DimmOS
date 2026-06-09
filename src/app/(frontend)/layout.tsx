@@ -18,6 +18,8 @@ import { DesktopWallpaper } from '@/components/desktop-wallpaper'
 import './styles.css'
 import 'remixicon/fonts/remixicon.css'
 
+export const dynamic = 'force-dynamic'
+
 const onest = Onest({ subsets: ['latin'] })
 
 export const metadata: Metadata = {

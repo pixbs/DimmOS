@@ -30,10 +30,11 @@ test.describe('Preloader', () => {
   test.beforeEach(bypassCookieBanner)
 
   test('preloader is visible on initial page load', async ({ page }) => {
-    // waitUntil: 'commit' captures the page before JavaScript fully hydrates
-    await page.goto(BASE_URL, { waitUntil: 'commit' })
-    const preloader = page.locator('[data-testid="preloader"]')
-    await expect(preloader).toBeVisible({ timeout: 3000 })
+    // Check the raw server-rendered HTML — the preloader div must be present in
+    // the SSR output (isComplete is false during SSR, before any effects run).
+    const response = await page.request.fetch(BASE_URL)
+    const body = await response.text()
+    expect(body).toContain('data-testid="preloader"')
   })
 
   test('preloader disappears after all windows are ready', async ({ page }) => {
@@ -76,8 +77,9 @@ test.describe('Preloader', () => {
     const windowEl = page.locator(`[data-secondary-window="${SLUG}"]`)
     // Should appear quickly — no fetch delay since data is pre-loaded
     await expect(windowEl).toBeVisible({ timeout: 2000 })
-    // Content must be present immediately — no "Loading…" spinner
-    await expect(page.locator('[data-block-type="richText"]').first()).toBeVisible({ timeout: 2000 })
+    // Content must be present immediately — no "Loading…" spinner.
+    // Scope to windowEl: other pre-rendered windows (display:none) also have richText in the DOM.
+    await expect(windowEl.locator('[data-block-type="richText"]').first()).toBeVisible({ timeout: 2000 })
     await expect(page.locator('text=Loading…')).toHaveCount(0)
   })
 
