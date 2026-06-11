@@ -106,6 +106,27 @@ src/
 
 Two drawer variants share the same `DrawerContext` (`{ open, close }`).
 
+### 404 window
+
+When a user navigates to a non-existent route, `notFound()` is called in `[slug]/page.tsx`. Next.js renders `src/app/(frontend)/not-found.tsx`, which queues a deferred window open for the failed slug and immediately redirects to `/`. The HTTP 404 status code is returned by the server before the client redirect, so SEO crawlers see the correct status.
+
+On **desktop**, once the redirect completes the window manager opens the failed slug as a standard `AdditionalWindow` (draggable, resizable, taskbar entry, all built-in behaviors). Payload returns `null` for the unknown slug, so `ContentView` renders the BSOD-styled null-content view inside the window chrome.
+
+On **mobile** (no window system), `not-found.tsx` renders a full-page BSOD overlay while the redirect is in flight.
+
+**Styled as a branded BSOD:** brand-red (`#F22F57`) background, monospace font, uppercase layout, with the failed route path displayed.
+
+**Key files:**
+- `src/app/(frontend)/not-found.tsx` — calls `manager.openDeferred(slug)` + `router.replace('/')` on all viewports; renders `lg:hidden` mobile BSOD overlay
+- `src/components/window/content-view.tsx` — `data === null` branch renders the BSOD content
+
+**Window manager API:**
+- `manager.openDeferred(slug)` — queues `slug` to open as an on-demand window once `realPrimarySlug` clears (after the redirect). Uses a `[pendingOpen, realPrimarySlug]` effect so the window isn't immediately removed by Effect 3's primary-clear logic.
+
+**Taskbar:** windows without a CMS registry entry (including any 404'd slug) appear with `ri-error-warning-fill` and brand-red color. The window's `rootSlug` is the literal failed path segment (e.g. `asdasd`).
+
+---
+
 ### DrawerShell — generic bottom sheet
 - Used by: `CookieBanner`, the `/test` page demo
 - CSS: `translate-y-full` (closed) → `translate-y-0` (open)

@@ -62,10 +62,14 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
   const pathname = usePathname()
   const slug = pathname.replace(/^\//, '') || 'home'
 
-  const { windows, focus, minimize, navigateInWindow, backInWindow, forwardInWindow } = useWindowManagerContext()
+  const { windows, focus, minimize, actualMinimize, navigateInWindow, backInWindow, forwardInWindow } = useWindowManagerContext()
   const win = windows.find((w) => w.rootSlug === slug)
   const winZ = win?.zIndex ?? BASE_Z
   const winMinimized = win?.minimized ?? false
+
+  useEffect(() => {
+    if (win?.pendingMinimize) actualMinimize(slug)
+  }, [win?.pendingMinimize, slug, actualMinimize])
 
   const currentSlug = win?.slug ?? slug
   const isAtRoot = currentSlug === slug

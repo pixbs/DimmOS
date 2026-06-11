@@ -80,7 +80,7 @@ test.describe('Windows — shared setup', () => {
     test('title bar is visible on desktop', async ({ page }) => {
       await page.goto(`${BASE_URL}/${SLUG}`)
       await expectPanelOpen(page)
-      await expect(page.locator('.win-titlebar--bar')).toBeVisible()
+      await expect(page.locator('[data-testid="page-drawer"] .win-titlebar--bar')).toBeVisible()
     })
 
     test('drag handle is hidden on desktop', async ({ page }) => {
@@ -93,7 +93,7 @@ test.describe('Windows — shared setup', () => {
       await page.goto(`${BASE_URL}/${SLUG}`)
       await expectPanelOpen(page)
       // seedWindow creates title "E2E e2e-test-window"
-      await expect(page.locator('.win-titlebar--bar')).toContainText('E2E e2e-test-window')
+      await expect(page.locator('[data-testid="page-drawer"] .win-titlebar--bar')).toContainText('E2E e2e-test-window')
     })
 
     test('close button navigates to /', async ({ page }) => {
@@ -106,7 +106,7 @@ test.describe('Windows — shared setup', () => {
     test('richText block is rendered inside the window', async ({ page }) => {
       await page.goto(`${BASE_URL}/${SLUG}`)
       await expectPanelOpen(page)
-      await expect(page.locator('[data-block-type="richText"]')).toBeVisible({ timeout: 10000 })
+      await expect(page.locator('[data-testid="page-drawer"] [data-block-type="richText"]')).toBeVisible({ timeout: 10000 })
     })
 
     test('window position is retained after reload', async ({ page }) => {
@@ -134,23 +134,23 @@ test.describe('Windows — shared setup', () => {
     test('resize handles are present on desktop', async ({ page }) => {
       await page.goto(`${BASE_URL}/${SLUG}`)
       await expectPanelOpen(page)
-      await expect(page.locator('.win-resize-handle--e')).toBeVisible()
-      await expect(page.locator('.win-resize-handle--s')).toBeVisible()
-      await expect(page.locator('.win-resize-handle--se')).toBeVisible()
+      await expect(page.locator('[data-testid="page-drawer"] .win-resize-handle--e')).toBeVisible()
+      await expect(page.locator('[data-testid="page-drawer"] .win-resize-handle--s')).toBeVisible()
+      await expect(page.locator('[data-testid="page-drawer"] .win-resize-handle--se')).toBeVisible()
     })
 
     test('east resize handle keyboard ArrowRight increases window width', async ({ page }) => {
       await page.goto(`${BASE_URL}/${SLUG}`)
       await expectPanelOpen(page)
       const panel = page.locator('[data-testid="page-drawer"]')
-      const initialW = await panel.evaluate((el) => el.offsetWidth)
+      const initialW = await panel.evaluate((el) => (el as HTMLElement).offsetWidth)
 
-      const handle = page.locator('.win-resize-handle--e')
+      const handle = page.locator('[data-testid="page-drawer"] .win-resize-handle--e')
       await handle.focus()
       await handle.press('ArrowRight')
       await handle.press('ArrowRight')
 
-      const newW = await panel.evaluate((el) => el.offsetWidth)
+      const newW = await panel.evaluate((el) => (el as HTMLElement).offsetWidth)
       expect(newW).toBeGreaterThan(initialW)
     })
 
@@ -158,14 +158,14 @@ test.describe('Windows — shared setup', () => {
       await page.goto(`${BASE_URL}/${SLUG}`)
       await expectPanelOpen(page)
       const panel = page.locator('[data-testid="page-drawer"]')
-      const initialH = await panel.evaluate((el) => el.offsetHeight)
+      const initialH = await panel.evaluate((el) => (el as HTMLElement).offsetHeight)
 
-      const handle = page.locator('.win-resize-handle--s')
+      const handle = page.locator('[data-testid="page-drawer"] .win-resize-handle--s')
       await handle.focus()
       await handle.press('ArrowDown')
       await handle.press('ArrowDown')
 
-      const newH = await panel.evaluate((el) => el.offsetHeight)
+      const newH = await panel.evaluate((el) => (el as HTMLElement).offsetHeight)
       expect(newH).toBeGreaterThan(initialH)
     })
 
@@ -200,7 +200,8 @@ test.describe('Windows — shared setup', () => {
       await page.locator(`a[href="/${SLUG}"]`).click()
       const win = page.locator(`[data-secondary-window="${SLUG}"]`)
       await expect(win).toBeVisible({ timeout: 2000 })
-      await expect(page.locator('[data-block-type="richText"]').first()).toBeVisible({ timeout: 2000 })
+      // Scope to win: other pre-rendered (display:none) windows also have richText in the DOM.
+      await expect(win.locator('[data-block-type="richText"]').first()).toBeVisible({ timeout: 2000 })
       await expect(page.locator('text=Loading…')).toHaveCount(0)
     })
 
@@ -216,14 +217,15 @@ test.describe('Windows — shared setup', () => {
     test('focusing the active secondary window keeps the cosmetic URL', async ({ page }) => {
       await page.addInitScript(() => {
         sessionStorage.setItem('open-windows', JSON.stringify([
-          { slug: 'e2e-test-window', zIndex: 51, minimized: false },
+          { slug: 'e2e-test-window', zIndex: 51, minimized: false, cascadeIndex: 0 },
         ]))
       })
       await page.goto(BASE_URL)
       const win = page.locator(`[data-secondary-window="${SLUG}"]`)
       await expect(win).toBeVisible({ timeout: 10000 })
       await expect(page).toHaveURL(`${BASE_URL}/${SLUG}`)
-      await win.click()
+      await page.locator('[data-testid="preloader"]').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {})
+      await win.locator('.win-titlebar--bar').click()
       await page.waitForTimeout(300)
       await expect(page).toHaveURL(`${BASE_URL}/${SLUG}`)
     })
@@ -231,7 +233,7 @@ test.describe('Windows — shared setup', () => {
     test('closing a secondary window resets the cosmetic URL to /', async ({ page }) => {
       await page.addInitScript(() => {
         sessionStorage.setItem('open-windows', JSON.stringify([
-          { slug: 'e2e-test-window', zIndex: 51, minimized: false },
+          { slug: 'e2e-test-window', zIndex: 51, minimized: false, cascadeIndex: 0 },
         ]))
       })
       await page.goto(BASE_URL)
@@ -272,16 +274,18 @@ test.describe('Windows — behavior flags', () => {
     await page.goto(`${BASE_URL}/${BEHAVIOR_SLUGS.noResize}`)
     const panel = page.locator('[data-testid="page-drawer"]')
     await expect(panel).toHaveAttribute('data-state', 'open', { timeout: 10000 })
-    await expect(page.locator('.win-resize-handle--e')).toHaveCount(0)
-    await expect(page.locator('.win-resize-handle--s')).toHaveCount(0)
-    await expect(page.locator('.win-resize-handle--se')).toHaveCount(0)
+    // Scope to panel: pre-rendered shortcut windows (display:none) also have resize handles in the DOM.
+    await expect(panel.locator('.win-resize-handle--e')).toHaveCount(0)
+    await expect(panel.locator('.win-resize-handle--s')).toHaveCount(0)
+    await expect(panel.locator('.win-resize-handle--se')).toHaveCount(0)
   })
 
   test('windowExpandable: true — expand button is enabled and expands to viewport width', async ({ page }) => {
     await page.goto(`${BASE_URL}/${BEHAVIOR_SLUGS.expandable}`)
     const panel = page.locator('[data-testid="page-drawer"]')
     await expect(panel).toHaveAttribute('data-state', 'open', { timeout: 10000 })
-    const expandBtn = page.locator('[aria-label="Expand to full screen"]')
+    // Scope to panel to avoid strict mode violation from pre-rendered windows' expand buttons.
+    const expandBtn = panel.locator('[aria-label="Expand to full screen"]')
     await expect(expandBtn).not.toBeDisabled()
     await expandBtn.click()
     const winW = await panel.evaluate((el) => el.style.getPropertyValue('--win-w'))
@@ -292,7 +296,8 @@ test.describe('Windows — behavior flags', () => {
     await page.goto(`${BASE_URL}/${BEHAVIOR_SLUGS.noMinimize}`)
     const panel = page.locator('[data-testid="page-drawer"]')
     await expect(panel).toHaveAttribute('data-state', 'open', { timeout: 10000 })
-    const minimizeBtn = page.locator('[aria-label="Minimize"]')
+    // Scope to panel to avoid strict mode violation from pre-rendered windows' minimize buttons.
+    const minimizeBtn = panel.locator('[aria-label="Minimize"]')
     await expect(minimizeBtn).toBeDisabled()
   })
 })

@@ -105,7 +105,6 @@ body[data-page-drawer="dragging"] {
 
 body[data-page-drawer] header {
   background-color: color-mix(in srgb, var(--color-bgs) var(--drawer-open-pct), var(--color-bg));
-  border-bottom-color: color-mix(in srgb, transparent var(--drawer-open-pct), color-mix(in srgb, var(--color-fg) 10%, transparent));
 }
 
 /* ─── Window / drawer panel shell ─── */

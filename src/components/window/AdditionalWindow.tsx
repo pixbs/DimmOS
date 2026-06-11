@@ -132,12 +132,12 @@ export function AdditionalWindow({
         setCurrentBehavior(data.behavior)
       } else if (data?.type === 'article') {
         setCurrentTitle(data.doc.title)
-        setCurrentBehavior(data.behavior)
+        // Don't override currentBehavior — toolbar flags (displayHistory etc.) come from the root window
       } else if (data?.type === 'form') {
         setCurrentTitle((data.doc as any).title ?? slug)
-        setCurrentBehavior(data.behavior)
+        // Same: keep root window behavior
       } else {
-        setCurrentTitle(slug)
+        setCurrentTitle(slug.charAt(0).toUpperCase() + slug.slice(1))
         setCurrentBehavior(DEFAULT_BEHAVIOR)
       }
     },
@@ -383,6 +383,7 @@ export function AdditionalWindow({
               key={slug}
               promise={currentPromise}
               onDataReady={handleDataReady}
+              slug={slug}
             />
           </Suspense>
         </div>

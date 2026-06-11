@@ -6,6 +6,7 @@ import { RichText } from '@payloadcms/richtext-lexical/react'
 import type { WindowContentResult, ResolvedBlock } from '@/actions/getWindowContent'
 import { useWindowManagerContext } from './manager-context'
 import { useWindowToolbar } from './window-toolbar-context'
+import { BSODContent } from './BSODContent'
 import { FormComponent } from '@/components/form/FormComponent'
 import type { Article, Media } from '@/payload-types'
 
@@ -167,9 +168,11 @@ function ArticleBlockContent({ article }: { article: Article }) {
 export function ContentView({
   promise,
   onDataReady,
+  slug,
 }: {
   promise: Promise<WindowContentResult>
   onDataReady: (data: WindowContentResult) => void
+  slug?: string
 }) {
   const data = use(promise)
 
@@ -178,7 +181,7 @@ export function ContentView({
   }, [data, onDataReady])
 
   if (data === null) {
-    return <div className="px-6 py-8 opacity-40 text-sm">Content not found.</div>
+    return <BSODContent slug={slug} />
   }
   if (data.type === 'window') {
     return (
