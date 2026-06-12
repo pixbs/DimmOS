@@ -153,12 +153,32 @@ describe('Windows collection', () => {
     expect(doc.content?.[0]?.blockType).toBe('embed')
   })
 
-  it('blocks unauthenticated read (admin-only)', async () => {
+  it('allows unauthenticated read (public content)', async () => {
+    const { docs } = await payload.find({
+      collection: 'windows',
+      where: { slug: { equals: 'test-window-rich-text' } },
+      overrideAccess: false,
+    })
+    expect(docs.length).toBe(1)
+  })
+
+  it('blocks unauthenticated create', async () => {
     await expect(
-      payload.find({
+      payload.create({
         collection: 'windows',
+        data: { title: 'No Auth', slug: 'test-window-no-auth' },
         overrideAccess: false,
       }),
+    ).rejects.toThrow()
+  })
+
+  it('blocks unauthenticated update and delete', async () => {
+    const id = createdIds[0]
+    await expect(
+      payload.update({ collection: 'windows', id, data: { title: 'Hacked' }, overrideAccess: false }),
+    ).rejects.toThrow()
+    await expect(
+      payload.delete({ collection: 'windows', id, overrideAccess: false }),
     ).rejects.toThrow()
   })
 })

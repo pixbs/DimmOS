@@ -10,6 +10,12 @@ import { createShortcutFields } from '@/fields/shortcutFields'
 export const Articles: CollectionConfig = {
   slug: 'articles',
   admin: { useAsTitle: 'title' },
+  access: {
+    read: () => true, // public content — rendered on the frontend without auth
+    create: ({ req: { user } }) => !!user,
+    update: ({ req: { user } }) => !!user,
+    delete: ({ req: { user } }) => !!user,
+  },
   hooks: {
     afterChange: [
       async ({ doc, req }) => {

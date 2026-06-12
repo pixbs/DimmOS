@@ -98,7 +98,7 @@ src/
 
 **`req` threading and hook safety.** Always pass `req` in nested Local API calls inside hooks — this keeps all reads and writes within the same Postgres transaction and prevents partial writes on error. See `src/hooks/forms/enforcePreDefinedEmail.ts` as the canonical example: `req.payload.findByID({ ..., req })`. Use `req.context.skipHooks = true` before a Local API call inside an `afterChange` hook when you need to prevent re-entry. Reset to `false` after the call.
 
-**Access control defaults.** All collections default to admin-only access. Public read is explicitly enabled per-collection only when the frontend requires it (e.g. `cookie-services`, `cookie-settings`). Use `overrideAccess: false` in integration tests to verify real access control; use `overrideAccess: true` only in test setup/teardown and the custom `/record` endpoint. Never use `overrideAccess: true` in application Server Components.
+**Access control defaults.** All collections default to admin-only access. Public read is explicitly enabled per-collection only when the frontend requires it (`windows`, `articles`, `cookie-services`, `cookie-settings`; `forms` is public-read via the form-builder plugin default). Every application Server Component read passes `overrideAccess: false` so real access control is always enforced. Use `overrideAccess: false` in integration tests to verify real access control; use `overrideAccess: true` only in test setup/teardown and the custom `/record` endpoint. Never use `overrideAccess: true` (or rely on the implicit default bypass) in application Server Components.
 
 ---
 
@@ -178,8 +178,10 @@ Use `data-testid="page-drawer"` (set on `PageDrawerShell`) rather than `[role="d
 |---|---|---|
 | `users` | Auth | Admin only |
 | `media` | Upload | Read: public; write: admin |
-| `windows` | General content pages (about, contact, welcome) + content blocks | Admin only |
-| `articles` | Portfolio case studies + service descriptions; `type: 'case-study' \| 'service'` | Admin only |
+| `windows` | General content pages (about, contact, welcome) + content blocks | Read: public; write: admin |
+| `articles` | Portfolio case studies + service descriptions; `type: 'case-study' \| 'service'` | Read: public; write: admin |
+| `forms` | Form-builder plugin collection (contact etc.) | Read: public (plugin default); write: admin |
+| `form-submissions` | Form-builder plugin collection | Create: public; read: admin (plugin default) |
 | `cookie-services` | Service catalogue | Read: public; write: admin |
 | `cookie-consents` | Audit log | Create: endpoint only; read/update/delete: admin |
 | `cookie-settings` (global) | Config | Read: public; update: admin |

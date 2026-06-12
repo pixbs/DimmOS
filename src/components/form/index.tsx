@@ -14,6 +14,7 @@ export async function Form({ formId }: FormProps) {
     collection: 'forms',
     id: formId,
     depth: 1,
+    overrideAccess: false,
   })
 
   if (!form) return null

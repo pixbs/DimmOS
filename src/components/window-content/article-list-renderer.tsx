@@ -22,6 +22,7 @@ export async function ArticleListRenderer({ block }: { block: ArticleListBlock }
     sort,
     depth: 0,
     limit: block.limit ?? 6,
+    overrideAccess: false,
   })
 
   return (

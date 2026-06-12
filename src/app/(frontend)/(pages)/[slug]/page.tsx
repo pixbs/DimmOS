@@ -24,6 +24,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       select: { title: true, meta: true } as const,
       limit: 1,
       depth: 1,
+      overrideAccess: false,
     }),
     payload.find({
       collection: 'articles',
@@ -31,6 +32,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
       select: { title: true, meta: true } as const,
       limit: 1,
       depth: 1,
+      overrideAccess: false,
     }),
   ])
 
@@ -42,24 +44,28 @@ export default async function SlugPage({ params }: PageProps) {
   const { slug } = await params
   const payload = await getPayload({ config })
 
+  // full docs required for block rendering — select intentionally omitted
   const [{ docs: windows }, { docs: articles }, { docs: forms }] = await Promise.all([
     payload.find({
       collection: 'windows',
       where: { slug: { equals: slug } },
       limit: 1,
       depth: 1,
+      overrideAccess: false,
     }),
     payload.find({
       collection: 'articles',
       where: { slug: { equals: slug } },
       limit: 1,
       depth: 1,
+      overrideAccess: false,
     }),
     payload.find({
       collection: 'forms',
       where: { slug: { equals: slug } },
       limit: 1,
       depth: 1,
+      overrideAccess: false,
     }),
   ])
 
@@ -134,9 +140,9 @@ export default async function SlugPage({ params }: PageProps) {
 export async function generateStaticParams() {
   const payload = await getPayload({ config })
   const [windows, articles, forms] = await Promise.all([
-    payload.find({ collection: 'windows',  select: { slug: true }, limit: 200, depth: 0 }),
-    payload.find({ collection: 'articles', select: { slug: true }, limit: 200, depth: 0 }),
-    payload.find({ collection: 'forms',    select: { slug: true }, limit: 200, depth: 0 }),
+    payload.find({ collection: 'windows',  select: { slug: true }, limit: 200, depth: 0, overrideAccess: false }),
+    payload.find({ collection: 'articles', select: { slug: true }, limit: 200, depth: 0, overrideAccess: false }),
+    payload.find({ collection: 'forms',    select: { slug: true }, limit: 200, depth: 0, overrideAccess: false }),
   ])
   return [
     ...windows.docs.map((d) => ({ slug: d.slug })),

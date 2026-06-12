@@ -40,7 +40,7 @@ async function resolveBlocks(
         sort,
         depth: 0,
         limit: block.limit ?? 6,
-        overrideAccess: true,
+        overrideAccess: false,
       })
 
       return {
@@ -63,7 +63,7 @@ async function fetchWindowContentImpl(slug: string): Promise<WindowContentResult
   const { docs: windows } = await payload.find({
     collection: 'windows',
     where: { slug: { equals: slug } },
-    overrideAccess: true,
+    overrideAccess: false,
     limit: 1,
     depth: 1,
   })
@@ -76,7 +76,7 @@ async function fetchWindowContentImpl(slug: string): Promise<WindowContentResult
   const { docs: articles } = await payload.find({
     collection: 'articles',
     where: { slug: { equals: slug } },
-    overrideAccess: true,
+    overrideAccess: false,
     limit: 1,
     depth: 1,
   })
@@ -85,7 +85,7 @@ async function fetchWindowContentImpl(slug: string): Promise<WindowContentResult
   const { docs: forms } = await payload.find({
     collection: 'forms',
     where: { slug: { equals: slug } },
-    overrideAccess: true,
+    overrideAccess: false,
     limit: 1,
     depth: 1,
   })

@@ -44,9 +44,9 @@ async function fetchData() {
   const select = { title: true, slug: true, shortcutName: true, shortcutIcon: true, shortcutOrder: true, showShortcut: true } as const
 
   const [windows, articles, forms] = await Promise.all([
-    payload.find({ collection: 'windows',  select, depth: 0, limit: 200 }),
-    payload.find({ collection: 'articles', select, depth: 0, limit: 200 }),
-    payload.find({ collection: 'forms',    select, depth: 0, limit: 200 }),
+    payload.find({ collection: 'windows',  select, depth: 0, limit: 200, overrideAccess: false }),
+    payload.find({ collection: 'articles', select, depth: 0, limit: 200, overrideAccess: false }),
+    payload.find({ collection: 'forms',    select, depth: 0, limit: 200, overrideAccess: false }),
   ])
 
   const allDocs = [
