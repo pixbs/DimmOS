@@ -188,81 +188,7 @@ export interface Window {
    * URL path identifier, e.g. "about" → /about
    */
   slug: string;
-  content?:
-    | (
-        | {
-            content?: {
-              root: {
-                type: string;
-                children: {
-                  type: any;
-                  version: number;
-                  [k: string]: unknown;
-                }[];
-                direction: ('ltr' | 'rtl') | null;
-                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-                indent: number;
-                version: number;
-              };
-              [k: string]: unknown;
-            } | null;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'richText';
-          }
-        | {
-            image: number | Media;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'image';
-          }
-        | {
-            images?:
-              | {
-                  image?: (number | null) | Media;
-                  id?: string | null;
-                }[]
-              | null;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'gallery';
-          }
-        | {
-            url: string;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'embed';
-          }
-        | {
-            heading: string;
-            body?: string | null;
-            link?: {
-              label?: string | null;
-              href?: string | null;
-              openInNewTab?: boolean | null;
-            };
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'cta';
-          }
-        | {
-            heading?: string | null;
-            /**
-             * Which article types to include in this list
-             */
-            types: ('case-study' | 'service')[];
-            sortField?: ('createdAt' | 'updatedAt' | 'title' | 'shortcutOrder') | null;
-            sortDirection?: ('desc' | 'asc') | null;
-            /**
-             * Maximum number of articles to display
-             */
-            limit?: number | null;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'articleList';
-          }
-      )[]
-    | null;
+  content?: (RichTextBlock | ImageBlock | GalleryBlock | EmbedBlock | CtaBlock | ArticleListBlock)[] | null;
   showShortcut?: boolean | null;
   shortcutName?: string | null;
   shortcutIcon?: string | null;
@@ -315,6 +241,101 @@ export interface Window {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RichTextBlock".
+ */
+export interface RichTextBlock {
+  content?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'richText';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ImageBlock".
+ */
+export interface ImageBlock {
+  image: number | Media;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'image';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "GalleryBlock".
+ */
+export interface GalleryBlock {
+  images?:
+    | {
+        image?: (number | null) | Media;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'gallery';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "EmbedBlock".
+ */
+export interface EmbedBlock {
+  url: string;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'embed';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CtaBlock".
+ */
+export interface CtaBlock {
+  heading: string;
+  body?: string | null;
+  link?: {
+    label?: string | null;
+    href?: string | null;
+    openInNewTab?: boolean | null;
+  };
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'cta';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ArticleListBlock".
+ */
+export interface ArticleListBlock {
+  heading?: string | null;
+  /**
+   * Which article types to include in this list
+   */
+  types: ('case-study' | 'service')[];
+  sortField?: ('createdAt' | 'updatedAt' | 'title' | 'shortcutOrder') | null;
+  sortDirection?: ('desc' | 'asc') | null;
+  /**
+   * Maximum number of articles to display
+   */
+  limit?: number | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'articleList';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "articles".
  */
 export interface Article {
@@ -325,81 +346,7 @@ export interface Article {
    * URL path identifier, e.g. "my-project" → /my-project
    */
   slug: string;
-  content?:
-    | (
-        | {
-            content?: {
-              root: {
-                type: string;
-                children: {
-                  type: any;
-                  version: number;
-                  [k: string]: unknown;
-                }[];
-                direction: ('ltr' | 'rtl') | null;
-                format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
-                indent: number;
-                version: number;
-              };
-              [k: string]: unknown;
-            } | null;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'richText';
-          }
-        | {
-            image: number | Media;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'image';
-          }
-        | {
-            images?:
-              | {
-                  image?: (number | null) | Media;
-                  id?: string | null;
-                }[]
-              | null;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'gallery';
-          }
-        | {
-            url: string;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'embed';
-          }
-        | {
-            heading: string;
-            body?: string | null;
-            link?: {
-              label?: string | null;
-              href?: string | null;
-              openInNewTab?: boolean | null;
-            };
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'cta';
-          }
-        | {
-            heading?: string | null;
-            /**
-             * Which article types to include in this list
-             */
-            types: ('case-study' | 'service')[];
-            sortField?: ('createdAt' | 'updatedAt' | 'title' | 'shortcutOrder') | null;
-            sortDirection?: ('desc' | 'asc') | null;
-            /**
-             * Maximum number of articles to display
-             */
-            limit?: number | null;
-            id?: string | null;
-            blockName?: string | null;
-            blockType: 'articleList';
-          }
-      )[]
-    | null;
+  content?: (RichTextBlock | ImageBlock | GalleryBlock | EmbedBlock | CtaBlock | ArticleListBlock)[] | null;
   showShortcut?: boolean | null;
   shortcutName?: string | null;
   shortcutIcon?: string | null;
@@ -827,65 +774,12 @@ export interface WindowsSelect<T extends boolean = true> {
   content?:
     | T
     | {
-        richText?:
-          | T
-          | {
-              content?: T;
-              id?: T;
-              blockName?: T;
-            };
-        image?:
-          | T
-          | {
-              image?: T;
-              id?: T;
-              blockName?: T;
-            };
-        gallery?:
-          | T
-          | {
-              images?:
-                | T
-                | {
-                    image?: T;
-                    id?: T;
-                  };
-              id?: T;
-              blockName?: T;
-            };
-        embed?:
-          | T
-          | {
-              url?: T;
-              id?: T;
-              blockName?: T;
-            };
-        cta?:
-          | T
-          | {
-              heading?: T;
-              body?: T;
-              link?:
-                | T
-                | {
-                    label?: T;
-                    href?: T;
-                    openInNewTab?: T;
-                  };
-              id?: T;
-              blockName?: T;
-            };
-        articleList?:
-          | T
-          | {
-              heading?: T;
-              types?: T;
-              sortField?: T;
-              sortDirection?: T;
-              limit?: T;
-              id?: T;
-              blockName?: T;
-            };
+        richText?: T | RichTextBlockSelect<T>;
+        image?: T | ImageBlockSelect<T>;
+        gallery?: T | GalleryBlockSelect<T>;
+        embed?: T | EmbedBlockSelect<T>;
+        cta?: T | CtaBlockSelect<T>;
+        articleList?: T | ArticleListBlockSelect<T>;
       };
   showShortcut?: T;
   shortcutName?: T;
@@ -911,6 +805,77 @@ export interface WindowsSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "RichTextBlock_select".
+ */
+export interface RichTextBlockSelect<T extends boolean = true> {
+  content?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ImageBlock_select".
+ */
+export interface ImageBlockSelect<T extends boolean = true> {
+  image?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "GalleryBlock_select".
+ */
+export interface GalleryBlockSelect<T extends boolean = true> {
+  images?:
+    | T
+    | {
+        image?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "EmbedBlock_select".
+ */
+export interface EmbedBlockSelect<T extends boolean = true> {
+  url?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "CtaBlock_select".
+ */
+export interface CtaBlockSelect<T extends boolean = true> {
+  heading?: T;
+  body?: T;
+  link?:
+    | T
+    | {
+        label?: T;
+        href?: T;
+        openInNewTab?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ArticleListBlock_select".
+ */
+export interface ArticleListBlockSelect<T extends boolean = true> {
+  heading?: T;
+  types?: T;
+  sortField?: T;
+  sortDirection?: T;
+  limit?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "articles_select".
  */
 export interface ArticlesSelect<T extends boolean = true> {
@@ -920,65 +885,12 @@ export interface ArticlesSelect<T extends boolean = true> {
   content?:
     | T
     | {
-        richText?:
-          | T
-          | {
-              content?: T;
-              id?: T;
-              blockName?: T;
-            };
-        image?:
-          | T
-          | {
-              image?: T;
-              id?: T;
-              blockName?: T;
-            };
-        gallery?:
-          | T
-          | {
-              images?:
-                | T
-                | {
-                    image?: T;
-                    id?: T;
-                  };
-              id?: T;
-              blockName?: T;
-            };
-        embed?:
-          | T
-          | {
-              url?: T;
-              id?: T;
-              blockName?: T;
-            };
-        cta?:
-          | T
-          | {
-              heading?: T;
-              body?: T;
-              link?:
-                | T
-                | {
-                    label?: T;
-                    href?: T;
-                    openInNewTab?: T;
-                  };
-              id?: T;
-              blockName?: T;
-            };
-        articleList?:
-          | T
-          | {
-              heading?: T;
-              types?: T;
-              sortField?: T;
-              sortDirection?: T;
-              limit?: T;
-              id?: T;
-              blockName?: T;
-            };
+        richText?: T | RichTextBlockSelect<T>;
+        image?: T | ImageBlockSelect<T>;
+        gallery?: T | GalleryBlockSelect<T>;
+        embed?: T | EmbedBlockSelect<T>;
+        cta?: T | CtaBlockSelect<T>;
+        articleList?: T | ArticleListBlockSelect<T>;
       };
   showShortcut?: T;
   shortcutName?: T;
