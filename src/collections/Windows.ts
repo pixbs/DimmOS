@@ -1,11 +1,11 @@
 // Windows = general content pages (about, contact, welcome).
 // Portfolio work and services live in the Articles collection.
 import type { CollectionConfig } from 'payload'
-import { revalidatePath, revalidateTag } from 'next/cache'
 import { contentBlocksField } from '@/fields/contentBlocks'
 import { windowBehaviorFields } from '@/fields/windowBehavior'
 import { createSlugField } from '@/fields/slugField'
 import { createShortcutFields } from '@/fields/shortcutFields'
+import { createRevalidationHooks } from '@/hooks/revalidateContent'
 
 export const Windows: CollectionConfig = {
   slug: 'windows',
@@ -16,29 +16,7 @@ export const Windows: CollectionConfig = {
     update: ({ req: { user } }) => !!user,
     delete: ({ req: { user } }) => !!user,
   },
-  hooks: {
-    afterChange: [
-      async ({ doc, req }) => {
-        if (req.context.skipHooks) return
-        req.context.skipHooks = true
-        try {
-          revalidateTag('window-content', {})
-          revalidatePath(`/${doc.slug}`)
-          revalidatePath('/')
-        } catch {}
-        req.context.skipHooks = false
-      },
-    ],
-    afterDelete: [
-      async ({ doc }) => {
-        try {
-          revalidateTag('window-content', {})
-          revalidatePath(`/${doc.slug}`)
-          revalidatePath('/')
-        } catch {}
-      },
-    ],
-  },
+  hooks: createRevalidationHooks(),
   fields: [
     {
       type: 'tabs',

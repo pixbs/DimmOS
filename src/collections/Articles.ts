@@ -1,11 +1,11 @@
 // Articles = portfolio case studies (type: 'case-study') and service descriptions (type: 'service').
-// Replaces the Works collection. The type field drives /works and /services listing routes.
+// Replaces the Works collection. The type field drives articleList block filtering.
 import type { CollectionConfig } from 'payload'
-import { revalidatePath, revalidateTag } from 'next/cache'
 import { contentBlocksField } from '@/fields/contentBlocks'
 import { windowBehaviorFields } from '@/fields/windowBehavior'
 import { createSlugField } from '@/fields/slugField'
 import { createShortcutFields } from '@/fields/shortcutFields'
+import { createRevalidationHooks } from '@/hooks/revalidateContent'
 
 export const Articles: CollectionConfig = {
   slug: 'articles',
@@ -16,33 +16,7 @@ export const Articles: CollectionConfig = {
     update: ({ req: { user } }) => !!user,
     delete: ({ req: { user } }) => !!user,
   },
-  hooks: {
-    afterChange: [
-      async ({ doc, req }) => {
-        if (req.context.skipHooks) return
-        req.context.skipHooks = true
-        try {
-          revalidateTag('window-content', {})
-          revalidatePath(`/${doc.slug}`)
-          revalidatePath('/')
-          revalidatePath('/works')
-          revalidatePath('/services')
-        } catch {}
-        req.context.skipHooks = false
-      },
-    ],
-    afterDelete: [
-      async ({ doc }) => {
-        try {
-          revalidateTag('window-content', {})
-          revalidatePath(`/${doc.slug}`)
-          revalidatePath('/')
-          revalidatePath('/works')
-          revalidatePath('/services')
-        } catch {}
-      },
-    ],
-  },
+  hooks: createRevalidationHooks({ extraPaths: ['/works', '/services'] }),
   fields: [
     {
       type: 'tabs',
