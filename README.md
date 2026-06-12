@@ -228,7 +228,7 @@ bun test:e2e     # Playwright — tests/e2e/**/*.e2e.spec.ts
 ## Local setup
 
 ```bash
-cp .env.example .env   # fill DATABASE_URI, PAYLOAD_SECRET, RESEND_DEFAULT_FROM_ADDRESS, RECAPTCHA_SECRET_KEY
+cp .env.example .env   # fill DATABASE_URL, PAYLOAD_SECRET, RESEND_API_KEY, RECAPTCHA_SECRET_KEY
 bun install
 bun dev                # starts Next.js dev server + Payload admin at http://localhost:3000
 ```
@@ -847,9 +847,10 @@ Every cookie/storage item the site writes is declared in a canonical manifest. A
 
 | Variable | Required | Description |
 |---|---|---|
-| `DATABASE_URI` | Yes | PostgreSQL connection string |
+| `DATABASE_URL` | Yes | PostgreSQL connection string |
 | `PAYLOAD_SECRET` | Yes | JWT signing secret (min 32 chars) |
-| `RESEND_DEFAULT_FROM_ADDRESS` | Yes | Sender address for form submission emails |
+| `RESEND_API_KEY` | Yes | Resend API key for form submission emails |
+| `RESEND_DEFAULT_FROM_ADDRESS` | No | Sender address for form submission emails (defaults to `noreply@dimm.co`) |
 | `RECAPTCHA_SECRET_KEY` | Yes | reCAPTCHA v3 server-side secret |
 | `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` | Yes | reCAPTCHA v3 public site key |
 | `NEXT_PUBLIC_SITE_URL` | Phase 3 | Canonical base URL for sitemap and robots.txt (no trailing slash) |

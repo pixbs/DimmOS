@@ -34,7 +34,9 @@ const EmbedBlock: Block = {
       required: true,
       validate: (v: string | null | undefined) => {
         try {
-          new URL(v ?? '')
+          const url = new URL(v ?? '')
+          if (url.protocol !== 'https:' && url.protocol !== 'http:')
+            return 'URL must use http or https'
           return true
         } catch {
           return 'Must be a valid URL'

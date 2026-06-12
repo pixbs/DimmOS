@@ -4,6 +4,8 @@ import type { CollectionConfig } from 'payload'
 import { revalidatePath, revalidateTag } from 'next/cache'
 import { contentBlocksField } from '@/fields/contentBlocks'
 import { windowBehaviorFields } from '@/fields/windowBehavior'
+import { createSlugField } from '@/fields/slugField'
+import { createShortcutFields } from '@/fields/shortcutFields'
 
 export const Articles: CollectionConfig = {
   slug: 'articles',
@@ -53,38 +55,13 @@ export const Articles: CollectionConfig = {
                 { label: 'Service', value: 'service' },
               ],
             },
-            {
-              name: 'slug',
-              type: 'text',
-              required: true,
-              unique: true,
-              index: true,
-              admin: { description: 'URL path identifier, e.g. "my-project" → /my-project' },
-              validate: (value: string | null | undefined) => {
-                if (!value) return 'Slug is required'
-                if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value))
-                  return 'Slug must be lowercase letters, numbers, and hyphens only'
-                return true
-              },
-            },
+            createSlugField('URL path identifier, e.g. "my-project" → /my-project'),
             contentBlocksField,
           ],
         },
         {
           label: 'Shortcut',
-          fields: [
-            { name: 'showShortcut', type: 'checkbox', defaultValue: false },
-            { name: 'shortcutName', type: 'text' },
-            { name: 'shortcutIcon', type: 'text', defaultValue: 'ri-folder-fill' },
-            {
-              name: 'shortcutOrder',
-              type: 'number',
-              admin: {
-                description:
-                  'Controls position across all shortcuts. Lower = earlier. Leave blank to append.',
-              },
-            },
-          ],
+          fields: createShortcutFields('ri-folder-fill'),
         },
         {
           label: 'Window',
