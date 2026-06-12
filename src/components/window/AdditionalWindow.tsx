@@ -9,7 +9,8 @@ import { WindowTitleBar } from './title-bar'
 import { ResizeHandles } from './ResizeHandles'
 import { ContentView } from './content-view'
 import { promiseCache, getOrCreatePromise, seedPromise } from '@/lib/window-promise-cache'
-import { loadSavedPosition, mergePositionToStorage, parsePx, clamp, type SavedPosition } from '@/lib/window-positions'
+import { loadSavedPosition, mergePositionToStorage, parsePx, type SavedPosition } from '@/lib/window-positions'
+import { startPanelDrag } from '@/lib/window-drag'
 import { ContentErrorBoundary } from './content-error-boundary'
 import type { WindowBehaviorConfig } from '@/utilities/windowBehavior'
 
@@ -144,7 +145,7 @@ export function AdditionalWindow({
   onReadyRef.current = onReady
   useEffect(() => {
     onReadyRef.current?.()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- preloader ready signal must fire exactly once per mount
 
   // ── 1. Restore saved position BEFORE first paint ──────────────────────────
   useLayoutEffect(() => {
@@ -172,7 +173,7 @@ export function AdditionalWindow({
     } else if (!isVisible && wasVisible !== undefined) {
       controls.set({ scale: 0.82, opacity: 0 })
     }
-  }, [isVisible]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isVisible]) // eslint-disable-line react-hooks/exhaustive-deps -- only visibility transitions drive the open/close animation; controls is stable
 
   function runOpenAnimation() {
     const el = panelRef.current
@@ -217,7 +218,7 @@ export function AdditionalWindow({
     }).then(() => {
       onMinimizeRef.current()
     })
-  }, [pendingMinimize, rootSlug]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pendingMinimize, rootSlug]) // eslint-disable-line react-hooks/exhaustive-deps -- controls and onMinimizeRef are stable; only the minimize trigger matters
 
   async function handleClose() {
     await controls.start({ scale: 0.82, opacity: 0, transition: { duration: 0.2, ease: 'easeIn' } })
@@ -286,35 +287,11 @@ export function AdditionalWindow({
   function handlePointerDown(e: React.PointerEvent) {
     const panel = panelRef.current
     if (!panel) return
-    e.preventDefault()
-
-    const startX = e.clientX
-    const startY = e.clientY
-    const startWinX = parsePx(panel, '--win-x', 80)
-    const startWinY = parsePx(panel, '--win-y', 60)
-
-    panel.setPointerCapture(e.pointerId)
-    panel.setAttribute('data-dragging', '')
-
-    function onMove(ev: PointerEvent) {
-      const maxX = window.innerWidth - (panel!.offsetWidth || 400)
-      const maxY = window.innerHeight - (panel!.offsetHeight || 300)
-      panel!.style.setProperty('--win-x', `${clamp(startWinX + ev.clientX - startX, 0, Math.max(0, maxX))}px`)
-      panel!.style.setProperty('--win-y', `${clamp(startWinY + ev.clientY - startY, 0, Math.max(0, maxY))}px`)
-    }
-
-    function onUp() {
-      panel!.removeEventListener('pointermove', onMove)
-      panel!.removeEventListener('pointerup', onUp)
-      panel!.removeAttribute('data-dragging')
-      mergePositionToStorage(storageKey, {
-        x: parsePx(panel!, '--win-x', 80),
-        y: parsePx(panel!, '--win-y', 60),
-      })
-    }
-
-    panel.addEventListener('pointermove', onMove)
-    panel.addEventListener('pointerup', onUp)
+    startPanelDrag(e, panel, {
+      defaultX: 80,
+      defaultY: 60,
+      onDragEnd: (pos) => mergePositionToStorage(storageKey, pos),
+    })
   }
 
   return (

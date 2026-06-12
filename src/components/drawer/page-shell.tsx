@@ -14,7 +14,8 @@ import { ContentErrorBoundary } from '@/components/window/content-error-boundary
 import { BASE_Z } from '@/hooks/useWindowManager'
 import { promiseCache, getOrCreatePromise } from '@/lib/window-promise-cache'
 import { isDesktopViewport } from '@/lib/breakpoints'
-import { loadSavedPosition, mergePositionToStorage, parsePx, clamp, type SavedPosition } from '@/lib/window-positions'
+import { loadSavedPosition, mergePositionToStorage, parsePx, type SavedPosition } from '@/lib/window-positions'
+import { startPanelDrag } from '@/lib/window-drag'
 import type { WindowContentResult } from '@/actions/getWindowContent'
 import type { ReactNode } from 'react'
 
@@ -182,41 +183,39 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- document-level Escape listener registered once; close identity is irrelevant
   }, [])
 
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     const panel = panelRef.current
     if (!panel) return
-    e.preventDefault()
 
-    const isDesktop = isDesktopViewport()
-    const startX = e.clientX
+    if (isDesktopViewport()) {
+      startPanelDrag(e, panel, {
+        defaultX: 80,
+        defaultY: 40,
+        onDragEnd: (pos) => mergePositionToStorage(slug, pos),
+      })
+      return
+    }
+
+    // Mobile sheet drag-to-dismiss — surface-specific (--drawer-open-pct lerp,
+    // 25% dismiss threshold), intentionally not part of the shared drag helper.
+    e.preventDefault()
     const startY = e.clientY
-    const startWinX = isDesktop ? parsePx(panel, '--win-x', 80) : 0
-    const startWinY = isDesktop ? parsePx(panel, '--win-y', 40) : 0
     let mobileOffset = 0
 
     panel.setPointerCapture(e.pointerId)
     panel.setAttribute('data-dragging', '')
-    if (!isDesktop) {
-      document.body.dataset.pageDrawer = 'dragging'
-      document.body.style.setProperty('--drawer-open-pct', '100%')
-    }
+    document.body.dataset.pageDrawer = 'dragging'
+    document.body.style.setProperty('--drawer-open-pct', '100%')
 
     function onMove(ev: PointerEvent) {
-      if (isDesktop) {
-        const maxX = window.innerWidth - (panel!.offsetWidth || 400)
-        const maxY = window.innerHeight - (panel!.offsetHeight || 300)
-        panel!.style.setProperty('--win-x', `${clamp(startWinX + ev.clientX - startX, 0, Math.max(0, maxX))}px`)
-        panel!.style.setProperty('--win-y', `${clamp(startWinY + ev.clientY - startY, 0, Math.max(0, maxY))}px`)
-      } else {
-        mobileOffset = Math.max(0, ev.clientY - startY)
-        const pct = Math.max(0, (1 - mobileOffset / (panel!.offsetHeight || 400)) * 100)
-        document.body.style.setProperty('--drawer-open-pct', `${pct}%`)
-        panel!.style.transform = `translateY(${mobileOffset}px)`
-        panel!.style.transition = 'none'
-      }
+      mobileOffset = Math.max(0, ev.clientY - startY)
+      const pct = Math.max(0, (1 - mobileOffset / (panel!.offsetHeight || 400)) * 100)
+      document.body.style.setProperty('--drawer-open-pct', `${pct}%`)
+      panel!.style.transform = `translateY(${mobileOffset}px)`
+      panel!.style.transition = 'none'
     }
 
     function onUp() {
@@ -224,20 +223,13 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
       panel!.removeEventListener('pointerup', onUp)
       panel!.removeAttribute('data-dragging')
 
-      if (isDesktop) {
-        mergePositionToStorage(slug, {
-          x: parsePx(panel!, '--win-x', 80),
-          y: parsePx(panel!, '--win-y', 40),
-        })
-      } else {
-        const willClose = mobileOffset > (panel!.offsetHeight || 400) * 0.25
-        panel!.style.transform = ''
-        panel!.style.transition = ''
-        document.body.style.removeProperty('--drawer-open-pct')
-        document.body.dataset.pageDrawer = willClose ? 'closed' : 'open'
-        panel!.setAttribute('data-state', willClose ? 'closed' : 'open')
-        if (willClose) close()
-      }
+      const willClose = mobileOffset > (panel!.offsetHeight || 400) * 0.25
+      panel!.style.transform = ''
+      panel!.style.transition = ''
+      document.body.style.removeProperty('--drawer-open-pct')
+      document.body.dataset.pageDrawer = willClose ? 'closed' : 'open'
+      panel!.setAttribute('data-state', willClose ? 'closed' : 'open')
+      if (willClose) close()
     }
 
     panel.addEventListener('pointermove', onMove)

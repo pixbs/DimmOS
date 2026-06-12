@@ -64,7 +64,10 @@ export function loadWindowsFromSession(): ManagedWindow[] {
         cascadeIndex: typeof w.cascadeIndex === 'number' ? w.cascadeIndex : 0,
         pendingMinimize: false,
       }))
-  } catch {
+  } catch (error) {
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('window-state: failed to restore windows from sessionStorage', error)
+    }
     return []
   }
 }
@@ -84,7 +87,10 @@ export function saveWindowsToSession(wins: ManagedWindow[]): void {
         })),
       ),
     )
-  } catch {
-    // quota exceeded or private browsing
+  } catch (error) {
+    // quota exceeded or private browsing — open-window list simply isn't persisted
+    if (process.env.NODE_ENV === 'development') {
+      console.warn('window-state: failed to persist windows to sessionStorage', error)
+    }
   }
 }

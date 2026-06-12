@@ -93,7 +93,7 @@ export function useWindowManager(): WindowManager {
       if (toAdd.length === 0) return prev
       return [...prev, ...toAdd]
     })
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- mount-only sessionStorage restore; refs hold current state
 
   // Effect 2: sync sessionStorage + cosmetic URL on every windows change
   useEffect(() => {
@@ -127,7 +127,7 @@ export function useWindowManager(): WindowManager {
         ...remaining,
       ]
     })
-  }, [pathSlug]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pathSlug]) // eslint-disable-line react-hooks/exhaustive-deps -- only real pathname changes re-run this; refs track the rest
 
   const open = useCallback(
     (slug: string) => {
