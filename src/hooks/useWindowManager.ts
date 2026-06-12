@@ -5,6 +5,7 @@ import { usePathname, useRouter } from 'next/navigation'
 import { BASE_Z, loadWindowsFromSession, saveWindowsToSession } from '@/lib/window-state'
 import type { ManagedWindow } from '@/lib/window-state'
 import { getOrCreatePromise, evictPromises } from '@/lib/window-promise-cache'
+import { isDesktopViewport } from '@/lib/breakpoints'
 
 // Re-export so existing callsites continue to work without import path changes
 export type { ManagedWindow } from '@/lib/window-state'
@@ -48,7 +49,7 @@ function updateCosmeticUrl(
 ): void {
   if (typeof window === 'undefined') return
   if (realPrimary !== null) return     // real route active — leave URL alone
-  if (window.innerWidth < 1024) return
+  if (!isDesktopViewport()) return
 
   const visible = wins.filter((w) => !w.minimized)
   const target =
@@ -130,7 +131,7 @@ export function useWindowManager(): WindowManager {
 
   const open = useCallback(
     (slug: string) => {
-      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      if (typeof window !== 'undefined' && !isDesktopViewport()) {
         router.push(`/${slug}`)
         return
       }

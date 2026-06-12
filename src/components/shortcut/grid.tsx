@@ -1,6 +1,7 @@
 'use client'
 
 import { useWindowManagerContext } from '@/components/window/manager-context'
+import { isDesktopViewport } from '@/lib/breakpoints'
 import { Shortcut } from './index'
 
 interface ShortcutData {
@@ -24,7 +25,7 @@ export function ShortcutGrid({ shortcuts }: { shortcuts: ShortcutData[] }) {
           href={s.href}
           color={s.color}
           onClick={(e) => {
-            if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+            if (isDesktopViewport()) {
               e.preventDefault()
               manager.open(s.slug)
             }

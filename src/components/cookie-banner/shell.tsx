@@ -2,6 +2,7 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { isDesktopViewport } from '@/lib/breakpoints'
 import { DrawerContext } from '@/components/drawer/context'
 
 interface CookieBannerShellProps {
@@ -39,7 +40,7 @@ export function CookieBannerShell({ children }: CookieBannerShellProps) {
   // ─── Mobile drag-to-dismiss ──────────────────────────────────────────────
 
   function handleMobilePointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    if (window.innerWidth >= 1024) return
+    if (isDesktopViewport()) return
     mobileDragStartY.current = e.clientY
     setIsMobileDragging(true)
     e.currentTarget.setPointerCapture(e.pointerId)
@@ -61,7 +62,7 @@ export function CookieBannerShell({ children }: CookieBannerShellProps) {
   // ─── Desktop drag-to-move ────────────────────────────────────────────────
 
   function handleDesktopTitlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    if (window.innerWidth < 1024) return
+    if (!isDesktopViewport()) return
     const panel = panelRef.current
     if (!panel) return
     e.preventDefault()

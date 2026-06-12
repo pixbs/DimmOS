@@ -13,6 +13,7 @@ import { ContentView } from '@/components/window/content-view'
 import { ContentErrorBoundary } from '@/components/window/content-error-boundary'
 import { BASE_Z } from '@/hooks/useWindowManager'
 import { promiseCache, getOrCreatePromise } from '@/lib/window-promise-cache'
+import { isDesktopViewport } from '@/lib/breakpoints'
 import type { WindowContentResult } from '@/actions/getWindowContent'
 import type { ReactNode } from 'react'
 
@@ -164,7 +165,7 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
   useEffect(() => { setIsOpen(true) }, [])
 
   useEffect(() => {
-    if (window.innerWidth < 1024) {
+    if (!isDesktopViewport()) {
       document.body.dataset.pageDrawer = isOpen ? 'open' : 'closed'
     }
     document.body.style.removeProperty('--drawer-open-pct')
@@ -172,7 +173,7 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
 
   useEffect(() => {
     return () => {
-      if (window.innerWidth < 1024) {
+      if (!isDesktopViewport()) {
         delete document.body.dataset.pageDrawer
       }
     }
@@ -181,7 +182,7 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
   // Remove data-page-drawer from body when viewport grows to desktop — prevents stale header tinting
   useEffect(() => {
     function onResize() {
-      if (window.innerWidth >= 1024) {
+      if (isDesktopViewport()) {
         delete document.body.dataset.pageDrawer
         document.body.style.removeProperty('--drawer-open-pct')
       }
@@ -192,7 +193,7 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
 
   // Restore saved position and size on desktop mount
   useEffect(() => {
-    if (window.innerWidth < 1024) return
+    if (!isDesktopViewport()) return
     const panel = panelRef.current
     if (!panel) return
     const saved = loadSavedPosition(slug)
@@ -216,7 +217,7 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
     if (!panel) return
     e.preventDefault()
 
-    const isDesktop = window.innerWidth >= 1024
+    const isDesktop = isDesktopViewport()
     const startX = e.clientX
     const startY = e.clientY
     const startWinX = isDesktop ? parsePx(panel, '--win-x', 80) : 0
