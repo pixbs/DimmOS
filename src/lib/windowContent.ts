@@ -4,11 +4,12 @@ import { getPayload } from 'payload'
 import config from '@payload-config'
 import type { Window, Article, Form } from '@/payload-types'
 import { extractBehavior, type WindowBehaviorConfig } from '@/utilities/windowBehavior'
+import { fetchArticleList, type ArticleListItem } from './articleList'
 
 export type ResolvedArticleListBlock = {
   blockType: 'articleList'
   heading?: string | null
-  articles: { id: string; title: string; slug: string; shortcutIcon?: string | null }[]
+  articles: ArticleListItem[]
 }
 
 export type ResolvedBlock =
@@ -29,29 +30,10 @@ async function resolveBlocks(
     rawBlocks.map(async (block): Promise<ResolvedBlock> => {
       if (block.blockType !== 'articleList') return block as ResolvedBlock
 
-      const types = block.types as ('case-study' | 'service')[] | null | undefined
-      const field = block.sortField ?? 'createdAt'
-      const sort = block.sortDirection === 'asc' ? field : `-${field}`
-
-      const { docs } = await payload.find({
-        collection: 'articles',
-        where: types?.length ? { type: { in: types } } : {},
-        select: { title: true, slug: true, shortcutIcon: true } as const,
-        sort,
-        depth: 0,
-        limit: block.limit ?? 6,
-        overrideAccess: false,
-      })
-
       return {
         blockType: 'articleList',
         heading: block.heading,
-        articles: docs.map((a) => ({
-          id: String(a.id),
-          title: a.title,
-          slug: a.slug ?? '',
-          shortcutIcon: a.shortcutIcon,
-        })),
+        articles: await fetchArticleList(block, payload),
       } satisfies ResolvedArticleListBlock
     }),
   )

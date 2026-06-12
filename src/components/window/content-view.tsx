@@ -1,14 +1,13 @@
 'use client'
 
 import { use, useEffect } from 'react'
-import Image from 'next/image'
-import { RichText } from '@payloadcms/richtext-lexical/react'
 import type { WindowContentResult, ResolvedBlock } from '@/actions/getWindowContent'
 import { useWindowManagerContext } from './manager-context'
 import { useWindowToolbar } from './window-toolbar-context'
 import { BSODContent } from './BSODContent'
 import { FormComponent } from '@/components/form/FormComponent'
-import type { Article, Media } from '@/payload-types'
+import { RichTextView, ImageView, GalleryView, EmbedView, CtaView } from '@/components/content-blocks/views'
+import type { Article } from '@/payload-types'
 
 function ArticleListBlock({ block }: { block: ResolvedBlock & { blockType: 'articleList' } }) {
   const { open } = useWindowManagerContext()
@@ -67,73 +66,15 @@ function ArticleListBlock({ block }: { block: ResolvedBlock & { blockType: 'arti
 function BlockRenderer({ block }: { block: ResolvedBlock }) {
   switch (block.blockType) {
     case 'richText':
-      return (
-        <div data-block-type="richText" className="prose prose-invert max-w-none">
-          {block.content && <RichText data={block.content} />}
-        </div>
-      )
-    case 'image': {
-      const media = block.image as Media
-      return (
-        <div data-block-type="image">
-          {media?.url && (
-            <Image
-              src={media.url}
-              alt={media.alt ?? ''}
-              width={media.width ?? 800}
-              height={media.height ?? 600}
-              className="w-full rounded-lg object-cover"
-            />
-          )}
-        </div>
-      )
-    }
+      return <RichTextView block={block} />
+    case 'image':
+      return <ImageView block={block} />
     case 'gallery':
-      return (
-        <div data-block-type="gallery" className="grid grid-cols-2 gap-3">
-          {block.images?.map((item, j) => {
-            const media = item.image as Media | null
-            return media?.url ? (
-              <Image
-                key={j}
-                src={media.url}
-                alt={media.alt ?? ''}
-                width={media.width ?? 400}
-                height={media.height ?? 300}
-                className="w-full rounded-lg object-cover aspect-square"
-              />
-            ) : null
-          })}
-        </div>
-      )
+      return <GalleryView block={block} />
     case 'embed':
-      return (
-        <div data-block-type="embed" className="aspect-video w-full overflow-hidden rounded-lg">
-          <iframe
-            src={block.url}
-            className="h-full w-full border-0"
-            allow="accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture"
-            allowFullScreen
-          />
-        </div>
-      )
+      return <EmbedView block={block} />
     case 'cta':
-      return (
-        <div data-block-type="cta" className="flex flex-col gap-3 rounded-xl bg-white/5 p-6">
-          <h2 className="text-xl font-semibold text-fg">{block.heading}</h2>
-          {block.body && <p className="text-fg/60 text-sm leading-relaxed">{block.body}</p>}
-          {block.link?.href && (
-            <a
-              href={block.link.href}
-              target={block.link.openInNewTab ? '_blank' : undefined}
-              rel={block.link.openInNewTab ? 'noopener noreferrer' : undefined}
-              className="inline-flex items-center gap-1 text-sm font-medium text-blue-400 hover:text-blue-300"
-            >
-              {block.link.label ?? block.link.href}
-            </a>
-          )}
-        </div>
-      )
+      return <CtaView block={block} />
     case 'articleList':
       return <ArticleListBlock block={block} />
     default:
