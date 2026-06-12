@@ -35,35 +35,43 @@ src/
 │   │   ├── page.tsx             # Homepage shell (shortcuts rendered in layout)
 │   │   ├── (pages)/             # Routes that open inside PageDrawer
 │   │   │   ├── layout.tsx       # Wraps children in <PageDrawer>
-│   │   │   ├── works/           # /works — case study listing (Articles type: case-study)
-│   │   │   ├── services/        # /services — services listing (Articles type: service)
-│   │   │   ├── [slug]/          # /[slug] — dynamic: windows → articles → forms
+│   │   │   ├── [slug]/          # /[slug] — dynamic: windows → articles → forms (listings are articleList blocks)
 │   │   │   └── cookie-preferences/  # /cookie-preferences — consent management
 │   │   └── test/                # /test — drawer interaction playground
 │   └── (payload)/               # Payload admin + REST/GraphQL API
 ├── collections/
 │   ├── Users.ts                 # Auth collection
 │   ├── Media.ts                 # Uploads with alt text
-│   ├── Windows.ts               # General content pages (about, contact, welcome) + content blocks + revalidation hooks
+│   ├── Windows.ts               # General content pages (about, contact, welcome) + content blocks
 │   ├── Articles.ts              # Portfolio case studies + service descriptions; type: 'case-study' | 'service'
 │   ├── CookieServices.ts        # Cookie service catalogue
 │   └── CookieConsents.ts        # Consent audit log (write-protected, custom endpoint)
 ├── fields/
-│   └── contentBlocks.ts         # Shared blocks field: richText, image, gallery, embed, cta
+│   ├── contentBlocks.ts         # Shared blocks field: richText, image, gallery, embed, cta, articleList
+│   ├── slugField.ts             # createSlugField() factory + validateSlug (shared by all content collections)
+│   ├── shortcutFields.ts        # createShortcutFields() factory (Shortcut tab on all content collections)
+│   └── windowBehavior.ts        # Window tab fields (chrome + toolbar flags)
 ├── globals/
 │   └── CookieSettings.ts        # Banner copy + consentVersion
 ├── actions/
 │   └── getWindowContent.ts      # 'use server' re-export of fetchWindowContent
 ├── lib/
-│   └── windowContent.ts         # server-only: unstable_cache fetch; WindowContentResult type; resolveBlocks
+│   ├── windowContent.ts         # server-only: unstable_cache fetch; WindowContentResult type; resolveBlocks
+│   ├── articleList.ts           # server-only: fetchArticleList — single source for articleList block queries
+│   ├── window-promise-cache.ts  # Client promise cache: seeding, rejection eviction, evict-on-close
+│   ├── window-positions.ts      # localStorage persistence for panel geometry + parsePx/clamp
+│   ├── window-drag.ts           # startPanelDrag — shared desktop drag-to-move
+│   ├── window-state.ts          # ManagedWindow type + sessionStorage open-window persistence
+│   └── breakpoints.ts           # DESKTOP_BREAKPOINT (1024) + isDesktopViewport()
 ├── components/
 │   ├── drawer/                  # Drawer system (see mechanics below)
 │   ├── cookie-banner/           # Consent banner + context
 │   ├── header/                  # Logo + Clock
 │   ├── preloader/               # Boot preloader progress bar + context
 │   ├── shortcut/                # Desktop icon tiles
-│   ├── form/                    # Dynamic form renderer
+│   ├── form/                    # Dynamic form renderer (typed from generated Form)
 │   ├── taskbar/                 # Desktop taskbar (window list)
+│   ├── content-blocks/          # THE block renderer: server switch + pure per-block views (views.tsx)
 │   ├── window/
 │   │   ├── AdditionalWindow.tsx         # Floating window: owns history stack, content loading, animations
 │   │   ├── WindowManagerProvider.tsx    # Mounts pre-rendered + on-demand windows; renders Taskbar
@@ -72,11 +80,15 @@ src/
 │   │   ├── title-context.tsx            # Per-route title + chrome flags + toolbar flags (SetWindowOptions / SetWindowToolbar)
 │   │   ├── title-bar.tsx                # Window chrome: traffic-light buttons + drag handle
 │   │   ├── manager-context.tsx          # useWindowManagerContext() (open/close/focus/minimize)
+│   │   ├── content-view.tsx             # Client renderer: use(promise) + shared block views
+│   │   ├── content-error-boundary.tsx   # BSOD-styled fallback + Retry for failed content loads
 │   │   └── ResizeHandles.tsx            # E / S / SE resize handles with pointer capture
-│   ├── window-content/          # Block renderer for Windows collection content
-│   └── article-content/         # Block renderer for Articles collection content
+│   ├── window-content/          # Thin wrapper: WindowContent → content-blocks
+│   └── article-content/         # Thin wrapper: ArticleContent (header) → content-blocks
 ├── hooks/
 │   ├── useWindowManager.ts      # Window open/close/focus/minimize state
+│   ├── useIsDesktop.ts          # Tri-state (null/false/true) viewport hook
+│   ├── revalidateContent.ts     # createRevalidationHooks() — shared afterChange/afterDelete revalidation
 │   ├── cookies/captureRequestMetadata.ts
 │   └── forms/verifyRecaptcha.ts
 └── migrations/                  # Auto-generated Payload migrations
@@ -88,7 +100,7 @@ src/
 
 **Server-first.** All data fetching happens in Server Components (`async` functions that call `getPayload()`). Client Components receive already-fetched data as props. No client-side data fetching except for the cookie consent version check and audit log POST.
 
-**Routes as drawers.** Every sub-page lives under the `(pages)` route group and is wrapped by a `PageDrawerShell`. Navigating to `/works` or `/cookie-preferences` does not do a full page reload — the URL changes and the drawer slides up from the bottom. On desktop this will eventually switch to floating windows (see roadmap).
+**Routes as drawers.** Every sub-page lives under the `(pages)` route group and is wrapped by a `PageDrawerShell`. Navigating to a content slug (e.g. `/about`) or `/cookie-preferences` does not do a full page reload — the URL changes and the drawer slides up from the bottom (mobile) or opens as a floating window (desktop). Listing pages are `articleList` blocks inside Windows documents, not dedicated routes.
 
 **Payload schema = source of truth.** TypeScript types are generated from the Payload config (`bun generate:types`). Never hand-write types that mirror the schema. Never hand-write migration SQL — run `bun payload migrate:create` and let Payload diff the schema.
 
@@ -99,6 +111,19 @@ src/
 **`req` threading and hook safety.** Always pass `req` in nested Local API calls inside hooks — this keeps all reads and writes within the same Postgres transaction and prevents partial writes on error. See `src/hooks/forms/enforcePreDefinedEmail.ts` as the canonical example: `req.payload.findByID({ ..., req })`. Use `req.context.skipHooks = true` before a Local API call inside an `afterChange` hook when you need to prevent re-entry. Reset to `false` after the call.
 
 **Access control defaults.** All collections default to admin-only access. Public read is explicitly enabled per-collection only when the frontend requires it (`windows`, `articles`, `cookie-services`, `cookie-settings`; `forms` is public-read via the form-builder plugin default). Every application Server Component read passes `overrideAccess: false` so real access control is always enforced. Use `overrideAccess: false` in integration tests to verify real access control; use `overrideAccess: true` only in test setup/teardown and the custom `/record` endpoint. Never use `overrideAccess: true` (or rely on the implicit default bypass) in application Server Components.
+
+---
+
+## Window content fetching
+
+Three layers cooperate to serve window content; each exists for a different reason:
+
+1. **Server cache** — `fetchWindowContent(slug)` in `src/lib/windowContent.ts` is wrapped in `unstable_cache` (tag `window-content`, per-slug keying via the function argument). CMS saves invalidate it through the shared revalidation hooks (`src/hooks/revalidateContent.ts`).
+2. **Server action transport** — `src/actions/getWindowContent.ts` re-exports the fetcher as a `'use server'` action so the client can request content for on-demand windows. This is deliberately a POST-for-reads tradeoff: shortcut windows are SSR-preloaded and results are cached on both ends, so only the *first* open of a non-shortcut window pays one POST. Revisit as a GET route handler only if window-open latency becomes a measured problem.
+3. **Client promise cache** — `src/lib/window-promise-cache.ts` holds one promise per slug for the session. Reliability rules:
+   - A **rejected** promise evicts itself (identity-guarded), so the next open retries instead of replaying the failure all session.
+   - **Closing a window evicts its history stack**, so reopening refetches fresh data; preloaded shortcut roots re-seed from SSR data on the next render and stay instant.
+   - `ContentErrorBoundary` (BSOD-styled, with Retry) wraps every `ContentView`, so a failed load never leaves a stuck Suspense fallback.
 
 ---
 
@@ -220,7 +245,7 @@ bun test:e2e     # Playwright — tests/e2e/**/*.e2e.spec.ts
 | `tests/e2e/admin.e2e.spec.ts` | Admin login, dashboard, list view, edit view |
 | `tests/e2e/frontend.e2e.spec.ts` | Homepage title + load |
 | `tests/e2e/windows.e2e.spec.ts` | Navigating to a window slug opens PageDrawer; richText block renders |
-| `tests/e2e/works.e2e.spec.ts` | `/works` listing: PageDrawer open, article card visible, clicking card navigates to detail |
+| `tests/e2e/works.e2e.spec.ts` | articleList-block listing window: PageDrawer open, article card visible, clicking card navigates to detail |
 | `tests/e2e/analytics.e2e.spec.ts` | PostHog consent gating (opted in/out via `ph_*` localStorage); cookie audit (no undeclared keys); services API |
 
 **Integration test access control pattern.** Always pass `overrideAccess: false` together with a `user` object to exercise real access control. Use `overrideAccess: true` only in test setup/teardown helpers. See `tests/int/cookie-services.int.spec.ts` — setup uses `overrideAccess: true` and assertions use `overrideAccess: false` — as the model to follow.
