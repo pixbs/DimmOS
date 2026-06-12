@@ -7,6 +7,12 @@ import { useCookieConsent } from '@/components/cookie-banner/context'
 import { SetWindowOptions } from '@/components/window/title-context'
 import type { CookieService, CookieSetting } from '@/payload-types'
 
+// Fields the listing actually renders — matches the select in page.tsx
+type CookieServiceItem = Pick<
+  CookieService,
+  'id' | 'name' | 'category' | 'legalName' | 'description' | 'privacyPolicyUrl' | 'cookies'
+>
+
 const CATEGORY_ORDER = ['essential', 'functional', 'analytics', 'marketing'] as const
 const CATEGORY_LABELS: Record<string, string> = {
   essential: 'Essential',
@@ -22,7 +28,7 @@ const CATEGORY_DESCRIPTIONS: Record<string, string> = {
 }
 
 interface Props {
-  services: CookieService[]
+  services: CookieServiceItem[]
   settings: CookieSetting
 }
 
@@ -47,7 +53,7 @@ export function CookiePreferencesForm({ services, settings }: Props) {
     }
   }, [isLoading, consent])
 
-  const byCategory = services.reduce<Record<string, CookieService[]>>((acc, svc) => {
+  const byCategory = services.reduce<Record<string, CookieServiceItem[]>>((acc, svc) => {
     acc[svc.category] = [...(acc[svc.category] ?? []), svc]
     return acc
   }, {})

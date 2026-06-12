@@ -117,7 +117,7 @@ export function AdditionalWindow({
         setCurrentTitle(data.doc.title)
         // Don't override currentBehavior — toolbar flags (displayHistory etc.) come from the root window
       } else if (data?.type === 'form') {
-        setCurrentTitle((data.doc as any).title ?? slug)
+        setCurrentTitle(data.doc.title ?? slug)
         // Same: keep root window behavior
       } else {
         setCurrentTitle(slug.charAt(0).toUpperCase() + slug.slice(1))

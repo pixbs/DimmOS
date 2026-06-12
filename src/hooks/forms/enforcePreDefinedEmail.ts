@@ -1,5 +1,7 @@
 import type { CollectionBeforeChangeHook } from 'payload'
 
+type SubmissionEntry = { field: string; value: string }
+
 export const enforcePreDefinedEmailHook: CollectionBeforeChangeHook = async ({
   data,
   req,
@@ -16,9 +18,11 @@ export const enforcePreDefinedEmailHook: CollectionBeforeChangeHook = async ({
 
   if (!form?.fields) return data
 
-  for (const field of form.fields as any[]) {
+  for (const field of form.fields) {
     if (field.blockType === 'email' && field.isPreDefined && field.defaultValue) {
-      const entry = (data.submissionData || []).find((e: any) => e.field === field.name)
+      const entry = ((data.submissionData ?? []) as SubmissionEntry[]).find(
+        (e) => e.field === field.name,
+      )
       if (entry) entry.value = field.defaultValue
     }
   }

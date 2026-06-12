@@ -19,5 +19,5 @@ export async function Form({ formId }: FormProps) {
 
   if (!form) return null
 
-  return <FormComponent form={form as any} />
+  return <FormComponent form={form} />
 }

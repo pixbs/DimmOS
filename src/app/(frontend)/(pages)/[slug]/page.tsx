@@ -21,7 +21,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     payload.find({
       collection: 'windows',
       where: { slug: { equals: slug } },
-      select: { title: true, meta: true } as const,
+      select: { title: true, slug: true, meta: true } as const,
       limit: 1,
       depth: 1,
       overrideAccess: false,
@@ -29,7 +29,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
     payload.find({
       collection: 'articles',
       where: { slug: { equals: slug } },
-      select: { title: true, meta: true } as const,
+      select: { title: true, slug: true, meta: true } as const,
       limit: 1,
       depth: 1,
       overrideAccess: false,
@@ -37,7 +37,7 @@ export async function generateMetadata({ params }: PageProps): Promise<Metadata>
   ])
 
   const doc = windows[0] ?? articles[0] ?? null
-  return generateMeta(doc as any)
+  return generateMeta(doc)
 }
 
 export default async function SlugPage({ params }: PageProps) {

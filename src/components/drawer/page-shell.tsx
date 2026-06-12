@@ -87,7 +87,7 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
     (data: WindowContentResult) => {
       if (data?.type === 'article') setNavTitle(data.doc.title)
       else if (data?.type === 'window') setNavTitle(data.title)
-      else if (data?.type === 'form') setNavTitle((data.doc as any).title ?? currentSlug)
+      else if (data?.type === 'form') setNavTitle(data.doc.title ?? currentSlug)
       else setNavTitle(currentSlug)
     },
     [currentSlug],

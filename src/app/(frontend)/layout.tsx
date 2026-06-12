@@ -50,29 +50,29 @@ async function fetchData() {
   ])
 
   const allDocs = [
-    ...windows.docs.map((doc) => ({ ...doc, _col: 'windows'  as CollectionSlug, _href: `/${doc.slug ?? ''}` })),
-    ...articles.docs.map((doc) => ({ ...doc, _col: 'articles' as CollectionSlug, _href: `/${doc.slug ?? ''}` })),
-    ...forms.docs.map((doc)    => ({ ...doc, _col: 'forms'    as CollectionSlug, _href: `/${(doc as any).slug ?? ''}` })),
+    ...windows.docs.map((doc) => ({ ...doc, _col: 'windows'  as CollectionSlug, _href: `/${doc.slug}` })),
+    ...articles.docs.map((doc) => ({ ...doc, _col: 'articles' as CollectionSlug, _href: `/${doc.slug}` })),
+    ...forms.docs.map((doc)    => ({ ...doc, _col: 'forms'    as CollectionSlug, _href: `/${doc.slug}` })),
   ]
 
   // Registry: all docs regardless of showShortcut, so the taskbar can look up any open page
   const registryEntries = allDocs.map((doc) => ({
     icon:     doc.shortcutIcon ?? 'ri-file-fill',
     name:     doc.shortcutName ?? doc.title,
-    slug:     doc.slug ?? (doc as any).slug ?? '',
+    slug:     doc.slug,
     color:    COLLECTION_META[doc._col].color,
     category: doc._col,
   }))
 
   // Shortcuts grid: only docs with showShortcut, sorted by order
   const shortcuts = allDocs
-    .filter((doc) => (doc as any).showShortcut)
-    .sort((a, b) => ((a as any).shortcutOrder ?? Infinity) - ((b as any).shortcutOrder ?? Infinity))
+    .filter((doc) => doc.showShortcut)
+    .sort((a, b) => (a.shortcutOrder ?? Infinity) - (b.shortcutOrder ?? Infinity))
     .map((doc) => ({
       icon:     doc.shortcutIcon ?? 'ri-file-fill',
       name:     doc.shortcutName ?? doc.title,
       href:     doc._href,
-      slug:     doc.slug ?? (doc as any).slug ?? '',
+      slug:     doc.slug,
       color:    COLLECTION_META[doc._col].color,
       category: doc._col,
     }))

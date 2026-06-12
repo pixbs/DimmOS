@@ -137,7 +137,7 @@ export function ContentView({
     return <ArticleBlockContent article={data.doc} />
   }
   if (data.type === 'form') {
-    return <FormComponent form={data.doc as any} />
+    return <FormComponent form={data.doc} />
   }
   return null
 }

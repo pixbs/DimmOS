@@ -10,7 +10,20 @@ export default async function CookiePreferencesPage() {
   const payload = await getPayload({ config })
 
   const [{ docs: services }, settings] = await Promise.all([
-    payload.find({ collection: 'cookie-services', limit: 100, depth: 0, overrideAccess: false }),
+    payload.find({
+      collection: 'cookie-services',
+      select: {
+        name: true,
+        category: true,
+        legalName: true,
+        description: true,
+        privacyPolicyUrl: true,
+        cookies: true,
+      } as const,
+      limit: 100,
+      depth: 0,
+      overrideAccess: false,
+    }),
     payload.findGlobal({ slug: 'cookie-settings', overrideAccess: false }),
   ])
 
