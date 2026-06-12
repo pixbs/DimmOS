@@ -9,6 +9,7 @@ import { WindowTitleBar } from './title-bar'
 import { ResizeHandles } from './ResizeHandles'
 import { ContentView } from './content-view'
 import { promiseCache, getOrCreatePromise, seedPromise } from '@/lib/window-promise-cache'
+import { ContentErrorBoundary } from './content-error-boundary'
 import type { WindowBehaviorConfig } from '@/utilities/windowBehavior'
 
 const DEFAULT_BEHAVIOR: WindowBehaviorConfig = {
@@ -374,18 +375,22 @@ export function AdditionalWindow({
       >
         <WindowToolbar />
         <div className={`flex-1 overflow-auto min-h-0 transition-opacity ${isPending ? 'opacity-60' : ''}`}>
-          <Suspense
-            fallback={
-              <div className="flex items-center justify-center h-32 opacity-30 text-sm">Loading…</div>
-            }
+          <ContentErrorBoundary
+            onRetry={() => setCurrentPromise(getOrCreatePromise(slug))}
           >
-            <ContentView
-              key={slug}
-              promise={currentPromise}
-              onDataReady={handleDataReady}
-              slug={slug}
-            />
-          </Suspense>
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center h-32 opacity-30 text-sm">Loading…</div>
+              }
+            >
+              <ContentView
+                key={slug}
+                promise={currentPromise}
+                onDataReady={handleDataReady}
+                slug={slug}
+              />
+            </Suspense>
+          </ContentErrorBoundary>
         </div>
       </WindowToolbarProvider>
 

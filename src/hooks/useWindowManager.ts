@@ -4,7 +4,7 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { BASE_Z, loadWindowsFromSession, saveWindowsToSession } from '@/lib/window-state'
 import type { ManagedWindow } from '@/lib/window-state'
-import { getOrCreatePromise } from '@/lib/window-promise-cache'
+import { getOrCreatePromise, evictPromises } from '@/lib/window-promise-cache'
 
 // Re-export so existing callsites continue to work without import path changes
 export type { ManagedWindow } from '@/lib/window-state'
@@ -161,6 +161,12 @@ export function useWindowManager(): WindowManager {
 
   const close = useCallback(
     (slug: string) => {
+      // Evict the window's content promises so reopening refetches fresh data.
+      // Preloaded shortcut windows re-seed their root slug from SSR data on the
+      // next render (seedPromise in AdditionalWindow), so only navigated history
+      // entries actually pay a refetch.
+      const closing = windowsRef.current.find((w) => w.rootSlug === slug)
+      if (closing) evictPromises(closing.historyStack)
       const next = windowsRef.current.filter((w) => w.rootSlug !== slug)
       if (slug === realPrimarySlugRef.current) {
         router.push('/')

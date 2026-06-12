@@ -10,7 +10,7 @@ export default defineConfig({
     maxWorkers: 1,
     minWorkers: 1,
     setupFiles: ['./vitest.setup.ts'],
-    include: ['tests/int/**/*.int.spec.ts'],
+    include: ['tests/int/**/*.int.spec.{ts,tsx}'],
     hookTimeout: 60000,
   },
 })

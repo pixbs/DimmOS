@@ -10,6 +10,7 @@ import { WindowToolbarProvider } from '@/components/window/window-toolbar-contex
 import { WindowToolbar } from '@/components/window/WindowToolbar'
 import { ResizeHandles } from '@/components/window/ResizeHandles'
 import { ContentView } from '@/components/window/content-view'
+import { ContentErrorBoundary } from '@/components/window/content-error-boundary'
 import { BASE_Z } from '@/hooks/useWindowManager'
 import { promiseCache, getOrCreatePromise } from '@/lib/window-promise-cache'
 import type { WindowContentResult } from '@/actions/getWindowContent'
@@ -324,17 +325,21 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
             {isAtRoot ? (
               children
             ) : (
-              <Suspense
-                fallback={
-                  <div className="flex items-center justify-center h-32 opacity-30 text-sm">Loading…</div>
-                }
+              <ContentErrorBoundary
+                onRetry={() => setCurrentPromise(getOrCreatePromise(currentSlug))}
               >
-                <ContentView
-                  key={currentSlug}
-                  promise={currentPromise}
-                  onDataReady={handleDataReady}
-                />
-              </Suspense>
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center h-32 opacity-30 text-sm">Loading…</div>
+                  }
+                >
+                  <ContentView
+                    key={currentSlug}
+                    promise={currentPromise}
+                    onDataReady={handleDataReady}
+                  />
+                </Suspense>
+              </ContentErrorBoundary>
             )}
           </div>
         </WindowToolbarProvider>
