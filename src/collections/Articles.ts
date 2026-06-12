@@ -16,7 +16,7 @@ export const Articles: CollectionConfig = {
     update: ({ req: { user } }) => !!user,
     delete: ({ req: { user } }) => !!user,
   },
-  hooks: createRevalidationHooks({ extraPaths: ['/works', '/services'] }),
+  hooks: createRevalidationHooks(),
   fields: [
     {
       type: 'tabs',
