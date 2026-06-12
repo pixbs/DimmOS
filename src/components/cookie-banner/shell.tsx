@@ -3,20 +3,11 @@
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { isDesktopViewport } from '@/lib/breakpoints'
+import { parsePx, clamp } from '@/lib/window-positions'
 import { DrawerContext } from '@/components/drawer/context'
 
 interface CookieBannerShellProps {
   children: ReactNode
-}
-
-function parsePx(el: HTMLElement, prop: string, fallback: number): number {
-  const raw = el.style.getPropertyValue(prop)
-  const n = parseFloat(raw)
-  return Number.isFinite(n) ? n : fallback
-}
-
-function clamp(v: number, min: number, max: number) {
-  return Math.min(Math.max(v, min), max)
 }
 
 export function CookieBannerShell({ children }: CookieBannerShellProps) {

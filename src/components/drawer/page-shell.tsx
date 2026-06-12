@@ -14,40 +14,13 @@ import { ContentErrorBoundary } from '@/components/window/content-error-boundary
 import { BASE_Z } from '@/hooks/useWindowManager'
 import { promiseCache, getOrCreatePromise } from '@/lib/window-promise-cache'
 import { isDesktopViewport } from '@/lib/breakpoints'
+import { loadSavedPosition, mergePositionToStorage, parsePx, clamp, type SavedPosition } from '@/lib/window-positions'
 import type { WindowContentResult } from '@/actions/getWindowContent'
 import type { ReactNode } from 'react'
 
 interface PageDrawerShellProps {
   children: ReactNode
   title?: string
-}
-
-function parsePx(el: HTMLElement, prop: string, fallback: number): number {
-  const raw = el.style.getPropertyValue(prop)
-  const n = parseFloat(raw)
-  return Number.isFinite(n) ? n : fallback
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max)
-}
-
-type SavedPosition = { x?: number; y?: number; w?: number; h?: number }
-
-function loadSavedPosition(slug: string): SavedPosition {
-  try {
-    return (JSON.parse(localStorage.getItem('window-positions') ?? '{}') as Record<string, SavedPosition>)[slug] ?? {}
-  } catch {
-    return {}
-  }
-}
-
-function mergePositionToStorage(slug: string, updates: Partial<SavedPosition>) {
-  try {
-    const all = JSON.parse(localStorage.getItem('window-positions') ?? '{}') as Record<string, SavedPosition>
-    all[slug] = { ...all[slug], ...updates }
-    localStorage.setItem('window-positions', JSON.stringify(all))
-  } catch { /* ignore */ }
 }
 
 export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerShellProps) {

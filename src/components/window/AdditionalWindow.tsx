@@ -9,6 +9,7 @@ import { WindowTitleBar } from './title-bar'
 import { ResizeHandles } from './ResizeHandles'
 import { ContentView } from './content-view'
 import { promiseCache, getOrCreatePromise, seedPromise } from '@/lib/window-promise-cache'
+import { loadSavedPosition, mergePositionToStorage, parsePx, clamp, type SavedPosition } from '@/lib/window-positions'
 import { ContentErrorBoundary } from './content-error-boundary'
 import type { WindowBehaviorConfig } from '@/utilities/windowBehavior'
 
@@ -43,26 +44,6 @@ interface AdditionalWindowProps {
 }
 
 const CASCADE_STEP = 32
-
-function parsePx(el: HTMLElement, prop: string, fallback: number): number {
-  const raw = el.style.getPropertyValue(prop)
-  const n = parseFloat(raw)
-  return Number.isFinite(n) ? n : fallback
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max)
-}
-
-type SavedPosition = { x?: number; y?: number; w?: number; h?: number }
-
-function mergePositionToStorage(key: string, updates: Partial<SavedPosition>) {
-  try {
-    const all = JSON.parse(localStorage.getItem('window-positions') ?? '{}') as Record<string, SavedPosition>
-    all[key] = { ...all[key], ...updates }
-    localStorage.setItem('window-positions', JSON.stringify(all))
-  } catch { /* ignore */ }
-}
 
 export function AdditionalWindow({
   rootSlug,
@@ -169,16 +150,11 @@ export function AdditionalWindow({
   useLayoutEffect(() => {
     const panel = panelRef.current
     if (!panel) return
-    try {
-      const saved = (JSON.parse(localStorage.getItem('window-positions') ?? '{}') as Record<string, SavedPosition>)[storageKey]
-      panel.style.setProperty('--win-x', `${saved?.x ?? (80 + cascadeIndex * CASCADE_STEP)}px`)
-      panel.style.setProperty('--win-y', `${saved?.y ?? (60 + cascadeIndex * CASCADE_STEP)}px`)
-      if (saved?.w !== undefined) panel.style.setProperty('--win-w', `${saved.w}px`)
-      if (saved?.h !== undefined) panel.style.setProperty('--win-h', `${saved.h}px`)
-    } catch {
-      panel.style.setProperty('--win-x', `${80 + cascadeIndex * CASCADE_STEP}px`)
-      panel.style.setProperty('--win-y', `${60 + cascadeIndex * CASCADE_STEP}px`)
-    }
+    const saved = loadSavedPosition(storageKey)
+    panel.style.setProperty('--win-x', `${saved.x ?? (80 + cascadeIndex * CASCADE_STEP)}px`)
+    panel.style.setProperty('--win-y', `${saved.y ?? (60 + cascadeIndex * CASCADE_STEP)}px`)
+    if (saved.w !== undefined) panel.style.setProperty('--win-w', `${saved.w}px`)
+    if (saved.h !== undefined) panel.style.setProperty('--win-h', `${saved.h}px`)
   }, [storageKey, cascadeIndex])
 
   // ── 2. Open animation ─────────────────────────────────────────────────────
