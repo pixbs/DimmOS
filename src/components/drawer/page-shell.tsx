@@ -16,6 +16,7 @@ import { promiseCache, getOrCreatePromise } from '@/lib/window-promise-cache'
 import { isDesktopViewport } from '@/lib/breakpoints'
 import { loadSavedPosition, mergePositionToStorage, parsePx, type SavedPosition } from '@/lib/window-positions'
 import { startPanelDrag } from '@/lib/window-drag'
+import { useKeyboardInset } from '@/hooks/useKeyboardInset'
 import type { WindowContentResult } from '@/actions/getWindowContent'
 import type { ReactNode } from 'react'
 
@@ -37,6 +38,9 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
   const router = useRouter()
   const pathname = usePathname()
   const slug = pathname.replace(/^\//, '') || 'home'
+
+  // Keep the pinned footer above the soft keyboard on mobile.
+  useKeyboardInset(panelRef)
 
   const { windows, focus, minimize, actualMinimize, navigateInWindow, backInWindow, forwardInWindow } = useWindowManagerContext()
   const win = windows.find((w) => w.rootSlug === slug)
@@ -287,7 +291,7 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
         >
           <WindowToolbar />
           <div
-            className={`flex-1 overflow-auto min-h-0 bg-bg rounded-2xl transition-opacity ${isPending ? 'opacity-60' : ''}`}
+            className={`flex-1 min-h-0 flex flex-col transition-opacity ${isPending ? 'opacity-60' : ''}`}
           >
             {isAtRoot ? (
               children

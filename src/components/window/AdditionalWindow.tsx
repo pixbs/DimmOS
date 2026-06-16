@@ -327,7 +327,7 @@ export function AdditionalWindow({
         onNavigate={handleNavigate}
       >
         <WindowToolbar />
-        <div className={`flex-1 overflow-auto min-h-0 bg-bg rounded-2xl transition-opacity ${isPending ? 'opacity-60' : ''}`}>
+        <div className={`flex-1 min-h-0 flex flex-col transition-opacity ${isPending ? 'opacity-60' : ''}`}>
           <ContentErrorBoundary
             onRetry={() => setCurrentPromise(getOrCreatePromise(slug))}
           >
