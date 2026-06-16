@@ -1,40 +1,22 @@
 // Articles = portfolio case studies (type: 'case-study') and service descriptions (type: 'service').
-// Replaces the Works collection. The type field drives /works and /services listing routes.
+// Replaces the Works collection. The type field drives articleList block filtering.
 import type { CollectionConfig } from 'payload'
-import { revalidatePath, revalidateTag } from 'next/cache'
 import { contentBlocksField } from '@/fields/contentBlocks'
 import { windowBehaviorFields } from '@/fields/windowBehavior'
+import { createSlugField } from '@/fields/slugField'
+import { createShortcutFields } from '@/fields/shortcutFields'
+import { createRevalidationHooks } from '@/hooks/revalidateContent'
 
 export const Articles: CollectionConfig = {
   slug: 'articles',
   admin: { useAsTitle: 'title' },
-  hooks: {
-    afterChange: [
-      async ({ doc, req }) => {
-        if (req.context.skipHooks) return
-        req.context.skipHooks = true
-        try {
-          revalidateTag('window-content', {})
-          revalidatePath(`/${doc.slug}`)
-          revalidatePath('/')
-          revalidatePath('/works')
-          revalidatePath('/services')
-        } catch {}
-        req.context.skipHooks = false
-      },
-    ],
-    afterDelete: [
-      async ({ doc }) => {
-        try {
-          revalidateTag('window-content', {})
-          revalidatePath(`/${doc.slug}`)
-          revalidatePath('/')
-          revalidatePath('/works')
-          revalidatePath('/services')
-        } catch {}
-      },
-    ],
+  access: {
+    read: () => true, // public content — rendered on the frontend without auth
+    create: ({ req: { user } }) => !!user,
+    update: ({ req: { user } }) => !!user,
+    delete: ({ req: { user } }) => !!user,
   },
+  hooks: createRevalidationHooks(),
   fields: [
     {
       type: 'tabs',
@@ -53,38 +35,13 @@ export const Articles: CollectionConfig = {
                 { label: 'Service', value: 'service' },
               ],
             },
-            {
-              name: 'slug',
-              type: 'text',
-              required: true,
-              unique: true,
-              index: true,
-              admin: { description: 'URL path identifier, e.g. "my-project" → /my-project' },
-              validate: (value: string | null | undefined) => {
-                if (!value) return 'Slug is required'
-                if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value))
-                  return 'Slug must be lowercase letters, numbers, and hyphens only'
-                return true
-              },
-            },
+            createSlugField('URL path identifier, e.g. "my-project" → /my-project'),
             contentBlocksField,
           ],
         },
         {
           label: 'Shortcut',
-          fields: [
-            { name: 'showShortcut', type: 'checkbox', defaultValue: false },
-            { name: 'shortcutName', type: 'text' },
-            { name: 'shortcutIcon', type: 'text', defaultValue: 'ri-folder-fill' },
-            {
-              name: 'shortcutOrder',
-              type: 'number',
-              admin: {
-                description:
-                  'Controls position across all shortcuts. Lower = earlier. Leave blank to append.',
-              },
-            },
-          ],
+          fields: createShortcutFields('ri-folder-fill'),
         },
         {
           label: 'Window',

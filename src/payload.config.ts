@@ -3,12 +3,15 @@ import { resendAdapter } from '@payloadcms/email-resend'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { formBuilderPlugin } from '@payloadcms/plugin-form-builder'
 import { seoPlugin } from '@payloadcms/plugin-seo'
+import type { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 import { sentryPlugin } from '@payloadcms/plugin-sentry'
 import * as Sentry from '@sentry/nextjs'
 import path from 'path'
-import { buildConfig } from 'payload'
+import { buildConfig, type Field } from 'payload'
 import { fileURLToPath } from 'url'
 import sharp from 'sharp'
+
+import type { Article, Window as WindowDoc } from './payload-types'
 
 import { Users } from './collections/Users'
 import { Media } from './collections/Media'
@@ -20,9 +23,19 @@ import { CookieSettings } from './globals/CookieSettings'
 import { enforcePreDefinedEmailHook } from './hooks/forms/enforcePreDefinedEmail'
 import { verifyRecaptchaHook } from './hooks/forms/verifyRecaptcha'
 import { windowBehaviorFields } from './fields/windowBehavior'
+import { createSlugField } from './fields/slugField'
+import { createShortcutFields } from './fields/shortcutFields'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
+
+const generateTitle: GenerateTitle<Article | WindowDoc> = ({ doc }) =>
+  doc?.title ? `${doc.title} — Dimm's OS` : "Dimm's OS"
+
+const generateURL: GenerateURL<Article | WindowDoc> = ({ doc }) => {
+  const base = process.env.NEXT_PUBLIC_SITE_URL ?? ''
+  return doc?.slug ? `${base}/${doc.slug}` : base
+}
 
 export default buildConfig({
   admin: {
@@ -35,7 +48,7 @@ export default buildConfig({
   globals: [CookieSettings],
   editor: lexicalEditor(),
   email: resendAdapter({
-    defaultFromAddress: 'noreply@dimm.co',
+    defaultFromAddress: process.env.RESEND_DEFAULT_FROM_ADDRESS || 'noreply@dimm.co',
     defaultFromName: 'DimmOS',
     apiKey: process.env.RESEND_API_KEY || '',
   }),
@@ -95,27 +108,12 @@ export default buildConfig({
       },
       formOverrides: {
         // Must be a function — the plugin ignores plain arrays
-        fields: ({ defaultFields }: { defaultFields: any[] }) => {
-          const titleField = defaultFields.find((f: any) => f.name === 'title')
-          const formFields = defaultFields.filter((f: any) => f.name !== 'title')
+        fields: ({ defaultFields }: { defaultFields: Field[] }) => {
+          const titleField = defaultFields.find((f) => 'name' in f && f.name === 'title')
+          const formFields = defaultFields.filter((f) => !('name' in f && f.name === 'title'))
           return [
-            titleField,
-            {
-              name: 'slug',
-              type: 'text',
-              required: true,
-              unique: true,
-              index: true,
-              admin: {
-                description: 'Used as the URL path: /contact → /contact',
-              },
-              validate: (value: string | null | undefined) => {
-                if (!value) return 'Slug is required'
-                if (!/^[a-z0-9]+(?:-[a-z0-9]+)*$/.test(value))
-                  return 'Slug must be lowercase letters, numbers, and hyphens only'
-                return true
-              },
-            },
+            ...(titleField ? [titleField] : []),
+            createSlugField('Used as the URL path: /contact → /contact'),
             {
               type: 'tabs',
               tabs: [
@@ -125,19 +123,7 @@ export default buildConfig({
                 },
                 {
                   label: 'Shortcut',
-                  fields: [
-                    { name: 'showShortcut', type: 'checkbox', defaultValue: false },
-                    { name: 'shortcutName', type: 'text' },
-                    { name: 'shortcutIcon', type: 'text', defaultValue: 'ri-draft-fill' },
-                    {
-                      name: 'shortcutOrder',
-                      type: 'number',
-                      admin: {
-                        description:
-                          'Controls position across all shortcuts. Lower = earlier. Leave blank to append.',
-                      },
-                    },
-                  ],
+                  fields: createShortcutFields('ri-draft-fill'),
                 },
                 {
                   label: 'Window',
@@ -159,17 +145,13 @@ export default buildConfig({
       collections: ['windows', 'articles'],
       uploadsCollection: 'media',
       tabbedUI: true,
-      generateTitle: ({ doc }: any) =>
-        doc?.title ? `${doc.title} — Dimm's OS` : "Dimm's OS",
-      generateURL: ({ doc }: any) => {
-        const base = process.env.NEXT_PUBLIC_SITE_URL ?? ''
-        return doc?.slug ? `${base}/${doc.slug}` : base
-      },
-      fields: ({ defaultFields }: any) => [
+      generateTitle,
+      generateURL,
+      fields: ({ defaultFields }) => [
         ...defaultFields,
         {
           name: 'noIndex',
-          type: 'checkbox' as const,
+          type: 'checkbox',
           defaultValue: false,
           admin: { description: 'Prevent search engines from indexing this page.' },
         },

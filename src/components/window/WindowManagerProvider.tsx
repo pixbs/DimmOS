@@ -1,7 +1,8 @@
 'use client'
 
-import { useState, useEffect, type ReactNode } from 'react'
+import { useState, type ReactNode } from 'react'
 import { useWindowManager } from '@/hooks/useWindowManager'
+import { useIsDesktop } from '@/hooks/useIsDesktop'
 import { WindowManagerContextProvider } from './manager-context'
 import { AdditionalWindow } from './AdditionalWindow'
 import { Taskbar } from '@/components/taskbar'
@@ -22,16 +23,7 @@ export function WindowManagerProvider({
   preloadedContents = {},
   shortcutSlugs = [],
 }: WindowManagerProviderProps) {
-  const [isDesktop, setIsDesktop] = useState<boolean | null>(null)
-
-  useEffect(() => {
-    function check() {
-      setIsDesktop(window.innerWidth >= 1024)
-    }
-    check()
-    window.addEventListener('resize', check, { passive: true })
-    return () => window.removeEventListener('resize', check)
-  }, [])
+  const isDesktop = useIsDesktop()
 
   const total = isDesktop === null ? null : isDesktop ? shortcutSlugs.length : 0
 

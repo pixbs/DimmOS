@@ -11,23 +11,15 @@ declare global {
   }
 }
 
-type FormField = {
-  blockType: 'email' | 'text' | 'textarea'
-  name: string
-  label?: string | null
-  placeholder?: string | null
-  required?: boolean | null
-  defaultValue?: string | null
-  isPreDefined?: boolean | null
+import type { Form } from '@/payload-types'
+
+type FormFieldBlock = NonNullable<Form['fields']>[number]
+
+function isLockedEmail(field: FormFieldBlock): boolean {
+  return field.blockType === 'email' && field.isPreDefined === true
 }
 
-type FormData = {
-  id: string | number
-  title: string
-  fields?: FormField[] | null
-}
-
-export function FormComponent({ form }: { form: FormData }) {
+export function FormComponent({ form }: { form: Form }) {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
   const [values, setValues] = useState<Record<string, string>>({})
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ''
@@ -56,7 +48,7 @@ export function FormComponent({ form }: { form: FormData }) {
 
     const submissionData = (form.fields || []).map((field) => ({
       field: field.name,
-      value: field.isPreDefined ? field.defaultValue || '' : values[field.name] || '',
+      value: isLockedEmail(field) ? field.defaultValue || '' : values[field.name] || '',
     }))
 
     if (siteKey && window.grecaptcha) {
@@ -97,14 +89,14 @@ export function FormComponent({ form }: { form: FormData }) {
     <form onSubmit={handleSubmit} className="flex flex-col h-full" noValidate={false}>
       {/* Row fields (email, text) */}
       {rowFields.map((field) => {
-        const isDisabled = field.blockType === 'email' && field.isPreDefined
+        const isDisabled = isLockedEmail(field)
         const label = field.label || field.name
         return (
           <div key={field.name} className="flex items-center gap-4 px-4 py-3 border-b border-fg/10">
             <span className="text-fg/40 text-[0.9375rem] shrink-0 w-16">{label}:</span>
             {isDisabled ? (
               <span className="px-3 py-1 rounded-lg text-xs text-brand bg-brand/10">
-                {field.defaultValue}
+                {field.defaultValue ?? ''}
               </span>
             ) : (
               <input

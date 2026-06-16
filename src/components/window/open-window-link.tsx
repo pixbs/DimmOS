@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import type { AnchorHTMLAttributes } from 'react'
 import { useWindowManagerContext } from './manager-context'
+import { isDesktopViewport } from '@/lib/breakpoints'
 
 interface OpenWindowLinkProps extends AnchorHTMLAttributes<HTMLAnchorElement> {
   slug: string
@@ -14,7 +15,7 @@ export function OpenWindowLink({ slug, children, className, ...rest }: OpenWindo
   const { open } = useWindowManagerContext()
 
   function handleClick(e: React.MouseEvent) {
-    if (typeof window !== 'undefined' && window.innerWidth >= 1024) {
+    if (isDesktopViewport()) {
       e.preventDefault()
       open(slug)
     }

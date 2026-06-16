@@ -71,4 +71,12 @@ test.describe('SEO', () => {
     const content = await robotsMeta.getAttribute('content')
     expect(content).toContain('noindex')
   })
+
+  test('document page has a canonical link ending in its slug', async ({ page }) => {
+    await page.goto(`${BASE_URL}/${NO_INDEX_SLUG}`)
+    const canonical = page.locator('link[rel="canonical"]')
+    await expect(canonical).toHaveCount(1)
+    const href = await canonical.getAttribute('href')
+    expect(href).toMatch(new RegExp(`/${NO_INDEX_SLUG}$`))
+  })
 })

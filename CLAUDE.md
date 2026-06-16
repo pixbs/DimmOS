@@ -1,5 +1,9 @@
 # Claude Code
 
+## File naming
+
+Component files mix PascalCase (`AdditionalWindow.tsx`) and kebab-case (`title-bar.tsx`) for historical reasons. Existing files keep their names — case-only renames churn git blame and misbehave on case-insensitive filesystems. New files use kebab-case.
+
 ## Skills installed
 
 | Skill | Trigger |

@@ -4,7 +4,8 @@ import { useState, useCallback, useRef, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
 import { BASE_Z, loadWindowsFromSession, saveWindowsToSession } from '@/lib/window-state'
 import type { ManagedWindow } from '@/lib/window-state'
-import { getOrCreatePromise } from '@/lib/window-promise-cache'
+import { getOrCreatePromise, evictPromises } from '@/lib/window-promise-cache'
+import { isDesktopViewport } from '@/lib/breakpoints'
 
 // Re-export so existing callsites continue to work without import path changes
 export type { ManagedWindow } from '@/lib/window-state'
@@ -48,7 +49,7 @@ function updateCosmeticUrl(
 ): void {
   if (typeof window === 'undefined') return
   if (realPrimary !== null) return     // real route active — leave URL alone
-  if (window.innerWidth < 1024) return
+  if (!isDesktopViewport()) return
 
   const visible = wins.filter((w) => !w.minimized)
   const target =
@@ -92,7 +93,7 @@ export function useWindowManager(): WindowManager {
       if (toAdd.length === 0) return prev
       return [...prev, ...toAdd]
     })
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- mount-only sessionStorage restore; refs hold current state
 
   // Effect 2: sync sessionStorage + cosmetic URL on every windows change
   useEffect(() => {
@@ -126,11 +127,11 @@ export function useWindowManager(): WindowManager {
         ...remaining,
       ]
     })
-  }, [pathSlug]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pathSlug]) // eslint-disable-line react-hooks/exhaustive-deps -- only real pathname changes re-run this; refs track the rest
 
   const open = useCallback(
     (slug: string) => {
-      if (typeof window !== 'undefined' && window.innerWidth < 1024) {
+      if (typeof window !== 'undefined' && !isDesktopViewport()) {
         router.push(`/${slug}`)
         return
       }
@@ -161,6 +162,12 @@ export function useWindowManager(): WindowManager {
 
   const close = useCallback(
     (slug: string) => {
+      // Evict the window's content promises so reopening refetches fresh data.
+      // Preloaded shortcut windows re-seed their root slug from SSR data on the
+      // next render (seedPromise in AdditionalWindow), so only navigated history
+      // entries actually pay a refetch.
+      const closing = windowsRef.current.find((w) => w.rootSlug === slug)
+      if (closing) evictPromises(closing.historyStack)
       const next = windowsRef.current.filter((w) => w.rootSlug !== slug)
       if (slug === realPrimarySlugRef.current) {
         router.push('/')

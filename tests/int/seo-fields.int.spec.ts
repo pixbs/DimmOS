@@ -95,12 +95,13 @@ describe('SEO meta fields on Windows collection', () => {
     expect((docs[0] as any).meta?.noIndex).toBe(false)
   })
 
-  it('blocks unauthenticated read (windows is admin-only)', async () => {
-    await expect(
-      payload.find({
-        collection: 'windows',
-        overrideAccess: false,
-      }),
-    ).rejects.toThrow()
+  it('exposes meta fields to unauthenticated read (windows is public)', async () => {
+    const { docs } = await payload.find({
+      collection: 'windows',
+      where: { slug: { equals: 'test-seo-roundtrip' } },
+      overrideAccess: false,
+    })
+    expect(docs.length).toBe(1)
+    expect((docs[0] as any).meta?.title).toBe('Round-trip Title')
   })
 })

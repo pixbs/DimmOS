@@ -13,6 +13,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       select: { slug: true, updatedAt: true } as const,
       limit: 200,
       depth: 0,
+      overrideAccess: false,
     }),
     payload.find({
       collection: 'articles',
@@ -20,6 +21,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
       select: { slug: true, updatedAt: true } as const,
       limit: 200,
       depth: 0,
+      overrideAccess: false,
     }),
   ])
 

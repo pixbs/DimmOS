@@ -124,12 +124,61 @@ describe('Windows collection', () => {
     expect(block.limit).toBe(3)
   })
 
-  it('blocks unauthenticated read (admin-only)', async () => {
+  it('rejects an embed block with a non-http(s) URL', async () => {
     await expect(
-      payload.find({
+      payload.create({
         collection: 'windows',
+        data: {
+          title: 'Bad Embed Window',
+          slug: 'test-window-bad-embed',
+          content: [{ blockType: 'embed', url: 'javascript:alert(1)' }],
+        },
+        overrideAccess: true,
+      }),
+    ).rejects.toThrow()
+  })
+
+  it('creates a window with an https embed block', async () => {
+    const doc = await payload.create({
+      collection: 'windows',
+      data: {
+        title: 'Embed Window',
+        slug: 'test-window-embed',
+        content: [{ blockType: 'embed', url: 'https://example.com/video' }],
+      },
+      overrideAccess: true,
+    })
+
+    createdIds.push(doc.id)
+    expect(doc.content?.[0]?.blockType).toBe('embed')
+  })
+
+  it('allows unauthenticated read (public content)', async () => {
+    const { docs } = await payload.find({
+      collection: 'windows',
+      where: { slug: { equals: 'test-window-rich-text' } },
+      overrideAccess: false,
+    })
+    expect(docs.length).toBe(1)
+  })
+
+  it('blocks unauthenticated create', async () => {
+    await expect(
+      payload.create({
+        collection: 'windows',
+        data: { title: 'No Auth', slug: 'test-window-no-auth' },
         overrideAccess: false,
       }),
+    ).rejects.toThrow()
+  })
+
+  it('blocks unauthenticated update and delete', async () => {
+    const id = createdIds[0]
+    await expect(
+      payload.update({ collection: 'windows', id, data: { title: 'Hacked' }, overrideAccess: false }),
+    ).rejects.toThrow()
+    await expect(
+      payload.delete({ collection: 'windows', id, overrideAccess: false }),
     ).rejects.toThrow()
   })
 })

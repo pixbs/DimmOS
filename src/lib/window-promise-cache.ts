@@ -22,7 +22,23 @@ export function getOrCreatePromise(slug: string): Promise<WindowContentResult> {
       // SSR: placeholder only — client will fetch on demand via useEffect
       return Promise.resolve(null)
     }
-    promiseCache.set(slug, getWindowContent(slug))
+    const p = getWindowContent(slug)
+    promiseCache.set(slug, p)
+    // Evict on failure so the next open retries instead of replaying a cached
+    // rejection for the rest of the session. Identity check guards against
+    // deleting a newer promise that has already replaced this one.
+    p.catch(() => {
+      if (promiseCache.get(slug) === p) promiseCache.delete(slug)
+    })
   }
   return promiseCache.get(slug)!
+}
+
+export function evictPromise(slug: string): void {
+  promiseCache.delete(slug)
+}
+
+/** Evict a window's slugs on close so reopening refetches instead of serving session-stale data. */
+export function evictPromises(slugs: string[]): void {
+  for (const slug of slugs) promiseCache.delete(slug)
 }

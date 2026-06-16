@@ -10,42 +10,18 @@ import { WindowToolbarProvider } from '@/components/window/window-toolbar-contex
 import { WindowToolbar } from '@/components/window/WindowToolbar'
 import { ResizeHandles } from '@/components/window/ResizeHandles'
 import { ContentView } from '@/components/window/content-view'
+import { ContentErrorBoundary } from '@/components/window/content-error-boundary'
 import { BASE_Z } from '@/hooks/useWindowManager'
 import { promiseCache, getOrCreatePromise } from '@/lib/window-promise-cache'
+import { isDesktopViewport } from '@/lib/breakpoints'
+import { loadSavedPosition, mergePositionToStorage, parsePx, type SavedPosition } from '@/lib/window-positions'
+import { startPanelDrag } from '@/lib/window-drag'
 import type { WindowContentResult } from '@/actions/getWindowContent'
 import type { ReactNode } from 'react'
 
 interface PageDrawerShellProps {
   children: ReactNode
   title?: string
-}
-
-function parsePx(el: HTMLElement, prop: string, fallback: number): number {
-  const raw = el.style.getPropertyValue(prop)
-  const n = parseFloat(raw)
-  return Number.isFinite(n) ? n : fallback
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max)
-}
-
-type SavedPosition = { x?: number; y?: number; w?: number; h?: number }
-
-function loadSavedPosition(slug: string): SavedPosition {
-  try {
-    return (JSON.parse(localStorage.getItem('window-positions') ?? '{}') as Record<string, SavedPosition>)[slug] ?? {}
-  } catch {
-    return {}
-  }
-}
-
-function mergePositionToStorage(slug: string, updates: Partial<SavedPosition>) {
-  try {
-    const all = JSON.parse(localStorage.getItem('window-positions') ?? '{}') as Record<string, SavedPosition>
-    all[slug] = { ...all[slug], ...updates }
-    localStorage.setItem('window-positions', JSON.stringify(all))
-  } catch { /* ignore */ }
 }
 
 export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerShellProps) {
@@ -111,7 +87,7 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
     (data: WindowContentResult) => {
       if (data?.type === 'article') setNavTitle(data.doc.title)
       else if (data?.type === 'window') setNavTitle(data.title)
-      else if (data?.type === 'form') setNavTitle((data.doc as any).title ?? currentSlug)
+      else if (data?.type === 'form') setNavTitle(data.doc.title ?? currentSlug)
       else setNavTitle(currentSlug)
     },
     [currentSlug],
@@ -163,7 +139,7 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
   useEffect(() => { setIsOpen(true) }, [])
 
   useEffect(() => {
-    if (window.innerWidth < 1024) {
+    if (!isDesktopViewport()) {
       document.body.dataset.pageDrawer = isOpen ? 'open' : 'closed'
     }
     document.body.style.removeProperty('--drawer-open-pct')
@@ -171,7 +147,7 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
 
   useEffect(() => {
     return () => {
-      if (window.innerWidth < 1024) {
+      if (!isDesktopViewport()) {
         delete document.body.dataset.pageDrawer
       }
     }
@@ -180,7 +156,7 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
   // Remove data-page-drawer from body when viewport grows to desktop — prevents stale header tinting
   useEffect(() => {
     function onResize() {
-      if (window.innerWidth >= 1024) {
+      if (isDesktopViewport()) {
         delete document.body.dataset.pageDrawer
         document.body.style.removeProperty('--drawer-open-pct')
       }
@@ -191,7 +167,7 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
 
   // Restore saved position and size on desktop mount
   useEffect(() => {
-    if (window.innerWidth < 1024) return
+    if (!isDesktopViewport()) return
     const panel = panelRef.current
     if (!panel) return
     const saved = loadSavedPosition(slug)
@@ -207,41 +183,39 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
     }
     document.addEventListener('keydown', onKeyDown)
     return () => document.removeEventListener('keydown', onKeyDown)
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- document-level Escape listener registered once; close identity is irrelevant
   }, [])
 
   function handlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
     const panel = panelRef.current
     if (!panel) return
-    e.preventDefault()
 
-    const isDesktop = window.innerWidth >= 1024
-    const startX = e.clientX
+    if (isDesktopViewport()) {
+      startPanelDrag(e, panel, {
+        defaultX: 80,
+        defaultY: 40,
+        onDragEnd: (pos) => mergePositionToStorage(slug, pos),
+      })
+      return
+    }
+
+    // Mobile sheet drag-to-dismiss — surface-specific (--drawer-open-pct lerp,
+    // 25% dismiss threshold), intentionally not part of the shared drag helper.
+    e.preventDefault()
     const startY = e.clientY
-    const startWinX = isDesktop ? parsePx(panel, '--win-x', 80) : 0
-    const startWinY = isDesktop ? parsePx(panel, '--win-y', 40) : 0
     let mobileOffset = 0
 
     panel.setPointerCapture(e.pointerId)
     panel.setAttribute('data-dragging', '')
-    if (!isDesktop) {
-      document.body.dataset.pageDrawer = 'dragging'
-      document.body.style.setProperty('--drawer-open-pct', '100%')
-    }
+    document.body.dataset.pageDrawer = 'dragging'
+    document.body.style.setProperty('--drawer-open-pct', '100%')
 
     function onMove(ev: PointerEvent) {
-      if (isDesktop) {
-        const maxX = window.innerWidth - (panel!.offsetWidth || 400)
-        const maxY = window.innerHeight - (panel!.offsetHeight || 300)
-        panel!.style.setProperty('--win-x', `${clamp(startWinX + ev.clientX - startX, 0, Math.max(0, maxX))}px`)
-        panel!.style.setProperty('--win-y', `${clamp(startWinY + ev.clientY - startY, 0, Math.max(0, maxY))}px`)
-      } else {
-        mobileOffset = Math.max(0, ev.clientY - startY)
-        const pct = Math.max(0, (1 - mobileOffset / (panel!.offsetHeight || 400)) * 100)
-        document.body.style.setProperty('--drawer-open-pct', `${pct}%`)
-        panel!.style.transform = `translateY(${mobileOffset}px)`
-        panel!.style.transition = 'none'
-      }
+      mobileOffset = Math.max(0, ev.clientY - startY)
+      const pct = Math.max(0, (1 - mobileOffset / (panel!.offsetHeight || 400)) * 100)
+      document.body.style.setProperty('--drawer-open-pct', `${pct}%`)
+      panel!.style.transform = `translateY(${mobileOffset}px)`
+      panel!.style.transition = 'none'
     }
 
     function onUp() {
@@ -249,20 +223,13 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
       panel!.removeEventListener('pointerup', onUp)
       panel!.removeAttribute('data-dragging')
 
-      if (isDesktop) {
-        mergePositionToStorage(slug, {
-          x: parsePx(panel!, '--win-x', 80),
-          y: parsePx(panel!, '--win-y', 40),
-        })
-      } else {
-        const willClose = mobileOffset > (panel!.offsetHeight || 400) * 0.25
-        panel!.style.transform = ''
-        panel!.style.transition = ''
-        document.body.style.removeProperty('--drawer-open-pct')
-        document.body.dataset.pageDrawer = willClose ? 'closed' : 'open'
-        panel!.setAttribute('data-state', willClose ? 'closed' : 'open')
-        if (willClose) close()
-      }
+      const willClose = mobileOffset > (panel!.offsetHeight || 400) * 0.25
+      panel!.style.transform = ''
+      panel!.style.transition = ''
+      document.body.style.removeProperty('--drawer-open-pct')
+      document.body.dataset.pageDrawer = willClose ? 'closed' : 'open'
+      panel!.setAttribute('data-state', willClose ? 'closed' : 'open')
+      if (willClose) close()
     }
 
     panel.addEventListener('pointermove', onMove)
@@ -324,17 +291,21 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
             {isAtRoot ? (
               children
             ) : (
-              <Suspense
-                fallback={
-                  <div className="flex items-center justify-center h-32 opacity-30 text-sm">Loading…</div>
-                }
+              <ContentErrorBoundary
+                onRetry={() => setCurrentPromise(getOrCreatePromise(currentSlug))}
               >
-                <ContentView
-                  key={currentSlug}
-                  promise={currentPromise}
-                  onDataReady={handleDataReady}
-                />
-              </Suspense>
+                <Suspense
+                  fallback={
+                    <div className="flex items-center justify-center h-32 opacity-30 text-sm">Loading…</div>
+                  }
+                >
+                  <ContentView
+                    key={currentSlug}
+                    promise={currentPromise}
+                    onDataReady={handleDataReady}
+                  />
+                </Suspense>
+              </ContentErrorBoundary>
             )}
           </div>
         </WindowToolbarProvider>

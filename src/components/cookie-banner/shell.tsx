@@ -2,20 +2,12 @@
 
 import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
+import { isDesktopViewport } from '@/lib/breakpoints'
+import { startPanelDrag } from '@/lib/window-drag'
 import { DrawerContext } from '@/components/drawer/context'
 
 interface CookieBannerShellProps {
   children: ReactNode
-}
-
-function parsePx(el: HTMLElement, prop: string, fallback: number): number {
-  const raw = el.style.getPropertyValue(prop)
-  const n = parseFloat(raw)
-  return Number.isFinite(n) ? n : fallback
-}
-
-function clamp(v: number, min: number, max: number) {
-  return Math.min(Math.max(v, min), max)
 }
 
 export function CookieBannerShell({ children }: CookieBannerShellProps) {
@@ -39,7 +31,7 @@ export function CookieBannerShell({ children }: CookieBannerShellProps) {
   // ─── Mobile drag-to-dismiss ──────────────────────────────────────────────
 
   function handleMobilePointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    if (window.innerWidth >= 1024) return
+    if (isDesktopViewport()) return
     mobileDragStartY.current = e.clientY
     setIsMobileDragging(true)
     e.currentTarget.setPointerCapture(e.pointerId)
@@ -61,34 +53,14 @@ export function CookieBannerShell({ children }: CookieBannerShellProps) {
   // ─── Desktop drag-to-move ────────────────────────────────────────────────
 
   function handleDesktopTitlePointerDown(e: React.PointerEvent<HTMLDivElement>) {
-    if (window.innerWidth < 1024) return
+    if (!isDesktopViewport()) return
     const panel = panelRef.current
     if (!panel) return
-    e.preventDefault()
-
-    const startX = e.clientX
-    const startY = e.clientY
-    const startWinX = parsePx(panel, '--win-x', Math.max(20, window.innerWidth - 440))
-    const startWinY = parsePx(panel, '--win-y', 20)
-
-    panel.setPointerCapture(e.pointerId)
-    panel.setAttribute('data-dragging', '')
-
-    function onMove(ev: PointerEvent) {
-      const maxX = window.innerWidth - (panel!.offsetWidth || 420)
-      const maxY = window.innerHeight - (panel!.offsetHeight || 300)
-      panel!.style.setProperty('--win-x', `${clamp(startWinX + ev.clientX - startX, 0, Math.max(0, maxX))}px`)
-      panel!.style.setProperty('--win-y', `${clamp(startWinY + ev.clientY - startY, 0, Math.max(0, maxY))}px`)
-    }
-
-    function onUp() {
-      panel!.removeEventListener('pointermove', onMove)
-      panel!.removeEventListener('pointerup', onUp)
-      panel!.removeAttribute('data-dragging')
-    }
-
-    panel.addEventListener('pointermove', onMove)
-    panel.addEventListener('pointerup', onUp)
+    startPanelDrag(e, panel, {
+      defaultX: Math.max(20, window.innerWidth - 440),
+      defaultY: 20,
+      // position intentionally not persisted — the banner re-anchors top-right each visit
+    })
   }
 
   // On mobile, override transform during drag
@@ -98,7 +70,9 @@ export function CookieBannerShell({ children }: CookieBannerShellProps) {
 
   return (
     <DrawerContext.Provider value={{ close, open }}>
-      {/* Mobile backdrop — lg:hidden keeps it off desktop */}
+      {/* Mobile backdrop — lg:hidden keeps it off desktop.
+          z-199 sits deliberately one below the panel's --win-z: 200 so the
+          banner always paints above its own backdrop and above all windows. */}
       <div
         aria-hidden="true"
         className={cn(

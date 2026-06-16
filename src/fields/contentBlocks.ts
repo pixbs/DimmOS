@@ -1,19 +1,22 @@
-import type { Block, Field } from 'payload'
+﻿import type { Block, Field } from 'payload'
 
 const RichTextBlock: Block = {
   slug: 'richText',
+  interfaceName: 'RichTextBlock',
   labels: { singular: 'Rich Text', plural: 'Rich Text Blocks' },
   fields: [{ name: 'content', type: 'richText' }],
 }
 
 const ImageBlock: Block = {
   slug: 'image',
+  interfaceName: 'ImageBlock',
   labels: { singular: 'Image', plural: 'Images' },
   fields: [{ name: 'image', type: 'upload', relationTo: 'media', required: true }],
 }
 
 const GalleryBlock: Block = {
   slug: 'gallery',
+  interfaceName: 'GalleryBlock',
   labels: { singular: 'Gallery', plural: 'Galleries' },
   fields: [
     {
@@ -26,6 +29,7 @@ const GalleryBlock: Block = {
 
 const EmbedBlock: Block = {
   slug: 'embed',
+  interfaceName: 'EmbedBlock',
   labels: { singular: 'Embed', plural: 'Embeds' },
   fields: [
     {
@@ -34,7 +38,9 @@ const EmbedBlock: Block = {
       required: true,
       validate: (v: string | null | undefined) => {
         try {
-          new URL(v ?? '')
+          const url = new URL(v ?? '')
+          if (url.protocol !== 'https:' && url.protocol !== 'http:')
+            return 'URL must use http or https'
           return true
         } catch {
           return 'Must be a valid URL'
@@ -46,6 +52,7 @@ const EmbedBlock: Block = {
 
 const CTABlock: Block = {
   slug: 'cta',
+  interfaceName: 'CtaBlock',
   labels: { singular: 'CTA', plural: 'CTAs' },
   fields: [
     { name: 'heading', type: 'text', required: true },
@@ -64,6 +71,7 @@ const CTABlock: Block = {
 
 const ArticleListBlock: Block = {
   slug: 'articleList',
+  interfaceName: 'ArticleListBlock',
   labels: { singular: 'Article List', plural: 'Article Lists' },
   fields: [
     {

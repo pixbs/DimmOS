@@ -87,12 +87,32 @@ describe('Articles collection', () => {
     ).rejects.toThrow()
   })
 
-  it('blocks unauthenticated read (admin-only)', async () => {
+  it('allows unauthenticated read (public content)', async () => {
+    const { docs } = await payload.find({
+      collection: 'articles',
+      where: { slug: { equals: 'test-case-study' } },
+      overrideAccess: false,
+    })
+    expect(docs.length).toBe(1)
+  })
+
+  it('blocks unauthenticated create', async () => {
     await expect(
-      payload.find({
+      payload.create({
         collection: 'articles',
+        data: { title: 'No Auth', type: 'service', slug: 'test-article-no-auth' },
         overrideAccess: false,
       }),
+    ).rejects.toThrow()
+  })
+
+  it('blocks unauthenticated update and delete', async () => {
+    const id = createdIds[0]
+    await expect(
+      payload.update({ collection: 'articles', id, data: { title: 'Hacked' }, overrideAccess: false }),
+    ).rejects.toThrow()
+    await expect(
+      payload.delete({ collection: 'articles', id, overrideAccess: false }),
     ).rejects.toThrow()
   })
 })

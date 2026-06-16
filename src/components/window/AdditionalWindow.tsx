@@ -9,6 +9,9 @@ import { WindowTitleBar } from './title-bar'
 import { ResizeHandles } from './ResizeHandles'
 import { ContentView } from './content-view'
 import { promiseCache, getOrCreatePromise, seedPromise } from '@/lib/window-promise-cache'
+import { loadSavedPosition, mergePositionToStorage, parsePx, type SavedPosition } from '@/lib/window-positions'
+import { startPanelDrag } from '@/lib/window-drag'
+import { ContentErrorBoundary } from './content-error-boundary'
 import type { WindowBehaviorConfig } from '@/utilities/windowBehavior'
 
 const DEFAULT_BEHAVIOR: WindowBehaviorConfig = {
@@ -42,26 +45,6 @@ interface AdditionalWindowProps {
 }
 
 const CASCADE_STEP = 32
-
-function parsePx(el: HTMLElement, prop: string, fallback: number): number {
-  const raw = el.style.getPropertyValue(prop)
-  const n = parseFloat(raw)
-  return Number.isFinite(n) ? n : fallback
-}
-
-function clamp(value: number, min: number, max: number): number {
-  return Math.min(Math.max(value, min), max)
-}
-
-type SavedPosition = { x?: number; y?: number; w?: number; h?: number }
-
-function mergePositionToStorage(key: string, updates: Partial<SavedPosition>) {
-  try {
-    const all = JSON.parse(localStorage.getItem('window-positions') ?? '{}') as Record<string, SavedPosition>
-    all[key] = { ...all[key], ...updates }
-    localStorage.setItem('window-positions', JSON.stringify(all))
-  } catch { /* ignore */ }
-}
 
 export function AdditionalWindow({
   rootSlug,
@@ -134,7 +117,7 @@ export function AdditionalWindow({
         setCurrentTitle(data.doc.title)
         // Don't override currentBehavior — toolbar flags (displayHistory etc.) come from the root window
       } else if (data?.type === 'form') {
-        setCurrentTitle((data.doc as any).title ?? slug)
+        setCurrentTitle(data.doc.title ?? slug)
         // Same: keep root window behavior
       } else {
         setCurrentTitle(slug.charAt(0).toUpperCase() + slug.slice(1))
@@ -162,22 +145,17 @@ export function AdditionalWindow({
   onReadyRef.current = onReady
   useEffect(() => {
     onReadyRef.current?.()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- preloader ready signal must fire exactly once per mount
 
   // ── 1. Restore saved position BEFORE first paint ──────────────────────────
   useLayoutEffect(() => {
     const panel = panelRef.current
     if (!panel) return
-    try {
-      const saved = (JSON.parse(localStorage.getItem('window-positions') ?? '{}') as Record<string, SavedPosition>)[storageKey]
-      panel.style.setProperty('--win-x', `${saved?.x ?? (80 + cascadeIndex * CASCADE_STEP)}px`)
-      panel.style.setProperty('--win-y', `${saved?.y ?? (60 + cascadeIndex * CASCADE_STEP)}px`)
-      if (saved?.w !== undefined) panel.style.setProperty('--win-w', `${saved.w}px`)
-      if (saved?.h !== undefined) panel.style.setProperty('--win-h', `${saved.h}px`)
-    } catch {
-      panel.style.setProperty('--win-x', `${80 + cascadeIndex * CASCADE_STEP}px`)
-      panel.style.setProperty('--win-y', `${60 + cascadeIndex * CASCADE_STEP}px`)
-    }
+    const saved = loadSavedPosition(storageKey)
+    panel.style.setProperty('--win-x', `${saved.x ?? (80 + cascadeIndex * CASCADE_STEP)}px`)
+    panel.style.setProperty('--win-y', `${saved.y ?? (60 + cascadeIndex * CASCADE_STEP)}px`)
+    if (saved.w !== undefined) panel.style.setProperty('--win-w', `${saved.w}px`)
+    if (saved.h !== undefined) panel.style.setProperty('--win-h', `${saved.h}px`)
   }, [storageKey, cascadeIndex])
 
   // ── 2. Open animation ─────────────────────────────────────────────────────
@@ -195,7 +173,7 @@ export function AdditionalWindow({
     } else if (!isVisible && wasVisible !== undefined) {
       controls.set({ scale: 0.82, opacity: 0 })
     }
-  }, [isVisible]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [isVisible]) // eslint-disable-line react-hooks/exhaustive-deps -- only visibility transitions drive the open/close animation; controls is stable
 
   function runOpenAnimation() {
     const el = panelRef.current
@@ -240,7 +218,7 @@ export function AdditionalWindow({
     }).then(() => {
       onMinimizeRef.current()
     })
-  }, [pendingMinimize, rootSlug]) // eslint-disable-line react-hooks/exhaustive-deps
+  }, [pendingMinimize, rootSlug]) // eslint-disable-line react-hooks/exhaustive-deps -- controls and onMinimizeRef are stable; only the minimize trigger matters
 
   async function handleClose() {
     await controls.start({ scale: 0.82, opacity: 0, transition: { duration: 0.2, ease: 'easeIn' } })
@@ -309,35 +287,11 @@ export function AdditionalWindow({
   function handlePointerDown(e: React.PointerEvent) {
     const panel = panelRef.current
     if (!panel) return
-    e.preventDefault()
-
-    const startX = e.clientX
-    const startY = e.clientY
-    const startWinX = parsePx(panel, '--win-x', 80)
-    const startWinY = parsePx(panel, '--win-y', 60)
-
-    panel.setPointerCapture(e.pointerId)
-    panel.setAttribute('data-dragging', '')
-
-    function onMove(ev: PointerEvent) {
-      const maxX = window.innerWidth - (panel!.offsetWidth || 400)
-      const maxY = window.innerHeight - (panel!.offsetHeight || 300)
-      panel!.style.setProperty('--win-x', `${clamp(startWinX + ev.clientX - startX, 0, Math.max(0, maxX))}px`)
-      panel!.style.setProperty('--win-y', `${clamp(startWinY + ev.clientY - startY, 0, Math.max(0, maxY))}px`)
-    }
-
-    function onUp() {
-      panel!.removeEventListener('pointermove', onMove)
-      panel!.removeEventListener('pointerup', onUp)
-      panel!.removeAttribute('data-dragging')
-      mergePositionToStorage(storageKey, {
-        x: parsePx(panel!, '--win-x', 80),
-        y: parsePx(panel!, '--win-y', 60),
-      })
-    }
-
-    panel.addEventListener('pointermove', onMove)
-    panel.addEventListener('pointerup', onUp)
+    startPanelDrag(e, panel, {
+      defaultX: 80,
+      defaultY: 60,
+      onDragEnd: (pos) => mergePositionToStorage(storageKey, pos),
+    })
   }
 
   return (
@@ -374,18 +328,22 @@ export function AdditionalWindow({
       >
         <WindowToolbar />
         <div className={`flex-1 overflow-auto min-h-0 transition-opacity ${isPending ? 'opacity-60' : ''}`}>
-          <Suspense
-            fallback={
-              <div className="flex items-center justify-center h-32 opacity-30 text-sm">Loading…</div>
-            }
+          <ContentErrorBoundary
+            onRetry={() => setCurrentPromise(getOrCreatePromise(slug))}
           >
-            <ContentView
-              key={slug}
-              promise={currentPromise}
-              onDataReady={handleDataReady}
-              slug={slug}
-            />
-          </Suspense>
+            <Suspense
+              fallback={
+                <div className="flex items-center justify-center h-32 opacity-30 text-sm">Loading…</div>
+              }
+            >
+              <ContentView
+                key={slug}
+                promise={currentPromise}
+                onDataReady={handleDataReady}
+                slug={slug}
+              />
+            </Suspense>
+          </ContentErrorBoundary>
         </div>
       </WindowToolbarProvider>
 
