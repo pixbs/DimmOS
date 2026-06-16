@@ -304,7 +304,7 @@ export function AdditionalWindow({
       data-secondary-window={rootSlug}
       style={{ '--win-z': String(zIndex) } as React.CSSProperties}
       onPointerDown={onFocus}
-      className="w-full"
+      className="w-full backdrop-blur-lg"
       animate={controls}
     >
       <WindowTitleBar
@@ -327,7 +327,7 @@ export function AdditionalWindow({
         onNavigate={handleNavigate}
       >
         <WindowToolbar />
-        <div className={`flex-1 overflow-auto min-h-0 transition-opacity ${isPending ? 'opacity-60' : ''}`}>
+        <div className={`flex-1 min-h-0 flex flex-col transition-opacity ${isPending ? 'opacity-60' : ''}`}>
           <ContentErrorBoundary
             onRetry={() => setCurrentPromise(getOrCreatePromise(slug))}
           >

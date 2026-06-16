@@ -8,6 +8,7 @@ import * as migration_20260528_001735 from './20260528_001735';
 import * as migration_20260528_032135 from './20260528_032135';
 import * as migration_20260528_175304 from './20260528_175304';
 import * as migration_20260612_111535 from './20260612_111535';
+import * as migration_20260616_130357_window_buttons from './20260616_130357_window_buttons';
 
 export const migrations = [
   {
@@ -58,6 +59,11 @@ export const migrations = [
   {
     up: migration_20260612_111535.up,
     down: migration_20260612_111535.down,
-    name: '20260612_111535'
+    name: '20260612_111535',
+  },
+  {
+    up: migration_20260616_130357_window_buttons.up,
+    down: migration_20260616_130357_window_buttons.down,
+    name: '20260616_130357_window_buttons'
   },
 ];

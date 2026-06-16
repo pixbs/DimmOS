@@ -5,6 +5,8 @@ import type { WindowContentResult, ResolvedBlock } from '@/actions/getWindowCont
 import { useWindowManagerContext } from './manager-context'
 import { useWindowToolbar } from './window-toolbar-context'
 import { BSODContent } from './BSODContent'
+import { WindowScaffold } from './window-scaffold'
+import { WindowButtons } from './window-buttons'
 import { FormComponent } from '@/components/form/FormComponent'
 import { RichTextView, ImageView, GalleryView, EmbedView, CtaView } from '@/components/content-blocks/views'
 import type { Article } from '@/payload-types'
@@ -84,18 +86,21 @@ function BlockRenderer({ block }: { block: ResolvedBlock }) {
 
 function ArticleBlockContent({ article }: { article: Article }) {
   const blocks = (article.content ?? []) as ResolvedBlock[]
+  const buttons = article.buttons ?? []
   return (
-    <div className="flex flex-col gap-6 px-6 py-8">
-      <div className="flex items-center gap-2">
-        <span className="text-xs uppercase tracking-widest opacity-40">
-          {article.type === 'case-study' ? 'Case Study' : 'Service'}
-        </span>
+    <WindowScaffold footer={buttons.length ? <WindowButtons buttons={buttons} /> : undefined}>
+      <div className="flex flex-col gap-6 px-6 py-8">
+        <div className="flex items-center gap-2">
+          <span className="text-xs uppercase tracking-widest opacity-40">
+            {article.type === 'case-study' ? 'Case Study' : 'Service'}
+          </span>
+        </div>
+        <h1 className="text-2xl font-bold text-fg">{article.title}</h1>
+        {blocks.map((block, i) => (
+          <BlockRenderer key={i} block={block} />
+        ))}
       </div>
-      <h1 className="text-2xl font-bold text-fg">{article.title}</h1>
-      {blocks.map((block, i) => (
-        <BlockRenderer key={i} block={block} />
-      ))}
-    </div>
+    </WindowScaffold>
   )
 }
 
@@ -122,15 +127,21 @@ export function ContentView({
   }, [data, onDataReady])
 
   if (data === null) {
-    return <BSODContent slug={slug} />
+    return (
+      <WindowScaffold>
+        <BSODContent slug={slug} />
+      </WindowScaffold>
+    )
   }
   if (data.type === 'window') {
     return (
-      <div className="flex flex-col gap-6 px-6 py-8">
-        {data.blocks.map((block, i) => (
-          <BlockRenderer key={i} block={block} />
-        ))}
-      </div>
+      <WindowScaffold footer={data.buttons.length ? <WindowButtons buttons={data.buttons} /> : undefined}>
+        <div className="flex flex-col gap-6 px-6 py-8">
+          {data.blocks.map((block, i) => (
+            <BlockRenderer key={i} block={block} />
+          ))}
+        </div>
+      </WindowScaffold>
     )
   }
   if (data.type === 'article') {

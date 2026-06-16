@@ -2,6 +2,7 @@
 // Replaces the Works collection. The type field drives articleList block filtering.
 import type { CollectionConfig } from 'payload'
 import { contentBlocksField } from '@/fields/contentBlocks'
+import { windowButtonsField } from '@/fields/windowButtons'
 import { windowBehaviorFields } from '@/fields/windowBehavior'
 import { createSlugField } from '@/fields/slugField'
 import { createShortcutFields } from '@/fields/shortcutFields'
@@ -37,6 +38,7 @@ export const Articles: CollectionConfig = {
             },
             createSlugField('URL path identifier, e.g. "my-project" → /my-project'),
             contentBlocksField,
+            windowButtonsField,
           ],
         },
         {

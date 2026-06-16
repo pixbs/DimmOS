@@ -86,7 +86,7 @@ export default async function SlugPage({ params }: PageProps) {
           defaultView={behavior.defaultView}
           displayHistory={behavior.displayHistory}
         />
-        <WindowContent blocks={doc.content ?? []} />
+        <WindowContent blocks={doc.content ?? []} buttons={doc.buttons} />
       </>
     )
   }

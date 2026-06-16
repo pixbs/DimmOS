@@ -7,6 +7,26 @@
  */
 
 /**
+ * Action buttons pinned to the bottom of the window.
+ *
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "WindowButton".
+ */
+export type WindowButton =
+  | {
+      label: string;
+      style?: ('primary' | 'secondary') | null;
+      target?: ('internal' | 'external') | null;
+      /**
+       * Slug of the window/page to open, e.g. "works".
+       */
+      slug?: string | null;
+      href?: string | null;
+      openInNewTab?: boolean | null;
+      id?: string | null;
+    }[]
+  | null;
+/**
  * Supported timezones in IANA format.
  *
  * This interface was referenced by `Config`'s JSON-Schema
@@ -189,6 +209,7 @@ export interface Window {
    */
   slug: string;
   content?: (RichTextBlock | ImageBlock | GalleryBlock | EmbedBlock | CtaBlock | ArticleListBlock)[] | null;
+  buttons?: WindowButton;
   showShortcut?: boolean | null;
   shortcutName?: string | null;
   shortcutIcon?: string | null;
@@ -347,6 +368,7 @@ export interface Article {
    */
   slug: string;
   content?: (RichTextBlock | ImageBlock | GalleryBlock | EmbedBlock | CtaBlock | ArticleListBlock)[] | null;
+  buttons?: WindowButton;
   showShortcut?: boolean | null;
   shortcutName?: string | null;
   shortcutIcon?: string | null;
@@ -781,6 +803,7 @@ export interface WindowsSelect<T extends boolean = true> {
         cta?: T | CtaBlockSelect<T>;
         articleList?: T | ArticleListBlockSelect<T>;
       };
+  buttons?: T | WindowButtonSelect<T>;
   showShortcut?: T;
   shortcutName?: T;
   shortcutIcon?: T;
@@ -876,6 +899,19 @@ export interface ArticleListBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "WindowButton_select".
+ */
+export interface WindowButtonSelect<T extends boolean = true> {
+  label?: T;
+  style?: T;
+  target?: T;
+  slug?: T;
+  href?: T;
+  openInNewTab?: T;
+  id?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "articles_select".
  */
 export interface ArticlesSelect<T extends boolean = true> {
@@ -892,6 +928,7 @@ export interface ArticlesSelect<T extends boolean = true> {
         cta?: T | CtaBlockSelect<T>;
         articleList?: T | ArticleListBlockSelect<T>;
       };
+  buttons?: T | WindowButtonSelect<T>;
   showShortcut?: T;
   shortcutName?: T;
   shortcutIcon?: T;

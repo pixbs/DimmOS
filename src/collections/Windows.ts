@@ -2,6 +2,7 @@
 // Portfolio work and services live in the Articles collection.
 import type { CollectionConfig } from 'payload'
 import { contentBlocksField } from '@/fields/contentBlocks'
+import { windowButtonsField } from '@/fields/windowButtons'
 import { windowBehaviorFields } from '@/fields/windowBehavior'
 import { createSlugField } from '@/fields/slugField'
 import { createShortcutFields } from '@/fields/shortcutFields'
@@ -27,6 +28,7 @@ export const Windows: CollectionConfig = {
             { name: 'title', type: 'text', required: true },
             createSlugField('URL path identifier, e.g. "about" → /about'),
             contentBlocksField,
+            windowButtonsField,
           ],
         },
         {

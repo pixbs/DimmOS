@@ -4,6 +4,7 @@ import { useEffect, useRef, useState, type ReactNode } from 'react'
 import { cn } from '@/lib/utils'
 import { isDesktopViewport } from '@/lib/breakpoints'
 import { startPanelDrag } from '@/lib/window-drag'
+import { WindowTitleBar } from '@/components/window/title-bar'
 import { DrawerContext } from '@/components/drawer/context'
 
 interface CookieBannerShellProps {
@@ -90,26 +91,25 @@ export function CookieBannerShell({ children }: CookieBannerShellProps) {
         data-window-panel=""
         data-cookie-banner=""
         data-state={isOpen ? 'open' : 'closed'}
+        className="backdrop-blur-lg"
         style={{
           '--win-z': '200',
           '--win-w': '420px',
           ...mobileDragStyle,
         } as React.CSSProperties}
       >
-        {/* Desktop title bar — .cookie-banner-titlebar is display:none on mobile */}
-        <div
-          className="cookie-banner-titlebar"
+        {/* Desktop title bar — shared component (.win-titlebar is display:none on mobile).
+            Banner-specific close label + bar class keep it out of window-scoped
+            test/style selectors (.win-titlebar--bar, aria-label="Close"). */}
+        <WindowTitleBar
+          title="Cookie Notice"
+          onClose={close}
           onPointerDown={handleDesktopTitlePointerDown}
-        >
-          <button
-            type="button"
-            aria-label="Close cookie notice"
-            onClick={close}
-            onPointerDown={(e) => e.stopPropagation()}
-            className="w-3 h-3 rounded-full shrink-0 transition-all hover:scale-125 bg-win-close"
-          />
-          <span className="text-sm font-semibold text-fg/70 flex-1 text-center select-none">Cookie Notice</span>
-        </div>
+          disableMinimize
+          expandable={false}
+          closeLabel="Close cookie notice"
+          barClassName="win-titlebar--banner"
+        />
 
         {/* Mobile drag handle — .win-draghandle is display:none on desktop */}
         <div
@@ -121,7 +121,7 @@ export function CookieBannerShell({ children }: CookieBannerShellProps) {
           <div className="w-20 h-1 rounded-full bg-fg/20" />
         </div>
 
-        <div className="flex-1 overflow-auto min-h-0">
+        <div className="flex-1 min-h-0 flex flex-col">
           {children}
         </div>
       </div>

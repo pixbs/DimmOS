@@ -3,6 +3,7 @@
 import { usePathname } from 'next/navigation'
 import { SetWindowTitle } from '@/components/window/title-context'
 import { BSODContent } from '@/components/window/BSODContent'
+import { WindowScaffold } from '@/components/window/window-scaffold'
 
 export default function NotFoundPage() {
   const pathname = usePathname()
@@ -12,7 +13,9 @@ export default function NotFoundPage() {
   return (
     <>
       <SetWindowTitle title={title} />
-      <BSODContent slug={slug} />
+      <WindowScaffold>
+        <BSODContent slug={slug} />
+      </WindowScaffold>
     </>
   )
 }

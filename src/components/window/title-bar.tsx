@@ -13,6 +13,12 @@ interface TitleBarProps {
   disableClose?: boolean
   expandable?: boolean
   expanded?: boolean
+  /** Accessible name for the close button. Defaults to "Close". */
+  closeLabel?: string
+  /** Relative-position class for the bar. Defaults to the window selector
+   *  `win-titlebar--bar`; pass a different class to keep non-window title bars
+   *  (e.g. the cookie banner) out of window-scoped test/style selectors. */
+  barClassName?: string
 }
 
 interface TrafficLightButtonProps {
@@ -30,10 +36,10 @@ function TrafficLightButton({ label, symbol, activeColor, hoverColor, disabled, 
       onClick={disabled ? undefined : onClick}
       aria-label={label}
       disabled={disabled}
-      className="w-6 h-6 flex items-center justify-center group"
+      className="w-5 h-5 flex items-center justify-center group"
     >
       <div className={cn(
-        'w-3 h-3 rounded-full transition-all flex items-center justify-center',
+        'w-2.5 h-2.5 rounded-full transition-all flex items-center justify-center',
         disabled
           ? 'bg-fg/10 cursor-not-allowed'
           : `${activeColor} ${hoverColor} group-hover:scale-150`,
@@ -58,16 +64,18 @@ export function WindowTitleBar({
   disableClose,
   expandable,
   expanded,
+  closeLabel = 'Close',
+  barClassName = 'win-titlebar--bar',
 }: TitleBarProps) {
   return (
     <div
-      className="win-titlebar win-titlebar--bar items-center px-3 shrink-0 border-b border-fg/10 cursor-grab active:cursor-grabbing touch-none select-none"
+      className={`win-titlebar ${barClassName} items-center px-3 shrink-0 cursor-grab active:cursor-grabbing touch-none select-none`}
       style={{ height: '2.25rem' }}
       onPointerDown={onPointerDown}
     >
       <div className="flex z-10" onPointerDown={(e) => e.stopPropagation()}>
         <TrafficLightButton
-          label="Close"
+          label={closeLabel}
           symbol="×"
           activeColor="bg-win-close"
           hoverColor="hover:bg-win-close-hover"
@@ -92,7 +100,7 @@ export function WindowTitleBar({
         />
       </div>
 
-      <span className="absolute left-0 right-0 text-center text-xs tracking-wide opacity-40 pointer-events-none truncate px-16">
+      <span className="absolute left-0 right-0 text-center text-xs tracking-wide text-fg/80 pointer-events-none truncate px-16">
         {title}
       </span>
     </div>

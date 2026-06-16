@@ -13,7 +13,7 @@ export function WindowToolbar() {
     <div
       data-window-toolbar=""
       data-view-mode={viewMode}
-      className="flex items-center gap-1.5 px-2 py-1 border-b border-white/10 bg-black/20 shrink-0"
+      className="flex items-center gap-1.5 px-2 py-1 bg-black/20 shrink-0"
     >
       {/* History navigation: back always visible (mobile + desktop), forward desktop-only */}
       {behavior.displayHistory && (
@@ -44,7 +44,7 @@ export function WindowToolbar() {
 
       {/* Search — desktop only */}
       {behavior.displaySearch && (
-        <div className="hidden lg:flex flex-1 items-center gap-1.5 bg-white/8 rounded-md px-2 py-1 min-w-0">
+        <div className="hidden bg-bg rounded-full lg:flex flex-1 items-center gap-1.5 bg-white/8 px-4 py-1 min-w-0">
           <i className="ri-search-line text-xs text-fg/40 shrink-0" />
           <input
             type="search"
