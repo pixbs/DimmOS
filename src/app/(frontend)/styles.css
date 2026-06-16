@@ -111,8 +111,10 @@ body[data-page-drawer] header {
 [data-window-panel] {
   position: fixed;
   will-change: transform, opacity;
-  background-color: var(--color-bg);
-  border: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
+  background-color: color-mix(in srgb, var(--color-bgs) 60%, transparent);  /* bgs/60 */
+  border: 1px solid color-mix(in srgb, var(--color-fg) 5%, transparent);    /* fg/5 */
+  padding: 8px;
+  gap: 4px;
   display: flex;
   flex-direction: column;
 }
@@ -215,7 +217,6 @@ body[data-page-drawer] header {
     padding: 0.5rem 1rem;
     cursor: grab;
     flex-shrink: 0;
-    border-bottom: 1px solid color-mix(in srgb, var(--color-fg) 10%, transparent);
   }
   .cookie-banner-titlebar:active { cursor: grabbing; }
   /* Position bottom-right by default; js overwrites --win-x/y on drag */

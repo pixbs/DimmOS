@@ -30,10 +30,10 @@ function TrafficLightButton({ label, symbol, activeColor, hoverColor, disabled, 
       onClick={disabled ? undefined : onClick}
       aria-label={label}
       disabled={disabled}
-      className="w-6 h-6 flex items-center justify-center group"
+      className="w-5 h-5 flex items-center justify-center group"
     >
       <div className={cn(
-        'w-3 h-3 rounded-full transition-all flex items-center justify-center',
+        'w-2.5 h-2.5 rounded-full transition-all flex items-center justify-center',
         disabled
           ? 'bg-fg/10 cursor-not-allowed'
           : `${activeColor} ${hoverColor} group-hover:scale-150`,
@@ -61,7 +61,7 @@ export function WindowTitleBar({
 }: TitleBarProps) {
   return (
     <div
-      className="win-titlebar win-titlebar--bar items-center px-3 shrink-0 border-b border-fg/10 cursor-grab active:cursor-grabbing touch-none select-none"
+      className="win-titlebar win-titlebar--bar items-center px-3 shrink-0 cursor-grab active:cursor-grabbing touch-none select-none"
       style={{ height: '2.25rem' }}
       onPointerDown={onPointerDown}
     >
@@ -92,7 +92,7 @@ export function WindowTitleBar({
         />
       </div>
 
-      <span className="absolute left-0 right-0 text-center text-xs tracking-wide opacity-40 pointer-events-none truncate px-16">
+      <span className="absolute left-0 right-0 text-center text-xs tracking-wide text-fg/80 pointer-events-none truncate px-16">
         {title}
       </span>
     </div>

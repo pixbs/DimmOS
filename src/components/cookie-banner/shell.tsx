@@ -90,6 +90,7 @@ export function CookieBannerShell({ children }: CookieBannerShellProps) {
         data-window-panel=""
         data-cookie-banner=""
         data-state={isOpen ? 'open' : 'closed'}
+        className="backdrop-blur-lg"
         style={{
           '--win-z': '200',
           '--win-w': '420px',
@@ -121,7 +122,7 @@ export function CookieBannerShell({ children }: CookieBannerShellProps) {
           <div className="w-20 h-1 rounded-full bg-fg/20" />
         </div>
 
-        <div className="flex-1 overflow-auto min-h-0">
+        <div className="flex-1 overflow-auto min-h-0 bg-bg rounded-2xl">
           {children}
         </div>
       </div>

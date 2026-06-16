@@ -255,6 +255,7 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
         data-testid="page-drawer"
         data-window-panel=""
         data-state={(isOpen && !winMinimized) ? 'open' : 'closed'}
+        className="backdrop-blur-lg"
         style={{ '--win-z': String(winZ) } as React.CSSProperties}
         onPointerDown={() => focus(slug)}
       >
@@ -286,7 +287,7 @@ export function PageDrawerShell({ children, title: titleProp = '' }: PageDrawerS
         >
           <WindowToolbar />
           <div
-            className={`flex-1 overflow-auto min-h-0 transition-opacity ${isPending ? 'opacity-60' : ''}`}
+            className={`flex-1 overflow-auto min-h-0 bg-bg rounded-2xl transition-opacity ${isPending ? 'opacity-60' : ''}`}
           >
             {isAtRoot ? (
               children

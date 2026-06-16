@@ -22,7 +22,7 @@ const PLUS_WIDTH    = 1.5
 const PLUS_ARM_FRAC = 0.08   // arm length = max(4 px, tileSize × this)
 
 // ── Proximity ────────────────────────────────────────────────────────────────
-const INFLUENCE_TILES      = 5.2   // radius in tile widths
+const INFLUENCE_TILES      = 4.2   // radius in tile widths
 const RADIUS_PRESSED_SCALE = 1.5   // ×50 % while mouse button held
 
 // ── Idle animation ───────────────────────────────────────────────────────────
