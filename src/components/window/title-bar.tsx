@@ -13,6 +13,12 @@ interface TitleBarProps {
   disableClose?: boolean
   expandable?: boolean
   expanded?: boolean
+  /** Accessible name for the close button. Defaults to "Close". */
+  closeLabel?: string
+  /** Relative-position class for the bar. Defaults to the window selector
+   *  `win-titlebar--bar`; pass a different class to keep non-window title bars
+   *  (e.g. the cookie banner) out of window-scoped test/style selectors. */
+  barClassName?: string
 }
 
 interface TrafficLightButtonProps {
@@ -58,16 +64,18 @@ export function WindowTitleBar({
   disableClose,
   expandable,
   expanded,
+  closeLabel = 'Close',
+  barClassName = 'win-titlebar--bar',
 }: TitleBarProps) {
   return (
     <div
-      className="win-titlebar win-titlebar--bar items-center px-3 shrink-0 cursor-grab active:cursor-grabbing touch-none select-none"
+      className={`win-titlebar ${barClassName} items-center px-3 shrink-0 cursor-grab active:cursor-grabbing touch-none select-none`}
       style={{ height: '2.25rem' }}
       onPointerDown={onPointerDown}
     >
       <div className="flex z-10" onPointerDown={(e) => e.stopPropagation()}>
         <TrafficLightButton
-          label="Close"
+          label={closeLabel}
           symbol="×"
           activeColor="bg-win-close"
           hoverColor="hover:bg-win-close-hover"

@@ -98,13 +98,17 @@ export function CookieBannerShell({ children }: CookieBannerShellProps) {
           ...mobileDragStyle,
         } as React.CSSProperties}
       >
-        {/* Desktop title bar — shared component (.win-titlebar is display:none on mobile) */}
+        {/* Desktop title bar — shared component (.win-titlebar is display:none on mobile).
+            Banner-specific close label + bar class keep it out of window-scoped
+            test/style selectors (.win-titlebar--bar, aria-label="Close"). */}
         <WindowTitleBar
           title="Cookie Notice"
           onClose={close}
           onPointerDown={handleDesktopTitlePointerDown}
           disableMinimize
           expandable={false}
+          closeLabel="Close cookie notice"
+          barClassName="win-titlebar--banner"
         />
 
         {/* Mobile drag handle — .win-draghandle is display:none on desktop */}

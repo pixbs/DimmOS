@@ -172,6 +172,7 @@ body[data-page-drawer] header {
 .win-titlebar  { display: none; }
 @media (min-width: 1024px) { .win-titlebar  { display: flex; } }
 .win-titlebar--bar { position: relative; }
+.win-titlebar--banner { position: relative; }
 
 /* Drag handle pill — mobile only */
 .win-draghandle { display: flex; }
