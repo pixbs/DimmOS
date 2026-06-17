@@ -12,8 +12,10 @@ export type ResolvedArticleListBlock = {
   articles: ArticleListItem[]
 }
 
+// Article['content'] is the superset block union (it includes the article-only
+// Hero); window content is a subset, so resolved window/article blocks share it.
 export type ResolvedBlock =
-  | Exclude<NonNullable<Window['content']>[number], { blockType: 'articleList' }>
+  | Exclude<NonNullable<Article['content']>[number], { blockType: 'articleList' }>
   | ResolvedArticleListBlock
 
 export type WindowContentResult =

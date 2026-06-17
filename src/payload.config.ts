@@ -17,6 +17,7 @@ import { Users } from './collections/Users'
 import { Media } from './collections/Media'
 import { Windows } from './collections/Windows'
 import { Articles } from './collections/Articles'
+import { Tags } from './collections/Tags'
 import { CookieServices } from './collections/CookieServices'
 import { CookieConsents } from './collections/CookieConsents'
 import { CookieSettings } from './globals/CookieSettings'
@@ -44,7 +45,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
-  collections: [Users, Media, Windows, Articles, CookieServices, CookieConsents],
+  collections: [Users, Media, Windows, Articles, Tags, CookieServices, CookieConsents],
   globals: [CookieSettings],
   editor: lexicalEditor(),
   email: resendAdapter({

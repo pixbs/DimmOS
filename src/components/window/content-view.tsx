@@ -8,7 +8,7 @@ import { BSODContent } from './BSODContent'
 import { WindowScaffold } from './window-scaffold'
 import { WindowButtons } from './window-buttons'
 import { FormComponent } from '@/components/form/FormComponent'
-import { RichTextView, ImageView, GalleryView, EmbedView, CtaView } from '@/components/content-blocks/views'
+import { RichTextView } from '@/components/content-blocks/views'
 import type { Article } from '@/payload-types'
 
 function ArticleListBlock({ block }: { block: ResolvedBlock & { blockType: 'articleList' } }) {
@@ -69,17 +69,10 @@ function BlockRenderer({ block }: { block: ResolvedBlock }) {
   switch (block.blockType) {
     case 'richText':
       return <RichTextView block={block} />
-    case 'image':
-      return <ImageView block={block} />
-    case 'gallery':
-      return <GalleryView block={block} />
-    case 'embed':
-      return <EmbedView block={block} />
-    case 'cta':
-      return <CtaView block={block} />
     case 'articleList':
       return <ArticleListBlock block={block} />
     default:
+      // Section blocks are rendered in a later phase.
       return null
   }
 }

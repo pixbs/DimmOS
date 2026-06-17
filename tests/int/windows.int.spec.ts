@@ -62,28 +62,24 @@ describe('Windows collection', () => {
     expect(doc.content == null || doc.content.length === 0).toBe(true)
   })
 
-  it('creates a window with a CTA block', async () => {
+  it('creates a window with a title section block', async () => {
     const doc = await payload.create({
       collection: 'windows',
       data: {
-        title: 'CTA Window',
-        slug: 'test-window-cta',
-        content: [
-          {
-            blockType: 'cta',
-            heading: 'Get in touch',
-            body: 'Send me a message',
-            link: { label: 'Contact', href: '/contact', openInNewTab: false },
-          },
-        ],
+        title: 'Title Window',
+        slug: 'test-window-title',
+        content: [{ blockType: 'sectionTitle', title: 'Section heading', description: 'Supporting copy' }],
       },
       overrideAccess: true,
     })
 
     createdIds.push(doc.id)
-    expect(doc.content?.[0]?.blockType).toBe('cta')
-    const cta = doc.content?.[0] as Extract<typeof doc.content[number], { blockType: 'cta' }>
-    expect(cta.heading).toBe('Get in touch')
+    expect(doc.content?.[0]?.blockType).toBe('sectionTitle')
+    const titleBlock = doc.content?.[0] as Extract<
+      NonNullable<typeof doc.content>[number],
+      { blockType: 'sectionTitle' }
+    >
+    expect(titleBlock.title).toBe('Section heading')
   })
 
   it('fetches window by slug', async () => {
@@ -117,40 +113,65 @@ describe('Windows collection', () => {
 
     createdIds.push(doc.id)
     expect(doc.content?.[0]?.blockType).toBe('articleList')
-    const block = doc.content?.[0] as Extract<typeof doc.content[number], { blockType: 'articleList' }>
+    const block = doc.content?.[0] as Extract<
+      NonNullable<typeof doc.content>[number],
+      { blockType: 'articleList' }
+    >
     expect(block.types).toEqual(['case-study'])
     expect(block.sortField).toBe('title')
     expect(block.sortDirection).toBe('asc')
     expect(block.limit).toBe(3)
   })
 
-  it('rejects an embed block with a non-http(s) URL', async () => {
-    await expect(
-      payload.create({
-        collection: 'windows',
-        data: {
-          title: 'Bad Embed Window',
-          slug: 'test-window-bad-embed',
-          content: [{ blockType: 'embed', url: 'javascript:alert(1)' }],
-        },
-        overrideAccess: true,
-      }),
-    ).rejects.toThrow()
-  })
-
-  it('creates a window with an https embed block', async () => {
+  it('creates a window with a stats block', async () => {
     const doc = await payload.create({
       collection: 'windows',
       data: {
-        title: 'Embed Window',
-        slug: 'test-window-embed',
-        content: [{ blockType: 'embed', url: 'https://example.com/video' }],
+        title: 'Stats Window',
+        slug: 'test-window-stats',
+        content: [
+          {
+            blockType: 'stats',
+            stats: [
+              { value: 10, suffix: 'Mil', label: 'Downloads' },
+              { value: 98, suffix: '%', label: 'Satisfaction' },
+            ],
+          },
+        ],
       },
       overrideAccess: true,
     })
 
     createdIds.push(doc.id)
-    expect(doc.content?.[0]?.blockType).toBe('embed')
+    expect(doc.content?.[0]?.blockType).toBe('stats')
+    const stats = doc.content?.[0] as Extract<
+      NonNullable<typeof doc.content>[number],
+      { blockType: 'stats' }
+    >
+    expect(stats.stats?.[0]?.value).toBe(10)
+    expect(stats.stats?.[0]?.suffix).toBe('Mil')
+  })
+
+  it('strips a hero block from a window (Hero is Articles-only)', async () => {
+    // Payload silently drops blocks whose type is not in the field's block list,
+    // so a window never persists a hero block.
+    await payload.delete({
+      collection: 'windows',
+      where: { slug: { equals: 'test-window-hero' } },
+      overrideAccess: true,
+    })
+    const doc = await payload.create({
+      collection: 'windows',
+      data: {
+        title: 'Hero Window',
+        slug: 'test-window-hero',
+        // @ts-expect-error 'hero' is not part of the Window content block union
+        content: [{ blockType: 'hero', title: 'Nope' }],
+      },
+      overrideAccess: true,
+    })
+    createdIds.push(doc.id)
+    expect((doc.content ?? []).some((b) => b.blockType === 'hero')).toBe(false)
   })
 
   it('allows unauthenticated read (public content)', async () => {

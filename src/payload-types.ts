@@ -91,6 +91,7 @@ export interface Config {
     media: Media;
     windows: Window;
     articles: Article;
+    tags: Tag;
     'cookie-services': CookieService;
     'cookie-consents': CookieConsent;
     forms: Form;
@@ -106,6 +107,7 @@ export interface Config {
     media: MediaSelect<false> | MediaSelect<true>;
     windows: WindowsSelect<false> | WindowsSelect<true>;
     articles: ArticlesSelect<false> | ArticlesSelect<true>;
+    tags: TagsSelect<false> | TagsSelect<true>;
     'cookie-services': CookieServicesSelect<false> | CookieServicesSelect<true>;
     'cookie-consents': CookieConsentsSelect<false> | CookieConsentsSelect<true>;
     forms: FormsSelect<false> | FormsSelect<true>;
@@ -208,7 +210,17 @@ export interface Window {
    * URL path identifier, e.g. "about" → /about
    */
   slug: string;
-  content?: (RichTextBlock | ImageBlock | GalleryBlock | EmbedBlock | CtaBlock | ArticleListBlock)[] | null;
+  content?:
+    | (
+        | RichTextBlock
+        | ArticleListBlock
+        | SummaryBlock
+        | StatsBlock
+        | ImageSectionBlock
+        | DescriptionBlock
+        | TitleBlock
+      )[]
+    | null;
   buttons?: WindowButton;
   showShortcut?: boolean | null;
   shortcutName?: string | null;
@@ -286,57 +298,6 @@ export interface RichTextBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ImageBlock".
- */
-export interface ImageBlock {
-  image: number | Media;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'image';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "GalleryBlock".
- */
-export interface GalleryBlock {
-  images?:
-    | {
-        image?: (number | null) | Media;
-        id?: string | null;
-      }[]
-    | null;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'gallery';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "EmbedBlock".
- */
-export interface EmbedBlock {
-  url: string;
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'embed';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "CtaBlock".
- */
-export interface CtaBlock {
-  heading: string;
-  body?: string | null;
-  link?: {
-    label?: string | null;
-    href?: string | null;
-    openInNewTab?: boolean | null;
-  };
-  id?: string | null;
-  blockName?: string | null;
-  blockType: 'cta';
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "ArticleListBlock".
  */
 export interface ArticleListBlock {
@@ -357,6 +318,94 @@ export interface ArticleListBlock {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "SummaryBlock".
+ */
+export interface SummaryBlock {
+  leftTitle?: string | null;
+  leftBody?: string | null;
+  rightTitle?: string | null;
+  rightBody?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'summary';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "StatsBlock".
+ */
+export interface StatsBlock {
+  /**
+   * Up to three large figures shown side by side
+   */
+  stats?:
+    | {
+        /**
+         * The number to count up to, e.g. 10
+         */
+        value: number;
+        /**
+         * Static text after the number, e.g. "Mil", "%", "+"
+         */
+        suffix?: string | null;
+        /**
+         * Caption below the figure
+         */
+        label: string;
+        id?: string | null;
+      }[]
+    | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'stats';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ImageSectionBlock".
+ */
+export interface ImageSectionBlock {
+  image: number | Media;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'imageSection';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "DescriptionBlock".
+ */
+export interface DescriptionBlock {
+  title: string;
+  body?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'description';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TitleBlock".
+ */
+export interface TitleBlock {
+  title: string;
+  description?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'sectionTitle';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "articles".
  */
 export interface Article {
@@ -367,7 +416,34 @@ export interface Article {
    * URL path identifier, e.g. "my-project" → /my-project
    */
   slug: string;
-  content?: (RichTextBlock | ImageBlock | GalleryBlock | EmbedBlock | CtaBlock | ArticleListBlock)[] | null;
+  /**
+   * Year the project shipped (shown in the Works table view)
+   */
+  year?: number | null;
+  /**
+   * Pick existing tags or create new ones — shown in the Works table view
+   */
+  tags?: (number | Tag)[] | null;
+  /**
+   * Background layer (16:9) for the Hero parallax and Works card image
+   */
+  bgImage?: (number | null) | Media;
+  /**
+   * Foreground layer (16:9) drawn over the background for the parallax effect
+   */
+  fgImage?: (number | null) | Media;
+  content?:
+    | (
+        | HeroBlock
+        | RichTextBlock
+        | ArticleListBlock
+        | SummaryBlock
+        | StatsBlock
+        | ImageSectionBlock
+        | DescriptionBlock
+        | TitleBlock
+      )[]
+    | null;
   buttons?: WindowButton;
   showShortcut?: boolean | null;
   shortcutName?: string | null;
@@ -418,6 +494,31 @@ export interface Article {
   };
   updatedAt: string;
   createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tags".
+ */
+export interface Tag {
+  id: number;
+  title: string;
+  /**
+   * URL-safe identifier for the tag, e.g. "branding"
+   */
+  slug: string;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HeroBlock".
+ */
+export interface HeroBlock {
+  title: string;
+  description?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'hero';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -689,6 +790,10 @@ export interface PayloadLockedDocument {
         value: number | Article;
       } | null)
     | ({
+        relationTo: 'tags';
+        value: number | Tag;
+      } | null)
+    | ({
         relationTo: 'cookie-services';
         value: number | CookieService;
       } | null)
@@ -797,11 +902,12 @@ export interface WindowsSelect<T extends boolean = true> {
     | T
     | {
         richText?: T | RichTextBlockSelect<T>;
-        image?: T | ImageBlockSelect<T>;
-        gallery?: T | GalleryBlockSelect<T>;
-        embed?: T | EmbedBlockSelect<T>;
-        cta?: T | CtaBlockSelect<T>;
         articleList?: T | ArticleListBlockSelect<T>;
+        summary?: T | SummaryBlockSelect<T>;
+        stats?: T | StatsBlockSelect<T>;
+        imageSection?: T | ImageSectionBlockSelect<T>;
+        description?: T | DescriptionBlockSelect<T>;
+        sectionTitle?: T | TitleBlockSelect<T>;
       };
   buttons?: T | WindowButtonSelect<T>;
   showShortcut?: T;
@@ -837,55 +943,6 @@ export interface RichTextBlockSelect<T extends boolean = true> {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "ImageBlock_select".
- */
-export interface ImageBlockSelect<T extends boolean = true> {
-  image?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "GalleryBlock_select".
- */
-export interface GalleryBlockSelect<T extends boolean = true> {
-  images?:
-    | T
-    | {
-        image?: T;
-        id?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "EmbedBlock_select".
- */
-export interface EmbedBlockSelect<T extends boolean = true> {
-  url?: T;
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
- * via the `definition` "CtaBlock_select".
- */
-export interface CtaBlockSelect<T extends boolean = true> {
-  heading?: T;
-  body?: T;
-  link?:
-    | T
-    | {
-        label?: T;
-        href?: T;
-        openInNewTab?: T;
-      };
-  id?: T;
-  blockName?: T;
-}
-/**
- * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "ArticleListBlock_select".
  */
 export interface ArticleListBlockSelect<T extends boolean = true> {
@@ -894,6 +951,63 @@ export interface ArticleListBlockSelect<T extends boolean = true> {
   sortField?: T;
   sortDirection?: T;
   limit?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "SummaryBlock_select".
+ */
+export interface SummaryBlockSelect<T extends boolean = true> {
+  leftTitle?: T;
+  leftBody?: T;
+  rightTitle?: T;
+  rightBody?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "StatsBlock_select".
+ */
+export interface StatsBlockSelect<T extends boolean = true> {
+  stats?:
+    | T
+    | {
+        value?: T;
+        suffix?: T;
+        label?: T;
+        id?: T;
+      };
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "ImageSectionBlock_select".
+ */
+export interface ImageSectionBlockSelect<T extends boolean = true> {
+  image?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "DescriptionBlock_select".
+ */
+export interface DescriptionBlockSelect<T extends boolean = true> {
+  title?: T;
+  body?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "TitleBlock_select".
+ */
+export interface TitleBlockSelect<T extends boolean = true> {
+  title?: T;
+  description?: T;
   id?: T;
   blockName?: T;
 }
@@ -918,15 +1032,21 @@ export interface ArticlesSelect<T extends boolean = true> {
   title?: T;
   type?: T;
   slug?: T;
+  year?: T;
+  tags?: T;
+  bgImage?: T;
+  fgImage?: T;
   content?:
     | T
     | {
+        hero?: T | HeroBlockSelect<T>;
         richText?: T | RichTextBlockSelect<T>;
-        image?: T | ImageBlockSelect<T>;
-        gallery?: T | GalleryBlockSelect<T>;
-        embed?: T | EmbedBlockSelect<T>;
-        cta?: T | CtaBlockSelect<T>;
         articleList?: T | ArticleListBlockSelect<T>;
+        summary?: T | SummaryBlockSelect<T>;
+        stats?: T | StatsBlockSelect<T>;
+        imageSection?: T | ImageSectionBlockSelect<T>;
+        description?: T | DescriptionBlockSelect<T>;
+        sectionTitle?: T | TitleBlockSelect<T>;
       };
   buttons?: T | WindowButtonSelect<T>;
   showShortcut?: T;
@@ -948,6 +1068,26 @@ export interface ArticlesSelect<T extends boolean = true> {
         image?: T;
         noIndex?: T;
       };
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "HeroBlock_select".
+ */
+export interface HeroBlockSelect<T extends boolean = true> {
+  title?: T;
+  description?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "tags_select".
+ */
+export interface TagsSelect<T extends boolean = true> {
+  title?: T;
+  slug?: T;
   updatedAt?: T;
   createdAt?: T;
 }

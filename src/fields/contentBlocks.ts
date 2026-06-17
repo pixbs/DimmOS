@@ -1,4 +1,12 @@
-﻿import type { Block, Field } from 'payload'
+import type { Block, Field } from 'payload'
+
+// Content section blocks shared by the Articles and Windows collections.
+//
+// `richText` and `articleList` are general-purpose; the remaining blocks are
+// the case-study layout sections. `hero` is article-only (it pairs with the
+// article-level bg/fg images) and is added by the factory below only when
+// `article: true`. All blocks declare an `interfaceName` so the generated
+// `Article['content']`/`Window['content']` unions reuse the same types.
 
 const RichTextBlock: Block = {
   slug: 'richText',
@@ -7,72 +15,10 @@ const RichTextBlock: Block = {
   fields: [{ name: 'content', type: 'richText' }],
 }
 
-const ImageBlock: Block = {
-  slug: 'image',
-  interfaceName: 'ImageBlock',
-  labels: { singular: 'Image', plural: 'Images' },
-  fields: [{ name: 'image', type: 'upload', relationTo: 'media', required: true }],
-}
-
-const GalleryBlock: Block = {
-  slug: 'gallery',
-  interfaceName: 'GalleryBlock',
-  labels: { singular: 'Gallery', plural: 'Galleries' },
-  fields: [
-    {
-      name: 'images',
-      type: 'array',
-      fields: [{ name: 'image', type: 'upload', relationTo: 'media' }],
-    },
-  ],
-}
-
-const EmbedBlock: Block = {
-  slug: 'embed',
-  interfaceName: 'EmbedBlock',
-  labels: { singular: 'Embed', plural: 'Embeds' },
-  fields: [
-    {
-      name: 'url',
-      type: 'text',
-      required: true,
-      validate: (v: string | null | undefined) => {
-        try {
-          const url = new URL(v ?? '')
-          if (url.protocol !== 'https:' && url.protocol !== 'http:')
-            return 'URL must use http or https'
-          return true
-        } catch {
-          return 'Must be a valid URL'
-        }
-      },
-    },
-  ],
-}
-
-const CTABlock: Block = {
-  slug: 'cta',
-  interfaceName: 'CtaBlock',
-  labels: { singular: 'CTA', plural: 'CTAs' },
-  fields: [
-    { name: 'heading', type: 'text', required: true },
-    { name: 'body', type: 'textarea' },
-    {
-      name: 'link',
-      type: 'group',
-      fields: [
-        { name: 'label', type: 'text' },
-        { name: 'href', type: 'text' },
-        { name: 'openInNewTab', type: 'checkbox', defaultValue: false },
-      ],
-    },
-  ],
-}
-
 const ArticleListBlock: Block = {
   slug: 'articleList',
   interfaceName: 'ArticleListBlock',
-  labels: { singular: 'Article List', plural: 'Article Lists' },
+  labels: { singular: 'Works / Article List', plural: 'Works / Article Lists' },
   fields: [
     {
       name: 'heading',
@@ -122,8 +68,116 @@ const ArticleListBlock: Block = {
   ],
 }
 
-export const contentBlocksField: Field = {
-  name: 'content',
-  type: 'blocks',
-  blocks: [RichTextBlock, ImageBlock, GalleryBlock, EmbedBlock, CTABlock, ArticleListBlock],
+// ─── Case-study layout sections ───
+
+/** Hero: title + description beside a 2/3-width parallax image (article bg/fg pair). */
+const HeroBlock: Block = {
+  slug: 'hero',
+  interfaceName: 'HeroBlock',
+  labels: { singular: 'Hero', plural: 'Heroes' },
+  fields: [
+    { name: 'title', type: 'text', required: true },
+    { name: 'description', type: 'textarea' },
+  ],
+}
+
+/** Summary: a narrow (1/3) title+body column beside a wide (2/3) title+body column. */
+const SummaryBlock: Block = {
+  slug: 'summary',
+  interfaceName: 'SummaryBlock',
+  labels: { singular: 'Summary', plural: 'Summaries' },
+  fields: [
+    { name: 'leftTitle', type: 'text' },
+    { name: 'leftBody', type: 'textarea' },
+    { name: 'rightTitle', type: 'text' },
+    { name: 'rightBody', type: 'textarea' },
+  ],
+}
+
+/** Stats: up to three large count-up figures, each with a suffix and a label. */
+const StatsBlock: Block = {
+  slug: 'stats',
+  interfaceName: 'StatsBlock',
+  labels: { singular: 'Stats', plural: 'Stats' },
+  fields: [
+    {
+      name: 'stats',
+      type: 'array',
+      minRows: 1,
+      maxRows: 3,
+      admin: { description: 'Up to three large figures shown side by side' },
+      fields: [
+        {
+          name: 'value',
+          type: 'number',
+          required: true,
+          admin: { description: 'The number to count up to, e.g. 10' },
+        },
+        {
+          name: 'suffix',
+          type: 'text',
+          admin: { description: 'Static text after the number, e.g. "Mil", "%", "+"' },
+        },
+        { name: 'label', type: 'text', required: true, admin: { description: 'Caption below the figure' } },
+      ],
+    },
+  ],
+}
+
+/** Image: a single full-width image rendered with the de-pixelation reveal. */
+const ImageSectionBlock: Block = {
+  slug: 'imageSection',
+  interfaceName: 'ImageSectionBlock',
+  labels: { singular: 'Image', plural: 'Images' },
+  fields: [{ name: 'image', type: 'upload', relationTo: 'media', required: true }],
+}
+
+/** Description: a 1/3-width big title beside 2/3-width rich text. */
+const DescriptionBlock: Block = {
+  slug: 'description',
+  interfaceName: 'DescriptionBlock',
+  labels: { singular: 'Description', plural: 'Descriptions' },
+  fields: [
+    { name: 'title', type: 'text', required: true },
+    { name: 'body', type: 'richText' },
+  ],
+}
+
+/** Title: an animated title with a supporting description. */
+const TitleBlock: Block = {
+  slug: 'sectionTitle',
+  interfaceName: 'TitleBlock',
+  labels: { singular: 'Title', plural: 'Titles' },
+  fields: [
+    { name: 'title', type: 'text', required: true },
+    { name: 'description', type: 'textarea' },
+  ],
+}
+
+/** Blocks available to every content collection (Articles and Windows). */
+const sharedBlocks: Block[] = [
+  RichTextBlock,
+  ArticleListBlock,
+  SummaryBlock,
+  StatsBlock,
+  ImageSectionBlock,
+  DescriptionBlock,
+  TitleBlock,
+]
+
+/** Blocks available only to Articles (adds the doc-image-backed Hero). */
+const articleBlocks: Block[] = [HeroBlock, ...sharedBlocks]
+
+/**
+ * Build the `content` blocks field for a content collection.
+ *
+ * @param opts.article - When `true`, includes the article-only Hero block.
+ *   Windows omit it because the Hero relies on the article-level bg/fg images.
+ */
+export function createContentBlocksField(opts: { article?: boolean } = {}): Field {
+  return {
+    name: 'content',
+    type: 'blocks',
+    blocks: opts.article ? articleBlocks : sharedBlocks,
+  }
 }
