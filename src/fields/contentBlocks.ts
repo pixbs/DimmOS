@@ -19,6 +19,8 @@ const ArticleListBlock: Block = {
   slug: 'articleList',
   interfaceName: 'ArticleListBlock',
   labels: { singular: 'Works / Article List', plural: 'Works / Article Lists' },
+  imageURL: '/block-previews/articleList.png',
+  imageAltText: 'Preview of the Works grid/table section',
   fields: [
     {
       name: 'heading',
@@ -75,6 +77,8 @@ const HeroBlock: Block = {
   slug: 'hero',
   interfaceName: 'HeroBlock',
   labels: { singular: 'Hero', plural: 'Heroes' },
+  imageURL: '/block-previews/hero.png',
+  imageAltText: 'Preview of the Hero section',
   fields: [
     { name: 'title', type: 'text', required: true },
     { name: 'description', type: 'textarea' },
@@ -86,6 +90,8 @@ const SummaryBlock: Block = {
   slug: 'summary',
   interfaceName: 'SummaryBlock',
   labels: { singular: 'Summary', plural: 'Summaries' },
+  imageURL: '/block-previews/summary.png',
+  imageAltText: 'Preview of the Summary section',
   fields: [
     { name: 'leftTitle', type: 'text' },
     { name: 'leftBody', type: 'textarea' },
@@ -99,6 +105,8 @@ const StatsBlock: Block = {
   slug: 'stats',
   interfaceName: 'StatsBlock',
   labels: { singular: 'Stats', plural: 'Stats' },
+  imageURL: '/block-previews/stats.png',
+  imageAltText: 'Preview of the Stats section',
   fields: [
     {
       name: 'stats',
@@ -129,6 +137,8 @@ const ImageSectionBlock: Block = {
   slug: 'imageSection',
   interfaceName: 'ImageSectionBlock',
   labels: { singular: 'Image', plural: 'Images' },
+  imageURL: '/block-previews/imageSection.png',
+  imageAltText: 'Preview of the full-width Image section',
   fields: [{ name: 'image', type: 'upload', relationTo: 'media', required: true }],
 }
 
@@ -137,6 +147,8 @@ const DescriptionBlock: Block = {
   slug: 'description',
   interfaceName: 'DescriptionBlock',
   labels: { singular: 'Description', plural: 'Descriptions' },
+  imageURL: '/block-previews/description.png',
+  imageAltText: 'Preview of the Description section',
   fields: [
     { name: 'title', type: 'text', required: true },
     { name: 'body', type: 'richText' },
@@ -148,6 +160,8 @@ const TitleBlock: Block = {
   slug: 'sectionTitle',
   interfaceName: 'TitleBlock',
   labels: { singular: 'Title', plural: 'Titles' },
+  imageURL: '/block-previews/sectionTitle.png',
+  imageAltText: 'Preview of the Title section',
   fields: [
     { name: 'title', type: 'text', required: true },
     { name: 'description', type: 'textarea' },

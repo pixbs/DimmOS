@@ -886,3 +886,50 @@ Every cookie/storage item the site writes is declared in a canonical manifest. A
 | `NEXT_PUBLIC_SENTRY_DSN` | Phase 4 | Sentry project DSN |
 | `SENTRY_ORG` | Phase 4 | Sentry organisation slug (for source map uploads in CI) |
 | `SENTRY_PROJECT` | Phase 4 | Sentry project slug |
+
+---
+
+## Content section blocks & scroll animations
+
+Articles and Windows share a `content` blocks field built by
+`createContentBlocksField()` in `src/fields/contentBlocks.ts`. Windows get the
+shared set; Articles also get the doc-image-backed **Hero**.
+
+| Block | `blockType` | Notes |
+|---|---|---|
+| Rich Text | `richText` | Lexical rich text |
+| Works / Article List | `articleList` | Grid + table views (toggle via window toolbar); table rows show tags + year with a mouse-following hover preview |
+| Summary | `summary` | 1/3 + 2/3 columns with a draw-on-scroll divider |
+| Stats | `stats` | Up to three count-up figures (value + suffix + label) |
+| Image | `imageSection` | Full-width image with the de-pixelation reveal |
+| Description | `description` | 1/3 animated title + 2/3 rich text |
+| Title | `sectionTitle` | Letter-by-letter animated title |
+| Hero | `hero` | **Articles only** — animated title + 2/3 parallax image from the article's `bgImage`/`fgImage` |
+
+Article-only fields (Content tab): `year`, `tags` (relationship → **Tags**
+collection; pick existing or create new), `bgImage`, `fgImage` (16:9 upload
+pair used by the Hero parallax and Works cards).
+
+### Scroll-animation toolkit
+
+`src/components/animation/` — Framer Motion primitives that trigger on *true*
+visibility inside the window's `.win-scroll` container (via `ScrollRoot` /
+`useScrollRoot`), not the viewport: `AnimatedText` (word/letter reveal with an
+accessible full-text copy), `PixelatedImage` (canvas de-pixelation → real
+`next/image`), `ParallaxImagePair`, `AnimatedDivider`, `CountUp`. Shared easing:
+`EASE_OUT_QUAD` (`src/lib/easing.ts`).
+
+### Seeds & block previews
+
+- `bun run seed:case-study [slug]` — seeds a full case study using every section
+  block plus sibling case studies for the Works list (generates its own images
+  via sharp). Defaults to `/case-study-demo`.
+- `bun run seed:block-previews` — with the dev server running, screenshots each
+  rendered section into `public/block-previews/<blockType>.png`; these are the
+  images shown in Payload's block-selection drawer (each block's `imageURL`).
+
+### Tests
+
+- `bun run test:int` — Payload integration (collections, blocks, resolver)
+- `bun run test:dom` — jsdom unit + component tests (`tests/unit`, `tests/component`)
+- `bun run test:e2e` — Playwright (includes `article-sections.e2e.spec.ts`)
