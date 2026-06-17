@@ -9,7 +9,7 @@ import { useSectionInView } from './use-section-in-view'
 export interface AnimatedDividerProps {
   /** Line direction. Horizontal draws left→right; vertical draws top→bottom. Defaults to `'horizontal'`. */
   orientation?: 'horizontal' | 'vertical'
-  /** Extra classes (e.g. colour override; defaults to `bg-fg/10`). */
+  /** Extra classes appended after the base `bg-fg/10` (e.g. a `bg-*` override or visibility toggles). */
   className?: string
   /** Draw duration in seconds. Defaults to `0.6`. */
   duration?: number
@@ -40,7 +40,7 @@ export function AnimatedDivider({
     <motion.div
       ref={ref}
       data-orientation={orientation}
-      className={`${horizontal ? 'h-px w-full' : 'h-full w-px'} ${className ?? 'bg-fg/10'}`}
+      className={`${horizontal ? 'h-px w-full' : 'h-full w-px'} bg-fg/10 ${className ?? ''}`}
       style={{ transformOrigin: horizontal ? 'left center' : 'center top' }}
       initial={reduce ? false : collapsed}
       animate={inView || reduce ? drawn : collapsed}

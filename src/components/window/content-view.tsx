@@ -9,6 +9,15 @@ import { WindowScaffold } from './window-scaffold'
 import { WindowButtons } from './window-buttons'
 import { FormComponent } from '@/components/form/FormComponent'
 import { RichTextView } from '@/components/content-blocks/views'
+import {
+  HeroView,
+  SummaryView,
+  StatsView,
+  ImageSectionView,
+  DescriptionView,
+  SectionTitleView,
+} from '@/components/content-blocks/sections'
+import { DocumentMediaProvider } from '@/components/content-blocks/document-media-context'
 import type { Article } from '@/payload-types'
 
 function ArticleListBlock({ block }: { block: ResolvedBlock & { blockType: 'articleList' } }) {
@@ -69,10 +78,21 @@ function BlockRenderer({ block }: { block: ResolvedBlock }) {
   switch (block.blockType) {
     case 'richText':
       return <RichTextView block={block} />
+    case 'hero':
+      return <HeroView block={block} />
+    case 'summary':
+      return <SummaryView block={block} />
+    case 'stats':
+      return <StatsView block={block} />
+    case 'imageSection':
+      return <ImageSectionView block={block} />
+    case 'description':
+      return <DescriptionView block={block} />
+    case 'sectionTitle':
+      return <SectionTitleView block={block} />
     case 'articleList':
       return <ArticleListBlock block={block} />
     default:
-      // Section blocks are rendered in a later phase.
       return null
   }
 }
@@ -82,17 +102,20 @@ function ArticleBlockContent({ article }: { article: Article }) {
   const buttons = article.buttons ?? []
   return (
     <WindowScaffold footer={buttons.length ? <WindowButtons buttons={buttons} /> : undefined}>
-      <div className="flex flex-col gap-6 px-6 py-8">
-        <div className="flex items-center gap-2">
-          <span className="text-xs uppercase tracking-widest opacity-40">
-            {article.type === 'case-study' ? 'Case Study' : 'Service'}
-          </span>
+      {/* Hero sections read the article's bg/fg images from this provider. */}
+      <DocumentMediaProvider background={article.bgImage} foreground={article.fgImage}>
+        <div className="flex flex-col gap-6 px-6 py-8">
+          <div className="flex items-center gap-2">
+            <span className="text-xs uppercase tracking-widest opacity-40">
+              {article.type === 'case-study' ? 'Case Study' : 'Service'}
+            </span>
+          </div>
+          <h1 className="text-2xl font-bold text-fg">{article.title}</h1>
+          {blocks.map((block, i) => (
+            <BlockRenderer key={i} block={block} />
+          ))}
         </div>
-        <h1 className="text-2xl font-bold text-fg">{article.title}</h1>
-        {blocks.map((block, i) => (
-          <BlockRenderer key={i} block={block} />
-        ))}
-      </div>
+      </DocumentMediaProvider>
     </WindowScaffold>
   )
 }
