@@ -204,14 +204,15 @@ Use `data-testid="page-drawer"` (set on `PageDrawerShell`) rather than `[role="d
 | `users` | Auth | Admin only |
 | `media` | Upload | Read: public; write: admin |
 | `windows` | General content pages (about, contact, welcome) + content blocks | Read: public; write: admin |
-| `articles` | Portfolio case studies + service descriptions; `type: 'case-study' \| 'service'` | Read: public; write: admin |
+| `articles` | Portfolio case studies + service descriptions; `type: 'case-study' \| 'service'`; section blocks, `year`, `tags`, `bgImage`/`fgImage` | Read: public; write: admin |
+| `tags` | Reusable labels for articles (shown in the Works table) | Read: public; write: admin |
 | `forms` | Form-builder plugin collection (contact etc.) | Read: public (plugin default); write: admin |
 | `form-submissions` | Form-builder plugin collection | Create: public; read: admin (plugin default) |
 | `cookie-services` | Service catalogue | Read: public; write: admin |
 | `cookie-consents` | Audit log | Create: endpoint only; read/update/delete: admin |
 | `cookie-settings` (global) | Config | Read: public; update: admin |
 
-**Windows and Articles** both support six content block types via `src/fields/contentBlocks.ts`: `richText`, `image`, `gallery`, `embed`, `cta`, and `articleList`. The `articleList` block queries articles by `type` at render time (server-side via `resolveBlocks` in `src/lib/windowContent.ts`) and passes a resolved `articles` array to the client; it never fetches on the client. Both collections have `afterChange`/`afterDelete` hooks that call `revalidateTag('window-content')` + `revalidatePath` for instant cache busting on save.
+**Windows and Articles** share a `content` blocks field built by `createContentBlocksField()` in `src/fields/contentBlocks.ts`: `richText`, `articleList` (Works), and the case-study section blocks `summary`, `stats`, `imageSection`, `description`, `sectionTitle`; Articles additionally get the doc-image-backed `hero`. The `articleList` block queries articles by `type` at render time (server-side via `resolveBlocks` in `src/lib/windowContent.ts`), resolving each article's cover images, tags, and year, and passes a resolved `articles` array to the client; it never fetches on the client. Both collections have `afterChange`/`afterDelete` hooks that call `revalidateTag('window-content')` + `revalidatePath` for instant cache busting on save. See [Content section blocks & scroll animations](#content-section-blocks--scroll-animations) for the full set.
 
 **Window toolbar fields** (`windowDisplaySearch`, `windowDisplayViewToggle`, `windowDefaultView`, `windowDisplayHistory`) are on all three collections via `windowBehaviorFields`. See [Phase 2.5](#25-window-toolbar--search-view-toggle-in-window-history) for architecture details.
 
@@ -422,15 +423,17 @@ Windows and Works have slugs and shortcut metadata but no content. This phase ad
 ### 1.2 Content blocks field
 
 - [x] Write `tests/int/windows.int.spec.ts` — Window creation with each block type, optional content, access control
-- [x] Create `src/fields/contentBlocks.ts` — exports `contentBlocksField` and five block types:
-  - `RichTextBlock` — `blockType: 'richText'`, field: `content` (lexical richText)
-  - `ImageBlock` — `blockType: 'image'`, field: `image` (upload rel to `media`, required)
-  - `GalleryBlock` — `blockType: 'gallery'`, field: `images` (array of upload rels to `media`)
-  - `EmbedBlock` — `blockType: 'embed'`, field: `url` (text, required, URL validation)
-  - `CTABlock` — `blockType: 'cta'`, fields: `heading` (text, required), `body` (textarea), `link` group (`label`, `href`, `openInNewTab` checkbox)
-- [x] Add `contentBlocksField` to `Windows.ts` and `Articles.ts`
+- [x] Create `src/fields/contentBlocks.ts` — content blocks shared by Windows and Articles
+- [x] Add the blocks field to `Windows.ts` and `Articles.ts`
 - [x] Run `bun generate:types` → `bun payload migrate:create` → `bun payload migrate`
 - [x] `bun test:int` — new tests pass
+
+> **Superseded (article-sections branch):** the original `image`/`gallery`/`embed`/`cta`
+> blocks were removed and replaced by the case-study section blocks, and
+> `contentBlocksField` became the `createContentBlocksField({ article })` factory
+> (so Articles also get the Hero block). See
+> [Content section blocks & scroll animations](#content-section-blocks--scroll-animations)
+> for the current block set, fields, and seeds.
 
 ### 1.3 On-demand cache revalidation
 
@@ -445,7 +448,7 @@ Revalidation lands here alongside content blocks so that admin saves immediately
 ### 1.4 Welcome Window
 
 - [x] Extend `tests/int/windows.int.spec.ts` — seed a Window with a `RichTextBlock`; assert `content[0].blockType === 'richText'`
-- [x] Create `src/components/window-content/index.tsx` — Server Component; switches on `block.blockType`; renders `RichText`, `image`, `gallery`, `embed`, and `cta` sub-components with `data-block-type` attributes for test targeting
+- [x] Create `src/components/window-content/index.tsx` — Server Component; renders blocks via the shared `ContentBlocks` renderer (`src/components/content-blocks/`), which switches on `block.blockType` and emits `data-block-type` attributes for test targeting
 - [x] Create `src/components/article-content/index.tsx` — same pattern typed with `Article`
 - [x] Write `tests/e2e/windows.e2e.spec.ts`:
   - Navigate to seeded window slug; assert `[data-testid="page-drawer"]` has class `translate-y-0`
