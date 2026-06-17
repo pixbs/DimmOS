@@ -171,7 +171,8 @@ describe('Windows collection', () => {
       overrideAccess: true,
     })
     createdIds.push(doc.id)
-    expect((doc.content ?? []).some((b) => b.blockType === 'hero')).toBe(false)
+    // The only block supplied was the (invalid) hero, so it is dropped entirely.
+    expect(doc.content ?? []).toHaveLength(0)
   })
 
   it('allows unauthenticated read (public content)', async () => {

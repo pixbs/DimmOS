@@ -1,11 +1,13 @@
 import { getPayload, Payload } from 'payload'
 import config from '@/payload.config'
 import { describe, it, beforeAll, afterAll, expect } from 'vitest'
+import { fetchArticleList } from '@/lib/articleList'
+import type { ArticleListBlock } from '@/payload-types'
 
 let payload: Payload
 
-const ARTICLE_SLUGS = ['sections-int', 'hero-only-int']
-const TAG_SLUGS = ['branding-int', 'web-int', 'no-auth-int']
+const ARTICLE_SLUGS = ['sections-int', 'hero-only-int', 'resolver-int']
+const TAG_SLUGS = ['branding-int', 'web-int', 'no-auth-int', 'resolver-tag-int']
 
 /** Idempotent wipe by slug so reruns (and aborted runs) never collide on unique slugs. */
 async function wipe() {
@@ -100,5 +102,38 @@ describe('Article sections + article-only fields', () => {
       },
     })
     expect(doc.content?.[0]?.blockType).toBe('hero')
+  })
+
+  it('fetchArticleList exposes tags and year for the Works views', async () => {
+    const tag = await payload.create({
+      collection: 'tags',
+      data: { title: 'Brand', slug: 'resolver-tag-int' },
+      overrideAccess: true,
+    })
+    await payload.create({
+      collection: 'articles',
+      overrideAccess: true,
+      data: {
+        title: 'Resolver Case Study',
+        type: 'case-study',
+        slug: 'resolver-int',
+        year: 2025,
+        tags: [tag.id],
+      },
+    })
+
+    const block = {
+      blockType: 'articleList',
+      types: ['case-study'],
+      sortField: 'createdAt',
+      sortDirection: 'desc',
+      limit: 50,
+    } as unknown as ArticleListBlock
+
+    const items = await fetchArticleList(block, payload)
+    const item = items.find((i) => i.slug === 'resolver-int')
+    expect(item).toBeDefined()
+    expect(item?.year).toBe(2025)
+    expect(item?.tags).toContain('Brand')
   })
 })

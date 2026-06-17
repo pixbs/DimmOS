@@ -18,6 +18,7 @@ import {
   SectionTitleView,
 } from '@/components/content-blocks/sections'
 import { DocumentMediaProvider } from '@/components/content-blocks/document-media-context'
+import { Works } from '@/components/content-blocks/works'
 import type { Article } from '@/payload-types'
 
 function ArticleListBlock({ block }: { block: ResolvedBlock & { blockType: 'articleList' } }) {
@@ -38,38 +39,8 @@ function ArticleListBlock({ block }: { block: ResolvedBlock & { blockType: 'arti
 
   return (
     <div data-block-type="articleList" data-view-mode={viewMode} className="flex flex-col gap-2">
-      {block.heading && <h2 className="text-lg font-semibold px-2">{block.heading}</h2>}
-      {viewMode === 'grid' ? (
-        <div className="flex flex-col gap-2">
-          {filtered.map((a) => (
-            <button
-              key={a.id}
-              data-article-item=""
-              onClick={() => handleClick(a.slug)}
-              className="flex items-center gap-3 rounded-xl bg-white/5 p-4 hover:bg-white/10 transition-colors w-full text-left"
-            >
-              <i className={`${a.shortcutIcon ?? 'ri-folder-fill'} text-2xl`} />
-              <span className="font-medium text-fg">{a.title}</span>
-            </button>
-          ))}
-        </div>
-      ) : (
-        <ul className="flex flex-col">
-          {filtered.map((a) => (
-            <li key={a.id}>
-              <button
-                data-article-item=""
-                onClick={() => handleClick(a.slug)}
-                className="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-white/8 transition-colors text-left"
-              >
-                <i className={`${a.shortcutIcon ?? 'ri-folder-fill'} text-base text-fg/60`} />
-                <span className="flex-1 text-sm text-fg">{a.title}</span>
-                <i className="ri-arrow-right-s-line text-fg/30" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {block.heading && <h2 className="px-2 text-lg font-semibold">{block.heading}</h2>}
+      <Works items={filtered} viewMode={viewMode} onSelect={handleClick} />
     </div>
   )
 }
