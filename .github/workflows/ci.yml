@@ -31,6 +31,11 @@ jobs:
       RECAPTCHA_SECRET_KEY: ${{ secrets.RECAPTCHA_SECRET_KEY }}
       NEXT_PUBLIC_RECAPTCHA_SITE_KEY: ${{ secrets.NEXT_PUBLIC_RECAPTCHA_SITE_KEY }}
       RESEND_API_KEY: ci-placeholder
+      # Required at build (NEXT_PUBLIC_* inlining) and at runtime so the PostHog
+      # consent e2e tests run instead of skipping. Add both in repo Settings →
+      # Secrets and variables → Actions.
+      NEXT_PUBLIC_POSTHOG_KEY: ${{ secrets.NEXT_PUBLIC_POSTHOG_KEY }}
+      NEXT_PUBLIC_POSTHOG_HOST: ${{ secrets.NEXT_PUBLIC_POSTHOG_HOST }}
 
     steps:
       - uses: actions/checkout@v4
