@@ -1,11 +1,20 @@
 import { Suspense } from 'react'
-import type { Window } from '@/payload-types'
+import type { Article } from '@/payload-types'
 import { ArticleListRenderer } from './article-list-renderer'
-import { RichTextView, ImageView, GalleryView, EmbedView, CtaView } from './views'
+import { RichTextView } from './views'
+import {
+  HeroView,
+  SummaryView,
+  StatsView,
+  ImageSectionView,
+  DescriptionView,
+  SectionTitleView,
+} from './sections'
 
-// Window['content'] and Article['content'] are the same union (shared block
-// interfaceNames) — this single renderer serves both collections.
-export type ContentBlock = NonNullable<Window['content']>[number]
+// Article['content'] is the superset union (it includes the article-only Hero
+// block); Window['content'] is a subset of it, so this single renderer type
+// serves both collections.
+export type ContentBlock = NonNullable<Article['content']>[number]
 
 export function ContentBlocks({ blocks }: { blocks: ContentBlock[] }) {
   return (
@@ -21,19 +30,25 @@ function BlockRenderer({ block }: { block: ContentBlock }) {
   switch (block.blockType) {
     case 'richText':
       return <RichTextView block={block} />
-    case 'image':
-      return <ImageView block={block} />
-    case 'gallery':
-      return <GalleryView block={block} />
-    case 'embed':
-      return <EmbedView block={block} />
-    case 'cta':
-      return <CtaView block={block} />
+    case 'hero':
+      return <HeroView block={block} />
+    case 'summary':
+      return <SummaryView block={block} />
+    case 'stats':
+      return <StatsView block={block} />
+    case 'imageSection':
+      return <ImageSectionView block={block} />
+    case 'description':
+      return <DescriptionView block={block} />
+    case 'sectionTitle':
+      return <SectionTitleView block={block} />
     case 'articleList':
       return (
         <Suspense fallback={<div />}>
           <ArticleListRenderer block={block} />
         </Suspense>
       )
+    default:
+      return null
   }
 }

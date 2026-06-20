@@ -1,7 +1,7 @@
 // Windows = general content pages (about, contact, welcome).
 // Portfolio work and services live in the Articles collection.
 import type { CollectionConfig } from 'payload'
-import { contentBlocksField } from '@/fields/contentBlocks'
+import { createContentBlocksField } from '@/fields/contentBlocks'
 import { windowButtonsField } from '@/fields/windowButtons'
 import { windowBehaviorFields } from '@/fields/windowBehavior'
 import { createSlugField } from '@/fields/slugField'
@@ -27,7 +27,7 @@ export const Windows: CollectionConfig = {
           fields: [
             { name: 'title', type: 'text', required: true },
             createSlugField('URL path identifier, e.g. "about" → /about'),
-            contentBlocksField,
+            createContentBlocksField(),
             windowButtonsField,
           ],
         },

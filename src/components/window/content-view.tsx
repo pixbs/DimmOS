@@ -8,7 +8,17 @@ import { BSODContent } from './BSODContent'
 import { WindowScaffold } from './window-scaffold'
 import { WindowButtons } from './window-buttons'
 import { FormComponent } from '@/components/form/FormComponent'
-import { RichTextView, ImageView, GalleryView, EmbedView, CtaView } from '@/components/content-blocks/views'
+import { RichTextView } from '@/components/content-blocks/views'
+import {
+  HeroView,
+  SummaryView,
+  StatsView,
+  ImageSectionView,
+  DescriptionView,
+  SectionTitleView,
+} from '@/components/content-blocks/sections'
+import { DocumentMediaProvider } from '@/components/content-blocks/document-media-context'
+import { Works } from '@/components/content-blocks/works'
 import type { Article } from '@/payload-types'
 
 function ArticleListBlock({ block }: { block: ResolvedBlock & { blockType: 'articleList' } }) {
@@ -29,38 +39,8 @@ function ArticleListBlock({ block }: { block: ResolvedBlock & { blockType: 'arti
 
   return (
     <div data-block-type="articleList" data-view-mode={viewMode} className="flex flex-col gap-2">
-      {block.heading && <h2 className="text-lg font-semibold px-2">{block.heading}</h2>}
-      {viewMode === 'grid' ? (
-        <div className="flex flex-col gap-2">
-          {filtered.map((a) => (
-            <button
-              key={a.id}
-              data-article-item=""
-              onClick={() => handleClick(a.slug)}
-              className="flex items-center gap-3 rounded-xl bg-white/5 p-4 hover:bg-white/10 transition-colors w-full text-left"
-            >
-              <i className={`${a.shortcutIcon ?? 'ri-folder-fill'} text-2xl`} />
-              <span className="font-medium text-fg">{a.title}</span>
-            </button>
-          ))}
-        </div>
-      ) : (
-        <ul className="flex flex-col">
-          {filtered.map((a) => (
-            <li key={a.id}>
-              <button
-                data-article-item=""
-                onClick={() => handleClick(a.slug)}
-                className="flex items-center gap-3 w-full px-4 py-2.5 hover:bg-white/8 transition-colors text-left"
-              >
-                <i className={`${a.shortcutIcon ?? 'ri-folder-fill'} text-base text-fg/60`} />
-                <span className="flex-1 text-sm text-fg">{a.title}</span>
-                <i className="ri-arrow-right-s-line text-fg/30" />
-              </button>
-            </li>
-          ))}
-        </ul>
-      )}
+      {block.heading && <h2 className="px-2 text-lg font-semibold">{block.heading}</h2>}
+      <Works items={filtered} viewMode={viewMode} onSelect={handleClick} />
     </div>
   )
 }
@@ -69,14 +49,18 @@ function BlockRenderer({ block }: { block: ResolvedBlock }) {
   switch (block.blockType) {
     case 'richText':
       return <RichTextView block={block} />
-    case 'image':
-      return <ImageView block={block} />
-    case 'gallery':
-      return <GalleryView block={block} />
-    case 'embed':
-      return <EmbedView block={block} />
-    case 'cta':
-      return <CtaView block={block} />
+    case 'hero':
+      return <HeroView block={block} />
+    case 'summary':
+      return <SummaryView block={block} />
+    case 'stats':
+      return <StatsView block={block} />
+    case 'imageSection':
+      return <ImageSectionView block={block} />
+    case 'description':
+      return <DescriptionView block={block} />
+    case 'sectionTitle':
+      return <SectionTitleView block={block} />
     case 'articleList':
       return <ArticleListBlock block={block} />
     default:
@@ -84,22 +68,18 @@ function BlockRenderer({ block }: { block: ResolvedBlock }) {
   }
 }
 
-function ArticleBlockContent({ article }: { article: Article }) {
-  const blocks = (article.content ?? []) as ResolvedBlock[]
+function ArticleBlockContent({ article, blocks }: { article: Article; blocks: ResolvedBlock[] }) {
   const buttons = article.buttons ?? []
   return (
     <WindowScaffold footer={buttons.length ? <WindowButtons buttons={buttons} /> : undefined}>
-      <div className="flex flex-col gap-6 px-6 py-8">
-        <div className="flex items-center gap-2">
-          <span className="text-xs uppercase tracking-widest opacity-40">
-            {article.type === 'case-study' ? 'Case Study' : 'Service'}
-          </span>
+      {/* Hero sections read the article's bg/fg images from this provider. */}
+      <DocumentMediaProvider background={article.bgImage} foreground={article.fgImage}>
+        <div className="flex flex-col gap-6 px-6 py-8">
+          {blocks.map((block, i) => (
+            <BlockRenderer key={i} block={block} />
+          ))}
         </div>
-        <h1 className="text-2xl font-bold text-fg">{article.title}</h1>
-        {blocks.map((block, i) => (
-          <BlockRenderer key={i} block={block} />
-        ))}
-      </div>
+      </DocumentMediaProvider>
     </WindowScaffold>
   )
 }
@@ -145,7 +125,7 @@ export function ContentView({
     )
   }
   if (data.type === 'article') {
-    return <ArticleBlockContent article={data.doc} />
+    return <ArticleBlockContent article={data.doc} blocks={data.blocks} />
   }
   if (data.type === 'form') {
     return <FormComponent form={data.doc} />
