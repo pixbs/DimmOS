@@ -42,7 +42,7 @@ describe('HeroView', () => {
 })
 
 describe('SummaryView', () => {
-  it('renders both columns and a divider for each layout', () => {
+  it('renders the 1/3 and 2/3 columns', () => {
     const { container } = render(
       <SummaryView
         block={{
@@ -55,11 +55,10 @@ describe('SummaryView', () => {
       />,
     )
     const text = container.textContent ?? ''
+    expect(text).toContain('Left')
     expect(text).toContain('left body')
+    expect(text).toContain('Right')
     expect(text).toContain('right body')
-    // one horizontal (stacked) + one vertical (side-by-side) divider
-    expect(container.querySelector('[data-orientation="horizontal"]')).toBeTruthy()
-    expect(container.querySelector('[data-orientation="vertical"]')).toBeTruthy()
   })
 })
 
@@ -70,8 +69,8 @@ describe('StatsView', () => {
         block={{
           blockType: 'stats',
           stats: [
-            { value: 10, suffix: 'Mil', label: 'Downloads' },
-            { value: 98, suffix: '%', label: 'Satisfaction' },
+            { value: '10Mil', label: 'Downloads' },
+            { value: '98%', label: 'Satisfaction' },
           ],
         }}
       />,

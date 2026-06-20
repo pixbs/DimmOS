@@ -1,7 +1,7 @@
 'use client'
 
 import type { TitleBlock } from '@/payload-types'
-import { AnimatedText } from '@/components/animation'
+import { AnimatedDivider, AnimatedText } from '@/components/animation'
 
 /**
  * Title section: a large letter-by-letter animated title with a supporting
@@ -9,16 +9,18 @@ import { AnimatedText } from '@/components/animation'
  */
 export function SectionTitleView({ block }: { block: TitleBlock }) {
   return (
-    <section data-block-type="sectionTitle" className="flex flex-col gap-3">
+    <section data-block-type="sectionTitle" className="flex flex-col gap-3 pt-10">
       <AnimatedText
         as="h2"
-        text={block.title}
         split="letters"
         className="text-4xl font-bold text-fg @2xl:text-5xl"
-      />
+      >
+        {block.title}
+      </AnimatedText>
       {block.description && (
         <p className="max-w-2xl leading-relaxed text-fg/60">{block.description}</p>
       )}
+    <AnimatedDivider className="mt-6"/>
     </section>
   )
 }

@@ -72,7 +72,7 @@ describe('Article sections + article-only fields', () => {
         content: [
           { blockType: 'hero', title: 'Hero title', description: 'Hero copy' },
           { blockType: 'summary', leftTitle: 'L', leftBody: 'lb', rightTitle: 'R', rightBody: 'rb' },
-          { blockType: 'stats', stats: [{ value: 10, suffix: 'Mil', label: 'Users' }] },
+          { blockType: 'stats', stats: [{ value: '10Mil', label: 'Users' }] },
           { blockType: 'description', title: 'Big title' },
           { blockType: 'sectionTitle', title: 'A title', description: 'desc' },
         ],

@@ -45,6 +45,14 @@ describe('WorksGrid', () => {
     fireEvent.click(getByText('Clicked'))
     expect(onSelect).toHaveBeenCalledWith('clicked')
   })
+
+  it('renders tag dots + labels on a card', () => {
+    const { getByText } = render(
+      <WorksGrid items={[item({ tags: ['web', 'research'] })]} onSelect={() => {}} />,
+    )
+    expect(getByText('web')).toBeTruthy()
+    expect(getByText('research')).toBeTruthy()
+  })
 })
 
 describe('WorksTable', () => {

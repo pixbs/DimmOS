@@ -68,20 +68,13 @@ function BlockRenderer({ block }: { block: ResolvedBlock }) {
   }
 }
 
-function ArticleBlockContent({ article }: { article: Article }) {
-  const blocks = (article.content ?? []) as ResolvedBlock[]
+function ArticleBlockContent({ article, blocks }: { article: Article; blocks: ResolvedBlock[] }) {
   const buttons = article.buttons ?? []
   return (
     <WindowScaffold footer={buttons.length ? <WindowButtons buttons={buttons} /> : undefined}>
       {/* Hero sections read the article's bg/fg images from this provider. */}
       <DocumentMediaProvider background={article.bgImage} foreground={article.fgImage}>
         <div className="flex flex-col gap-6 px-6 py-8">
-          <div className="flex items-center gap-2">
-            <span className="text-xs uppercase tracking-widest opacity-40">
-              {article.type === 'case-study' ? 'Case Study' : 'Service'}
-            </span>
-          </div>
-          <h1 className="text-2xl font-bold text-fg">{article.title}</h1>
           {blocks.map((block, i) => (
             <BlockRenderer key={i} block={block} />
           ))}
@@ -132,7 +125,7 @@ export function ContentView({
     )
   }
   if (data.type === 'article') {
-    return <ArticleBlockContent article={data.doc} />
+    return <ArticleBlockContent article={data.doc} blocks={data.blocks} />
   }
   if (data.type === 'form') {
     return <FormComponent form={data.doc} />

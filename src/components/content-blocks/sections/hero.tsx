@@ -18,20 +18,19 @@ export function HeroView({ block }: { block: HeroBlock }) {
     <section data-block-type="hero" className="@container">
       <div className="grid grid-cols-1 gap-6 @2xl:grid-cols-3 @2xl:items-center @2xl:gap-8">
         <div className="flex flex-col gap-3 @2xl:col-span-1">
-          <AnimatedText
-            as="h2"
-            text={block.title}
-            className="text-2xl font-bold text-fg @2xl:text-3xl"
-          />
+          <AnimatedText as="h2" className="text-2xl font-bold text-fg @2xl:text-3xl">
+            {block.title}
+          </AnimatedText>
           {block.description && (
             <p className="leading-relaxed text-fg/60">{block.description}</p>
           )}
         </div>
         {background && (
-          <div className="py-4 @2xl:col-span-2">
+          <div className="order-first py-4 @2xl:order-0 @2xl:col-span-2">
             <ParallaxImagePair
               background={background}
               foreground={foreground}
+              aspectClassName="aspect-video"
               className="rounded-2xl"
             />
           </div>

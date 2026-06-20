@@ -3,8 +3,8 @@
  * prefix/suffix text, so the number can be animated from 0 while the affixes
  * stay static.
  *
- * The `Stats` block stores the numeric value and suffix in separate fields, so
- * this parser is primarily a fallback for free-form strings such as `"10Mil"`,
+ * The `Stats` block stores each figure as a single free-form string, so this is
+ * the parser that drives the `CountUp` animation for values such as `"10Mil"`,
  * `"$1.2K"`, `"98%"`, or `"1,200+"`.
  */
 

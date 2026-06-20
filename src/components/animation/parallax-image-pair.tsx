@@ -19,8 +19,10 @@ export interface ParallaxImagePairProps {
   background: ParallaxLayer
   /** The front layer (moves most); omit for a single-image parallax. */
   foreground?: ParallaxLayer | null
-  /** Classes for the 16:9 frame (sizing / rounding). */
+  /** Classes for the frame (rounding etc.); include an aspect class — see `aspectClassName`. */
   className?: string
+  /** Aspect-ratio class for the frame. Defaults to `aspect-video` (16:9). */
+  aspectClassName?: string
   /** Maximum layer travel in pixels across the scroll range. Defaults to `40`. */
   strength?: number
 }
@@ -38,6 +40,7 @@ export function ParallaxImagePair({
   background,
   foreground,
   className,
+  aspectClassName = 'aspect-video',
   strength = 40,
 }: ParallaxImagePairProps) {
   const frameRef = useRef<HTMLDivElement>(null)
@@ -52,8 +55,8 @@ export function ParallaxImagePair({
   const fgY = useTransform(scrollYProgress, [0, 1], [strength, -strength])
 
   return (
-    <div ref={frameRef} className={`relative aspect-video overflow-hidden ${className ?? ''}`}>
-      <motion.div className="absolute -inset-[6%]" style={{ y: bgY }}>
+    <div ref={frameRef} className={`relative overflow-hidden ${aspectClassName} ${className ?? ''}`}>
+      <motion.div className="absolute inset-[-6%] z-0" style={{ y: bgY }}>
         <PixelatedImage
           src={background.src}
           alt={background.alt}
@@ -63,7 +66,7 @@ export function ParallaxImagePair({
         />
       </motion.div>
       {foreground && (
-        <motion.div className="absolute -inset-[6%]" style={{ y: fgY }}>
+        <motion.div className="absolute inset-[-6%] z-10" style={{ y: fgY }}>
           <PixelatedImage
             src={foreground.src}
             alt={foreground.alt}
@@ -71,6 +74,7 @@ export function ParallaxImagePair({
             height={foreground.height}
             className="h-full w-full"
             imageClassName="h-full w-full object-contain"
+            transparentReveal
           />
         </motion.div>
       )}

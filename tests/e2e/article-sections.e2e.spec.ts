@@ -59,12 +59,12 @@ test.describe('Case study section blocks', () => {
     await expect(page.locator('[data-block-type="stats"]')).toContainText('Customer satisfaction')
   })
 
-  test('summary renders dividers', async ({ page }) => {
+  test('summary renders both columns', async ({ page }) => {
     await page.goto(`${BASE_URL}/${SLUG}`)
     await expectDrawerOpen(page)
-    await expect(
-      page.locator('[data-block-type="summary"] [data-orientation]').first(),
-    ).toBeVisible({ timeout: 10000 })
+    const summary = page.locator('[data-block-type="summary"]')
+    await expect(summary).toContainText('Overview')
+    await expect(summary).toContainText('What we did')
   })
 
   test('works section renders sibling article cards', async ({ page }) => {

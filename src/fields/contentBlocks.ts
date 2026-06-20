@@ -100,7 +100,7 @@ const SummaryBlock: Block = {
   ],
 }
 
-/** Stats: up to three large count-up figures, each with a suffix and a label. */
+/** Stats: up to three large count-up figures, each a single string and a label. */
 const StatsBlock: Block = {
   slug: 'stats',
   interfaceName: 'StatsBlock',
@@ -117,14 +117,12 @@ const StatsBlock: Block = {
       fields: [
         {
           name: 'value',
-          type: 'number',
-          required: true,
-          admin: { description: 'The number to count up to, e.g. 10' },
-        },
-        {
-          name: 'suffix',
           type: 'text',
-          admin: { description: 'Static text after the number, e.g. "Mil", "%", "+"' },
+          required: true,
+          admin: {
+            description:
+              'The figure as a single string, e.g. "30Mil", "$30,000", "21%". The number animates; surrounding text stays static.',
+          },
         },
         { name: 'label', type: 'text', required: true, admin: { description: 'Caption below the figure' } },
       ],

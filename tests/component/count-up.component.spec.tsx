@@ -3,25 +3,33 @@ import { render } from '@testing-library/react'
 import { CountUp } from '@/components/animation/count-up'
 
 describe('CountUp', () => {
-  it('exposes the final value with affixes to screen readers', () => {
-    const { container } = render(<CountUp value={42} suffix="+" />)
+  it('exposes the original string to screen readers', () => {
+    const { container } = render(<CountUp>1,200+</CountUp>)
     const srOnly = container.querySelector('.sr-only')
-    expect(srOnly?.textContent).toBe('42+')
+    expect(srOnly?.textContent).toBe('1,200+')
   })
 
-  it('includes the prefix in the accessible value', () => {
-    const { container } = render(<CountUp value={98} prefix="$" />)
+  it('keeps a leading prefix in the accessible value', () => {
+    const { container } = render(<CountUp>$98</CountUp>)
     expect(container.querySelector('.sr-only')?.textContent).toBe('$98')
   })
 
-  it('renders the number and the affix as distinct spans', () => {
-    const { container } = render(<CountUp value={50} suffix="%" />)
+  it('renders the number and the affixes as distinct spans', () => {
+    const { container } = render(<CountUp>50%</CountUp>)
     expect(container.querySelector('[data-count-number]')).toBeTruthy()
     expect(container.querySelector('[data-count-affix]')?.textContent).toBe('%')
   })
 
-  it('formats with the requested decimal places', () => {
-    const { container } = render(<CountUp value={3.5} decimals={1} />)
-    expect(container.querySelector('.sr-only')?.textContent).toContain('3.5')
+  it('splits a leading prefix and trailing suffix into separate affix spans', () => {
+    const { container } = render(<CountUp>$1.2K</CountUp>)
+    const affixes = Array.from(container.querySelectorAll('[data-count-affix]')).map(
+      (n) => n.textContent,
+    )
+    expect(affixes).toEqual(['$', 'K'])
+  })
+
+  it('preserves the original decimals in the accessible value', () => {
+    const { container } = render(<CountUp>3.5x</CountUp>)
+    expect(container.querySelector('.sr-only')?.textContent).toBe('3.5x')
   })
 })

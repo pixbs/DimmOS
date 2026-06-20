@@ -2,7 +2,7 @@ import 'server-only'
 import { unstable_cache } from 'next/cache'
 import { getPayload } from 'payload'
 import config from '@payload-config'
-import type { Window, Article, Form, WindowButton } from '@/payload-types'
+import type { Article, Form, WindowButton } from '@/payload-types'
 import { extractBehavior, type WindowBehaviorConfig } from '@/utilities/windowBehavior'
 import { fetchArticleList, type ArticleListItem } from './articleList'
 
@@ -20,12 +20,12 @@ export type ResolvedBlock =
 
 export type WindowContentResult =
   | { type: 'window'; title: string; blocks: ResolvedBlock[]; buttons: NonNullable<WindowButton>; behavior: WindowBehaviorConfig }
-  | { type: 'article'; doc: Article; behavior: WindowBehaviorConfig }
+  | { type: 'article'; doc: Article; blocks: ResolvedBlock[]; behavior: WindowBehaviorConfig }
   | { type: 'form'; doc: Form; behavior: WindowBehaviorConfig }
   | null
 
 async function resolveBlocks(
-  rawBlocks: NonNullable<Window['content']>,
+  rawBlocks: NonNullable<Article['content']>,
   payload: Awaited<ReturnType<typeof getPayload>>,
 ): Promise<ResolvedBlock[]> {
   return Promise.all(
@@ -64,7 +64,13 @@ async function fetchWindowContentImpl(slug: string): Promise<WindowContentResult
     limit: 1,
     depth: 1,
   })
-  if (articles.length) return { type: 'article', doc: articles[0], behavior: extractBehavior(articles[0]) }
+  if (articles.length) {
+    const doc = articles[0]
+    // Resolve blocks (e.g. an articleList inside an article) so the client
+    // renderer receives ready-to-render data instead of crashing on raw blocks.
+    const blocks = await resolveBlocks(doc.content ?? [], payload)
+    return { type: 'article', doc, blocks, behavior: extractBehavior(doc) }
+  }
 
   const { docs: forms } = await payload.find({
     collection: 'forms',

@@ -340,13 +340,9 @@ export interface StatsBlock {
   stats?:
     | {
         /**
-         * The number to count up to, e.g. 10
+         * The figure as a single string, e.g. "30Mil", "$30,000", "21%". The number animates; surrounding text stays static.
          */
-        value: number;
-        /**
-         * Static text after the number, e.g. "Mil", "%", "+"
-         */
-        suffix?: string | null;
+        value: string;
         /**
          * Caption below the figure
          */
@@ -975,7 +971,6 @@ export interface StatsBlockSelect<T extends boolean = true> {
     | T
     | {
         value?: T;
-        suffix?: T;
         label?: T;
         id?: T;
       };

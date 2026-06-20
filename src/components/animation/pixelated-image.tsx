@@ -28,6 +28,12 @@ export interface PixelatedImageProps {
   minResolution?: number
   /** Milliseconds between frames. Defaults to `45`. */
   stepMs?: number
+  /**
+   * Keep the canvas overlay transparent during the reveal (no opaque backdrop).
+   * Use for foreground layers stacked over another image so the layer beneath
+   * shows through the transparent areas of the source. Defaults to `false`.
+   */
+  transparentReveal?: boolean
 }
 
 /** Cap the transient canvas buffer width; the real `next/image` provides final crispness. */
@@ -55,6 +61,7 @@ export function PixelatedImage({
   steps = 14,
   minResolution = 0.05,
   stepMs = 45,
+  transparentReveal = false,
 }: PixelatedImageProps) {
   const wrapperRef = useRef<HTMLDivElement>(null)
   const canvasRef = useRef<HTMLCanvasElement>(null)
@@ -137,7 +144,10 @@ export function PixelatedImage({
           ref={canvasRef}
           aria-hidden
           className="pointer-events-none absolute inset-0 h-full w-full"
-          style={{ imageRendering: 'pixelated', backgroundColor: 'var(--color-bg)' }}
+          style={{
+            imageRendering: 'pixelated',
+            backgroundColor: transparentReveal ? 'transparent' : 'var(--color-bg)',
+          }}
         />
       )}
     </div>

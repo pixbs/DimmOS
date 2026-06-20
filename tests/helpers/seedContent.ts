@@ -302,12 +302,12 @@ export async function seedCaseStudy(slug: string) {
   await payload.create({
     collection: 'articles',
     overrideAccess: true,
-    data: { title: 'Northwind Rebrand', type: 'case-study', slug: `${slug}-w1`, year: 2024, tags: [tBrand.id, tMotion.id], bgImage: w1bg.id },
+    data: { title: 'Northwind Rebrand', type: 'case-study', slug: `${slug}-w1`, year: 2024, tags: [tBrand.id, tMotion.id], bgImage: w1bg.id, fgImage: fg.id },
   })
   await payload.create({
     collection: 'articles',
     overrideAccess: true,
-    data: { title: 'Lumen Platform', type: 'case-study', slug: `${slug}-w2`, year: 2025, tags: [tWeb.id], bgImage: w2bg.id },
+    data: { title: 'Lumen Platform', type: 'case-study', slug: `${slug}-w2`, year: 2025, tags: [tWeb.id], bgImage: w2bg.id, fgImage: fg.id },
   })
   await payload.create({
     collection: 'articles',
@@ -347,9 +347,9 @@ export async function seedCaseStudy(slug: string) {
         {
           blockType: 'stats',
           stats: [
-            { value: 10, suffix: 'Mil', label: 'Impressions in launch month' },
-            { value: 98, suffix: '%', label: 'Customer satisfaction' },
-            { value: 3, suffix: 'x', label: 'Faster onboarding' },
+            { value: '10Mil', label: 'Impressions in launch month' },
+            { value: '98%', label: 'Customer satisfaction' },
+            { value: '3x', label: 'Faster onboarding' },
           ],
         },
         { blockType: 'imageSection', image: sectionImg.id },

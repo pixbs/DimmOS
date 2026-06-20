@@ -133,8 +133,8 @@ describe('Windows collection', () => {
           {
             blockType: 'stats',
             stats: [
-              { value: 10, suffix: 'Mil', label: 'Downloads' },
-              { value: 98, suffix: '%', label: 'Satisfaction' },
+              { value: '10Mil', label: 'Downloads' },
+              { value: '98%', label: 'Satisfaction' },
             ],
           },
         ],
@@ -148,8 +148,7 @@ describe('Windows collection', () => {
       NonNullable<typeof doc.content>[number],
       { blockType: 'stats' }
     >
-    expect(stats.stats?.[0]?.value).toBe(10)
-    expect(stats.stats?.[0]?.suffix).toBe('Mil')
+    expect(stats.stats?.[0]?.value).toBe('10Mil')
   })
 
   it('strips a hero block from a window (Hero is Articles-only)', async () => {

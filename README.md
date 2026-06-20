@@ -903,7 +903,7 @@ shared set; Articles also get the doc-image-backed **Hero**.
 | Rich Text | `richText` | Lexical rich text |
 | Works / Article List | `articleList` | Grid + table views (toggle via window toolbar); table rows show tags + year with a mouse-following hover preview |
 | Summary | `summary` | 1/3 + 2/3 columns with a draw-on-scroll divider |
-| Stats | `stats` | Up to three count-up figures (value + suffix + label) |
+| Stats | `stats` | Up to three count-up figures (single value string like `"30Mil"`/`"$30,000"`/`"21%"` + label) |
 | Image | `imageSection` | Full-width image with the de-pixelation reveal |
 | Description | `description` | 1/3 animated title + 2/3 rich text |
 | Title | `sectionTitle` | Letter-by-letter animated title |

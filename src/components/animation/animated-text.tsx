@@ -8,8 +8,8 @@ import { useSectionInView } from './use-section-in-view'
 
 /** Props for {@link AnimatedText}. */
 export interface AnimatedTextProps {
-  /** The text to reveal. Always rendered intact (visually hidden) for screen readers. */
-  text: string
+  /** The text to reveal, passed as children. Always rendered intact (visually hidden) for screen readers. */
+  children: string
   /** Animate whole words (default) or individual letters. */
   split?: SplitMode
   /** Wrapper element type, e.g. `'h1'`, `'h2'`, `'span'`. Defaults to `'span'`. */
@@ -34,7 +34,7 @@ export interface AnimatedTextProps {
  * @see useSectionInView for the true-visibility trigger.
  */
 export function AnimatedText({
-  text,
+  children,
   split = 'words',
   as,
   className,
@@ -45,13 +45,13 @@ export function AnimatedText({
   const ref = useRef<HTMLSpanElement>(null)
   const inView = useSectionInView(ref)
   const reduce = useReducedMotion()
-  const { words } = splitText(text, split)
+  const { words } = splitText(children, split)
 
   let unitIndex = 0
 
   return (
     <Wrapper ref={ref} className={className}>
-      <span className="sr-only">{text}</span>
+      <span className="sr-only">{children}</span>
       <span aria-hidden className="inline-flex flex-wrap gap-x-[0.25em]">
         {words.map((units, wi) => (
           <span key={wi} className="inline-flex whitespace-nowrap">
