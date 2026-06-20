@@ -55,14 +55,17 @@ test.describe('Case study section blocks', () => {
   test('stats expose their value + suffix to assistive tech', async ({ page }) => {
     await page.goto(`${BASE_URL}/${SLUG}`)
     await expectDrawerOpen(page)
-    await expect(page.locator('[data-block-type="stats"]')).toContainText('10Mil')
-    await expect(page.locator('[data-block-type="stats"]')).toContainText('Customer satisfaction')
+    const stats = page.locator('[data-testid="page-drawer"]').locator('[data-block-type="stats"]')
+    await expect(stats).toContainText('10Mil')
+    await expect(stats).toContainText('Customer satisfaction')
   })
 
   test('summary renders both columns', async ({ page }) => {
     await page.goto(`${BASE_URL}/${SLUG}`)
     await expectDrawerOpen(page)
-    const summary = page.locator('[data-block-type="summary"]')
+    const summary = page
+      .locator('[data-testid="page-drawer"]')
+      .locator('[data-block-type="summary"]')
     await expect(summary).toContainText('Overview')
     await expect(summary).toContainText('What we did')
   })
@@ -70,9 +73,10 @@ test.describe('Case study section blocks', () => {
   test('works section renders sibling article cards', async ({ page }) => {
     await page.goto(`${BASE_URL}/${SLUG}`)
     await expectDrawerOpen(page)
-    await expect(
-      page.locator('[data-block-type="articleList"] [data-article-card]').first(),
-    ).toBeVisible({ timeout: 10000 })
-    await expect(page.locator('[data-block-type="articleList"]')).toContainText('Northwind Rebrand')
+    const articleList = page
+      .locator('[data-testid="page-drawer"]')
+      .locator('[data-block-type="articleList"]')
+    await expect(articleList.locator('[data-article-card]').first()).toBeVisible({ timeout: 10000 })
+    await expect(articleList).toContainText('Northwind Rebrand')
   })
 })
