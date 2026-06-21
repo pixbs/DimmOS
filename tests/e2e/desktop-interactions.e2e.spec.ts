@@ -170,6 +170,42 @@ test.describe('Desktop interactions', () => {
     await expect(page.getByRole('dialog', { name: 'Display Options' })).toBeVisible()
   })
 
+  test('context menu items animate above the custom cursor surface', async ({ page }) => {
+    await page.goto(BASE_URL)
+    await dismissCookieNotice(page)
+    const cursor = page.locator('[data-dimm-custom-cursor]')
+    await page.mouse.move(900, 520)
+    await expect(cursor).toBeVisible({ timeout: 5000 })
+
+    await page.locator('[data-shortcut-surface]').click({ button: 'right', position: { x: 900, y: 520 } })
+    const menu = page.getByRole('menu', { name: 'Wallpaper menu' })
+    await expect(menu).toBeVisible()
+    await expect(menu).toHaveCSS('pointer-events', 'auto')
+
+    const cursorZ = await cursor.evaluate((el) => Number(getComputedStyle(el).zIndex))
+    const menuZ = await menu.evaluate((el) => Number(getComputedStyle(el).zIndex))
+    expect(cursorZ).toBeGreaterThan(menuZ)
+
+    const displayOptions = menu.getByRole('menuitem', { name: 'Display options' })
+    const itemBox = await displayOptions.boundingBox()
+    expect(itemBox).not.toBeNull()
+    if (!itemBox) return
+
+    const point = {
+      x: Math.round(itemBox.x + itemBox.width / 2),
+      y: Math.round(itemBox.y + itemBox.height / 2),
+    }
+    await page.mouse.move(point.x, point.y)
+
+    await expect(cursor).toHaveAttribute('data-cursor-kind', 'action')
+    await expect
+      .poll(async () => cursor.evaluate((el) => (el as HTMLElement).style.transform))
+      .toContain(`translate3d(${point.x}px, ${point.y}px`)
+    await expect
+      .poll(async () => displayOptions.evaluate((el) => getComputedStyle(el).backgroundColor))
+      .not.toBe('rgba(0, 0, 0, 0)')
+  })
+
   test('shortcut context menu opens a DimmOS window', async ({ page }) => {
     await page.goto(BASE_URL)
     await page.locator('[data-testid="preloader"]').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})

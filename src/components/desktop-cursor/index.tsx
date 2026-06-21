@@ -136,24 +136,28 @@ export function DesktopCursor() {
   const icon = hasAction ? ACTION_ICONS[action] : ''
 
   return createPortal(
-    <motion.div
+    <div
       ref={cursorRef}
       aria-hidden="true"
       data-dimm-custom-cursor=""
       data-cursor-kind={action}
-      className="fixed left-0 top-0 z-[9999] flex items-center justify-center rounded-full bg-fg text-bg mix-blend-difference pointer-events-none"
-      initial={false}
-      animate={{
-        height: hasAction ? 34 : 8,
-        width: hasAction ? 34 : 8,
-        opacity: isVisible ? 1 : 0,
-        scale: isPressed ? 0.82 : 1,
-      }}
-      transition={{ duration: 0.18, ease: EASE_OUT_QUAD }}
+      className="fixed left-0 top-0 z-[10050] pointer-events-none"
       style={{ transform: 'translate3d(-100px, -100px, 0)' }}
     >
-      {hasAction && <i className={`${icon} text-[17px] leading-none`} />}
-    </motion.div>,
+      <motion.div
+        className="flex items-center justify-center rounded-full bg-fg text-bg mix-blend-difference"
+        initial={false}
+        animate={{
+          height: hasAction ? 34 : 8,
+          width: hasAction ? 34 : 8,
+          opacity: isVisible ? 1 : 0,
+          scale: isPressed ? 0.82 : 1,
+        }}
+        transition={{ duration: 0.18, ease: EASE_OUT_QUAD }}
+      >
+        {hasAction && <i className={`${icon} text-[17px] leading-none`} />}
+      </motion.div>
+    </div>,
     document.body,
   )
 }

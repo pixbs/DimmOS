@@ -2,11 +2,13 @@
 
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { AnimatePresence, motion } from 'framer-motion'
 import { isDesktopViewport } from '@/lib/breakpoints'
 import { clearShortcutPositions } from '@/lib/shortcut-positions'
 import { classifyHref, copyText, getSlugFromHref, toAbsoluteUrl } from '@/lib/context-menu'
 import { useWindowManagerContext } from '@/components/window/manager-context'
 import { useDisplayOptions } from '@/components/display-options'
+import { EASE_OUT_QUAD } from '@/lib/easing'
 
 type MenuItem = {
   label: string
@@ -57,7 +59,12 @@ export function DesktopContextMenu() {
   const manager = useWindowManagerContext()
   const { openDisplayOptions, closeDisplayOptions } = useDisplayOptions()
   const [menu, setMenu] = useState<MenuState | null>(null)
+  const [mounted, setMounted] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
+
+  useEffect(() => {
+    setMounted(true)
+  }, [])
 
   useEffect(() => {
     if (!menu) return
@@ -198,40 +205,53 @@ export function DesktopContextMenu() {
     return () => document.removeEventListener('contextmenu', onContextMenu)
   }, [closeDisplayOptions, manager, openDisplayOptions])
 
-  if (!menu) return null
+  if (!mounted) return null
 
   return createPortal(
-    <div
-      ref={menuRef}
-      role="menu"
-      aria-label={menu.label}
-      data-context-menu=""
-      className="fixed z-[10000] flex w-[240px] flex-col rounded-lg border border-fg/10 bg-bgs/95 p-1.5 text-sm text-fg shadow-2xl backdrop-blur-xl"
-      style={{ left: menu.x, top: menu.y }}
-      onKeyDown={(e) => {
-        if (e.key === 'Escape') {
-          e.preventDefault()
-          setMenu(null)
-        }
-      }}
-    >
-      {menu.items.map((item) => (
-        <button
-          key={item.label}
-          type="button"
-          role="menuitem"
-          disabled={item.disabled}
-          onClick={async () => {
-            await item.action()
-            setMenu(null)
+    <AnimatePresence>
+      {menu && (
+        <motion.div
+          key={`${menu.label}-${menu.x}-${menu.y}`}
+          ref={menuRef}
+          role="menu"
+          aria-label={menu.label}
+          data-context-menu=""
+          className="fixed z-10000 flex w-60 origin-top-left flex-col overflow-hidden rounded-2xl border border-fg/10 bg-bgs/80 p-1.5 text-sm text-fg shadow-2xl backdrop-blur-xl pointer-events-auto"
+          style={{ left: menu.x, top: menu.y }}
+          initial={{ opacity: 0, scale: 0.96, y: -4 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.98, y: -2 }}
+          transition={{ duration: 0.16, ease: EASE_OUT_QUAD }}
+          onKeyDown={(e) => {
+            if (e.key === 'Escape') {
+              e.preventDefault()
+              setMenu(null)
+            }
           }}
-          className="flex h-[38px] items-center gap-3 rounded-md px-3 text-left text-fg transition-colors hover:bg-white/10 focus:bg-white/10 focus:outline-none disabled:cursor-default disabled:opacity-40"
         >
-          <i className={`${item.icon} text-base text-fg/60`} />
-          <span>{item.label}</span>
-        </button>
-      ))}
-    </div>,
+          {menu.items.map((item) => (
+            <motion.button
+              key={item.label}
+              type="button"
+              role="menuitem"
+              disabled={item.disabled}
+              data-cursor-action={item.disabled ? undefined : 'action'}
+              whileHover={item.disabled ? undefined : { x: 2, backgroundColor: 'rgba(255, 255, 255, 0.12)' }}
+              whileTap={item.disabled ? undefined : { scale: 0.985 }}
+              transition={{ duration: 0.12, ease: EASE_OUT_QUAD }}
+              onClick={async () => {
+                await item.action()
+                setMenu(null)
+              }}
+              className="group flex h-[38px] cursor-pointer items-center gap-3 rounded-md px-3 text-left text-fg transition-colors hover:bg-white/10 focus:bg-white/10 focus:outline-none disabled:cursor-default disabled:opacity-40"
+            >
+              <i className={`${item.icon} text-base text-fg/60 transition-colors group-hover:text-fg/90 group-focus:text-fg/90`} />
+              <span>{item.label}</span>
+            </motion.button>
+          ))}
+        </motion.div>
+      )}
+    </AnimatePresence>,
     document.body,
   )
 }
