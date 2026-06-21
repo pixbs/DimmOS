@@ -1,44 +1,45 @@
 'use client'
 
+import { motion } from 'framer-motion'
 import Link from 'next/link'
-import { useState } from 'react'
 import type { MouseEventHandler } from 'react'
+import { cn } from '@/lib/utils'
 
 interface ShortcutProps {
   icon: string
   name: string
   href: string
   color: string
+  slug?: string
+  className?: string
   onClick?: MouseEventHandler<HTMLAnchorElement>
 }
 
-export function Shortcut({ icon, name, href, color, onClick }: ShortcutProps) {
-  const [pressing, setPressing] = useState(false)
-
+export function Shortcut({ icon, name, href, color, slug, className, onClick }: ShortcutProps) {
   return (
     <Link
       href={href}
       onClick={onClick}
-      onPointerDown={() => setPressing(true)}
-      onPointerUp={() => setPressing(false)}
-      onPointerLeave={() => setPressing(false)}
-      onPointerCancel={() => setPressing(false)}
-      className="col-span-2 flex flex-col items-center gap-2 no-underline text-white [-webkit-tap-highlight-color:transparent] justify-center"
+      data-shortcut-slug={slug}
+      data-cursor-action="window"
+      draggable={false}
+      className={cn(
+        'flex flex-col items-center justify-center gap-2 no-underline text-white [-webkit-tap-highlight-color:transparent]',
+        className ?? 'col-span-2',
+      )}
     >
-      <div
+      <motion.div
+        whileTap={{ scale: 0.92 }}
+        transition={{ duration: 0.12, ease: 'easeOut' }}
         className="h-12 w-12 rounded-md flex items-center justify-center text-[24px] leading-none"
         style={{
-          background: pressing
-            ? `color-mix(in srgb, ${color} 30%, transparent)`
-            : `color-mix(in srgb, ${color} 22%, #0d0d0d)`,
-          backdropFilter: pressing ? 'blur(12px)' : 'none',
-          transform: pressing ? 'scale(0.92)' : 'scale(1)',
-          transition: 'background 120ms ease, backdrop-filter 120ms ease, transform 120ms ease',
+          background: `color-mix(in srgb, ${color} 22%, #0d0d0d)`,
+          transition: 'background 120ms ease, backdrop-filter 120ms ease',
           color,
         }}
       >
         <i className={icon} />
-      </div>
+      </motion.div>
       <span className="text-[0.8125rem] text-center whitespace-nowrap">{name}</span>
     </Link>
   )

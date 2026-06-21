@@ -42,6 +42,32 @@ export const cookieManifest: ServiceEntry[] = [
     ],
   },
   {
+    name: 'Display Options',
+    category: 'functional',
+    description: 'Remembers desktop display preferences such as whether DimmOS uses the website cursor or the system cursor.',
+    cookies: [
+      {
+        storageType: 'localStorage',
+        name: 'display-options:v1',
+        duration: 'Persistent',
+        description: 'Stores the selected cursor mode for the desktop interface.',
+      },
+    ],
+  },
+  {
+    name: 'Shortcut Positions',
+    category: 'functional',
+    description: 'Remembers where desktop shortcuts were placed on the wallpaper.',
+    cookies: [
+      {
+        storageType: 'localStorage',
+        name: 'shortcut-positions:v1',
+        duration: 'Persistent',
+        description: 'Saved x/y positions for desktop shortcut icons.',
+      },
+    ],
+  },
+  {
     name: 'Open Windows State',
     category: 'functional',
     description: 'Remembers which desktop windows are open during your current browser session.',

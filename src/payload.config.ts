@@ -5,6 +5,7 @@ import { formBuilderPlugin } from '@payloadcms/plugin-form-builder'
 import { seoPlugin } from '@payloadcms/plugin-seo'
 import type { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 import { sentryPlugin } from '@payloadcms/plugin-sentry'
+import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 import * as Sentry from '@sentry/nextjs'
 import path from 'path'
 import { buildConfig, type Field } from 'payload'
@@ -31,6 +32,8 @@ import { aiGenerateFieldEndpoint } from './endpoints/ai-generate-field'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
+const isVercelBlobStorageEnabled =
+  Boolean(process.env.BLOB_READ_WRITE_TOKEN) && process.env.PAYLOAD_DISABLE_BLOB_STORAGE !== 'true'
 
 const generateTitle: GenerateTitle<Article | WindowDoc> = ({ doc }) =>
   doc?.title ? `${doc.title} — Dimm's OS` : "Dimm's OS"
@@ -91,6 +94,17 @@ export default buildConfig({
   }),
   sharp,
   plugins: [
+    ...(isVercelBlobStorageEnabled
+      ? [
+          vercelBlobStorage({
+            collections: {
+              media: true,
+            },
+            clientUploads: true,
+            token: process.env.BLOB_READ_WRITE_TOKEN,
+          }),
+        ]
+      : []),
     formBuilderPlugin({
       fields: {
         text: {

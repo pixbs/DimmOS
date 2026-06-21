@@ -26,15 +26,25 @@ interface TrafficLightButtonProps {
   symbol: string
   activeColor: string
   hoverColor: string
+  cursorAction: 'close' | 'collapse' | 'expand' | 'restore'
   disabled?: boolean
   onClick?: () => void
 }
 
-function TrafficLightButton({ label, symbol, activeColor, hoverColor, disabled, onClick }: TrafficLightButtonProps) {
+function TrafficLightButton({
+  label,
+  symbol,
+  activeColor,
+  hoverColor,
+  cursorAction,
+  disabled,
+  onClick,
+}: TrafficLightButtonProps) {
   return (
     <button
       onClick={disabled ? undefined : onClick}
       aria-label={label}
+      data-cursor-action={disabled ? undefined : cursorAction}
       disabled={disabled}
       className="w-5 h-5 flex items-center justify-center group"
     >
@@ -79,6 +89,7 @@ export function WindowTitleBar({
           symbol="×"
           activeColor="bg-win-close"
           hoverColor="hover:bg-win-close-hover"
+          cursorAction="close"
           disabled={disableClose}
           onClick={onClose}
         />
@@ -87,6 +98,7 @@ export function WindowTitleBar({
           symbol="–"
           activeColor="bg-win-minimize"
           hoverColor="hover:bg-win-minimize-hover"
+          cursorAction="collapse"
           disabled={disableMinimize}
           onClick={onMinimize}
         />
@@ -95,6 +107,7 @@ export function WindowTitleBar({
           symbol={expanded ? '↙' : '↗'}
           activeColor="bg-win-expand"
           hoverColor="hover:bg-win-expand-hover"
+          cursorAction={expanded ? 'restore' : 'expand'}
           disabled={!expandable}
           onClick={expandable ? onExpand : undefined}
         />

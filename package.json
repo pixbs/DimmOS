@@ -17,10 +17,10 @@
     "seed:cookies": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" node src/scripts/seedCookieServices.ts",
     "seed:case-study": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" node src/scripts/seed-case-study.ts",
     "seed:block-previews": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" node src/scripts/seed-block-previews.ts",
-    "seed:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" node tests/helpers/e2e-seed.ts",
-    "test:e2e": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
-    "test:int": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts",
-    "test:dom": "cross-env NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.dom.mts"
+    "seed:e2e": "cross-env PAYLOAD_DISABLE_BLOB_STORAGE=true NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" node tests/helpers/e2e-seed.ts",
+    "test:e2e": "cross-env PAYLOAD_DISABLE_BLOB_STORAGE=true NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
+    "test:int": "cross-env PAYLOAD_DISABLE_BLOB_STORAGE=true NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts",
+    "test:dom": "cross-env PAYLOAD_DISABLE_BLOB_STORAGE=true NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.dom.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
@@ -31,6 +31,7 @@
     "@payloadcms/plugin-sentry": "3.84.1",
     "@payloadcms/plugin-seo": "3.84.1",
     "@payloadcms/richtext-lexical": "3.84.1",
+    "@payloadcms/storage-vercel-blob": "3.84.1",
     "@payloadcms/ui": "3.84.1",
     "@posthog/next": "^0.4.68",
     "@sentry/nextjs": "^10.55.0",

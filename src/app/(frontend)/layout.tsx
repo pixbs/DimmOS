@@ -15,6 +15,9 @@ import { ShortcutRegistryProvider } from '@/components/shortcut/registry-context
 import { WindowManagerProvider } from '@/components/window/WindowManagerProvider'
 import { fetchAllShortcutContents } from '@/lib/windowContent'
 import { DesktopWallpaper } from '@/components/desktop-wallpaper'
+import { DisplayOptionsProvider } from '@/components/display-options'
+import { DesktopCursor } from '@/components/desktop-cursor'
+import { DesktopContextMenu } from '@/components/context-menu'
 import './styles.css'
 import 'remixicon/fonts/remixicon.css'
 
@@ -88,29 +91,54 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
   const { shortcuts, registryEntries, shortcutSlugs, preloadedContents } = await fetchData()
 
   return (
-    <html lang="en" className={onest.className}>
+    <html lang="en" className={onest.className} suppressHydrationWarning>
       <body>
         {/* Google Consent Mode v2 — fires before hydration, Next.js injects this into <head> */}
         <Script src="/consent-init.js" strategy="beforeInteractive" />
+        <Script
+          id="display-options-init"
+          strategy="beforeInteractive"
+          dangerouslySetInnerHTML={{
+            __html: `
+              (function() {
+                try {
+                  var mode = 'website';
+                  var raw = localStorage.getItem('display-options:v1');
+                  if (raw) {
+                    var parsed = JSON.parse(raw);
+                    if (parsed && parsed.cursorMode === 'system') mode = 'system';
+                  }
+                  document.documentElement.dataset.dimmCursor = mode;
+                } catch (e) {
+                  document.documentElement.dataset.dimmCursor = 'website';
+                }
+              })();
+            `,
+          }}
+        />
         <PostHogProvider clientOptions={{ opt_out_capturing_by_default: true }}>
           <CookieConsentProvider>
             <PostHogConsentGate />
             <SentryReplayProvider />
             <PostHogPageView />
             <Suspense>
-              <ShortcutRegistryProvider shortcuts={registryEntries}>
-                <WindowManagerProvider preloadedContents={preloadedContents} shortcutSlugs={shortcutSlugs}>
-                  <Header />
-                  <main>
-                    <DesktopWallpaper />
-                    <div className="relative z-1 grid grid-cols-[repeat(var(--cols),var(--tile))] auto-rows-[calc(2*var(--tile))]">
-                      <ShortcutGrid shortcuts={shortcuts} />
-                    </div>
-                    {children}
-                  </main>
-                  <CookieBanner />
-                </WindowManagerProvider>
-              </ShortcutRegistryProvider>
+              <DisplayOptionsProvider>
+                <ShortcutRegistryProvider shortcuts={registryEntries}>
+                  <WindowManagerProvider preloadedContents={preloadedContents} shortcutSlugs={shortcutSlugs}>
+                    <Header />
+                    <main>
+                      <DesktopWallpaper />
+                      <div className="relative z-1 h-[calc(100vh-var(--header-height))]">
+                        <ShortcutGrid shortcuts={shortcuts} />
+                      </div>
+                      {children}
+                    </main>
+                    <CookieBanner />
+                    <DesktopContextMenu />
+                    <DesktopCursor />
+                  </WindowManagerProvider>
+                </ShortcutRegistryProvider>
+              </DisplayOptionsProvider>
             </Suspense>
           </CookieConsentProvider>
         </PostHogProvider>
