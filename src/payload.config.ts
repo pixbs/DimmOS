@@ -67,14 +67,17 @@ export default buildConfig({
   }),
   sharp,
   plugins: [
-    vercelBlobStorage({
-      enabled: isVercelBlobStorageEnabled,
-      collections: {
-        media: true,
-      },
-      clientUploads: true,
-      token: process.env.BLOB_READ_WRITE_TOKEN,
-    }),
+    ...(isVercelBlobStorageEnabled
+      ? [
+          vercelBlobStorage({
+            collections: {
+              media: true,
+            },
+            clientUploads: true,
+            token: process.env.BLOB_READ_WRITE_TOKEN,
+          }),
+        ]
+      : []),
     formBuilderPlugin({
       fields: {
         text: {
