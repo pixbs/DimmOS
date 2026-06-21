@@ -9,6 +9,10 @@ import { useDisplayOptions } from '@/components/display-options'
 type CursorAction =
   | 'idle'
   | 'action'
+  | 'close'
+  | 'collapse'
+  | 'expand'
+  | 'restore'
   | 'drag'
   | 'window'
   | 'internal-link'
@@ -19,6 +23,10 @@ type CursorAction =
 
 const ACTION_ICONS: Record<Exclude<CursorAction, 'idle'>, string> = {
   action: 'ri-cursor-line',
+  close: 'ri-close-line',
+  collapse: 'ri-subtract-line',
+  expand: 'ri-expand-diagonal-line',
+  restore: 'ri-collapse-diagonal-line',
   drag: 'ri-drag-move-2-line',
   window: 'ri-window-line',
   'internal-link': 'ri-arrow-right-line',
