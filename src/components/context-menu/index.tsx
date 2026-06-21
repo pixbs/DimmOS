@@ -236,17 +236,19 @@ export function DesktopContextMenu() {
               role="menuitem"
               disabled={item.disabled}
               data-cursor-action={item.disabled ? undefined : 'action'}
-              whileHover={item.disabled ? undefined : { x: 2, backgroundColor: 'rgba(255, 255, 255, 0.12)' }}
+              whileHover={item.disabled ? undefined : { backgroundColor: 'rgba(255, 255, 255, 0.12)' }}
               whileTap={item.disabled ? undefined : { scale: 0.985 }}
               transition={{ duration: 0.12, ease: EASE_OUT_QUAD }}
               onClick={async () => {
                 await item.action()
                 setMenu(null)
               }}
-              className="group flex h-[38px] cursor-pointer items-center gap-3 rounded-md px-3 text-left text-fg transition-colors hover:bg-white/10 focus:bg-white/10 focus:outline-none disabled:cursor-default disabled:opacity-40"
+              className="group flex h-9.5 cursor-pointer items-center rounded-lg px-3 text-left text-fg transition-colors hover:bg-white/10 focus:bg-white/10 focus:outline-none disabled:cursor-default disabled:opacity-40"
             >
-              <i className={`${item.icon} text-base text-fg/60 transition-colors group-hover:text-fg/90 group-focus:text-fg/90`} />
-              <span>{item.label}</span>
+              <span className="flex items-center gap-3 transition-transform duration-150 ease-out group-hover:translate-x-0.5">
+                <i className={`${item.icon} text-base text-fg/60 transition-colors group-hover:text-fg/90 group-focus:text-fg/90`} />
+                <span>{item.label}</span>
+              </span>
             </motion.button>
           ))}
         </motion.div>
