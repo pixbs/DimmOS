@@ -41,6 +41,13 @@ body {
   color: var(--color-fg);
 }
 
+@media (hover: hover) and (pointer: fine) and (min-width: 1024px) {
+  html[data-dimm-cursor="website"],
+  html[data-dimm-cursor="website"] * {
+    cursor: none !important;
+  }
+}
+
 main {
   color: var(--color-fg);
 
@@ -173,6 +180,7 @@ body[data-page-drawer] header {
 @media (min-width: 1024px) { .win-titlebar  { display: flex; } }
 .win-titlebar--bar { position: relative; }
 .win-titlebar--banner { position: relative; }
+.win-titlebar--system { position: relative; }
 
 /* Drag handle pill — mobile only */
 .win-draghandle { display: flex; }
