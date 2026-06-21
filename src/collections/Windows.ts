@@ -6,6 +6,7 @@ import { windowButtonsField } from '@/fields/windowButtons'
 import { windowBehaviorFields } from '@/fields/windowBehavior'
 import { createSlugField } from '@/fields/slugField'
 import { createShortcutFields } from '@/fields/shortcutFields'
+import { withAiGeneration } from '@/fields/ai-generation'
 import { createRevalidationHooks } from '@/hooks/revalidateContent'
 
 export const Windows: CollectionConfig = {
@@ -25,7 +26,7 @@ export const Windows: CollectionConfig = {
         {
           label: 'Content',
           fields: [
-            { name: 'title', type: 'text', required: true },
+            withAiGeneration({ name: 'title', type: 'text', required: true }),
             createSlugField('URL path identifier, e.g. "about" → /about'),
             createContentBlocksField(),
             windowButtonsField,

@@ -1,4 +1,5 @@
 import type { Block, Field } from 'payload'
+import { withAiGeneration } from './ai-generation'
 
 // Content section blocks shared by the Articles and Windows collections.
 //
@@ -22,11 +23,11 @@ const ArticleListBlock: Block = {
   imageURL: '/block-previews/articleList.png',
   imageAltText: 'Preview of the Works grid/table section',
   fields: [
-    {
+    withAiGeneration({
       name: 'heading',
       type: 'text',
       admin: { placeholder: 'e.g. Our Services, Recent Work' },
-    },
+    }),
     {
       name: 'types',
       type: 'select',
@@ -80,8 +81,8 @@ const HeroBlock: Block = {
   imageURL: '/block-previews/hero.png',
   imageAltText: 'Preview of the Hero section',
   fields: [
-    { name: 'title', type: 'text', required: true },
-    { name: 'description', type: 'textarea' },
+    withAiGeneration({ name: 'title', type: 'text', required: true }),
+    withAiGeneration({ name: 'description', type: 'textarea' }),
   ],
 }
 
@@ -93,10 +94,10 @@ const SummaryBlock: Block = {
   imageURL: '/block-previews/summary.png',
   imageAltText: 'Preview of the Summary section',
   fields: [
-    { name: 'leftTitle', type: 'text' },
-    { name: 'leftBody', type: 'textarea' },
-    { name: 'rightTitle', type: 'text' },
-    { name: 'rightBody', type: 'textarea' },
+    withAiGeneration({ name: 'leftTitle', type: 'text' }),
+    withAiGeneration({ name: 'leftBody', type: 'textarea' }),
+    withAiGeneration({ name: 'rightTitle', type: 'text' }),
+    withAiGeneration({ name: 'rightBody', type: 'textarea' }),
   ],
 }
 
@@ -124,7 +125,12 @@ const StatsBlock: Block = {
               'The figure as a single string, e.g. "30Mil", "$30,000", "21%". The number animates; surrounding text stays static.',
           },
         },
-        { name: 'label', type: 'text', required: true, admin: { description: 'Caption below the figure' } },
+        withAiGeneration({
+          name: 'label',
+          type: 'text',
+          required: true,
+          admin: { description: 'Caption below the figure' },
+        }),
       ],
     },
   ],
@@ -148,7 +154,7 @@ const DescriptionBlock: Block = {
   imageURL: '/block-previews/description.png',
   imageAltText: 'Preview of the Description section',
   fields: [
-    { name: 'title', type: 'text', required: true },
+    withAiGeneration({ name: 'title', type: 'text', required: true }),
     { name: 'body', type: 'richText' },
   ],
 }
@@ -161,8 +167,8 @@ const TitleBlock: Block = {
   imageURL: '/block-previews/sectionTitle.png',
   imageAltText: 'Preview of the Title section',
   fields: [
-    { name: 'title', type: 'text', required: true },
-    { name: 'description', type: 'textarea' },
+    withAiGeneration({ name: 'title', type: 'text', required: true }),
+    withAiGeneration({ name: 'description', type: 'textarea' }),
   ],
 }
 

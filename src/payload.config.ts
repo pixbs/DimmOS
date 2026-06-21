@@ -26,6 +26,8 @@ import { verifyRecaptchaHook } from './hooks/forms/verifyRecaptcha'
 import { windowBehaviorFields } from './fields/windowBehavior'
 import { createSlugField } from './fields/slugField'
 import { createShortcutFields } from './fields/shortcutFields'
+import { withAiGeneration } from './fields/ai-generation'
+import { aiGenerateFieldEndpoint } from './endpoints/ai-generate-field'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -45,6 +47,7 @@ export default buildConfig({
       baseDir: path.resolve(dirname),
     },
   },
+  endpoints: [aiGenerateFieldEndpoint],
   collections: [Users, Media, Windows, Articles, Tags, CookieServices, CookieConsents],
   globals: [CookieSettings],
   editor: lexicalEditor(),
@@ -69,28 +72,28 @@ export default buildConfig({
         text: {
           fields: [
             { name: 'name', type: 'text', required: true },
-            { name: 'label', type: 'text' },
-            { name: 'placeholder', type: 'text' },
+            withAiGeneration({ name: 'label', type: 'text' }),
+            withAiGeneration({ name: 'placeholder', type: 'text' }),
             { name: 'required', type: 'checkbox' },
-            { name: 'defaultValue', type: 'text' },
+            withAiGeneration({ name: 'defaultValue', type: 'text' }),
           ],
         },
         textarea: {
           fields: [
             { name: 'name', type: 'text', required: true },
-            { name: 'label', type: 'text' },
-            { name: 'placeholder', type: 'text' },
+            withAiGeneration({ name: 'label', type: 'text' }),
+            withAiGeneration({ name: 'placeholder', type: 'text' }),
             { name: 'required', type: 'checkbox' },
-            { name: 'defaultValue', type: 'text' },
+            withAiGeneration({ name: 'defaultValue', type: 'text' }),
           ],
         },
         email: {
           fields: [
             { name: 'name', type: 'text', required: true },
-            { name: 'label', type: 'text' },
-            { name: 'placeholder', type: 'text' },
+            withAiGeneration({ name: 'label', type: 'text' }),
+            withAiGeneration({ name: 'placeholder', type: 'text' }),
             { name: 'required', type: 'checkbox' },
-            { name: 'defaultValue', type: 'text' },
+            withAiGeneration({ name: 'defaultValue', type: 'text' }),
             {
               name: 'isPreDefined',
               type: 'checkbox',
@@ -111,9 +114,11 @@ export default buildConfig({
         // Must be a function — the plugin ignores plain arrays
         fields: ({ defaultFields }: { defaultFields: Field[] }) => {
           const titleField = defaultFields.find((f) => 'name' in f && f.name === 'title')
+          const aiTitleField =
+            titleField && titleField.type === 'text' ? withAiGeneration(titleField) : titleField
           const formFields = defaultFields.filter((f) => !('name' in f && f.name === 'title'))
           return [
-            ...(titleField ? [titleField] : []),
+            ...(aiTitleField ? [aiTitleField] : []),
             createSlugField('Used as the URL path: /contact → /contact'),
             {
               type: 'tabs',
