@@ -111,6 +111,12 @@ export function ShortcutGrid({ shortcuts }: { shortcuts: ShortcutData[] }) {
         window.setTimeout(() => {
           draggedRef.current = false
         }, 0)
+      } else {
+        draggedRef.current = true
+        manager.open(slug)
+        window.setTimeout(() => {
+          draggedRef.current = false
+        }, 0)
       }
     }
 

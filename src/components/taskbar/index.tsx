@@ -38,6 +38,8 @@ function TaskbarButton({
     <div className="group relative">
       <button
         data-window-id={win.rootSlug}
+        data-taskbar-window={win.rootSlug}
+        data-taskbar-minimized={win.minimized ? 'true' : 'false'}
         onClick={() => (win.minimized ? onFocus() : onMinimize())}
         className={cn(
           'w-12 h-12 rounded-2xl flex items-center justify-center transition-opacity active:opacity-70',

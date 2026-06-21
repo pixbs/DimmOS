@@ -17,6 +17,7 @@ import { fetchAllShortcutContents } from '@/lib/windowContent'
 import { DesktopWallpaper } from '@/components/desktop-wallpaper'
 import { DisplayOptionsProvider } from '@/components/display-options'
 import { DesktopCursor } from '@/components/desktop-cursor'
+import { DesktopContextMenu } from '@/components/context-menu'
 import './styles.css'
 import 'remixicon/fonts/remixicon.css'
 
@@ -133,6 +134,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
                       {children}
                     </main>
                     <CookieBanner />
+                    <DesktopContextMenu />
                     <DesktopCursor />
                   </WindowManagerProvider>
                 </ShortcutRegistryProvider>
