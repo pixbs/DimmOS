@@ -25,8 +25,15 @@ export function CookieBannerShell({ children }: CookieBannerShellProps) {
     function onKeyDown(e: KeyboardEvent) {
       if (e.key === 'Escape') close()
     }
+    function onContextClose() {
+      close()
+    }
     document.addEventListener('keydown', onKeyDown)
-    return () => document.removeEventListener('keydown', onKeyDown)
+    window.addEventListener('dimmos:close-cookie-banner', onContextClose)
+    return () => {
+      document.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('dimmos:close-cookie-banner', onContextClose)
+    }
   }, [])
 
   // ─── Mobile drag-to-dismiss ──────────────────────────────────────────────
