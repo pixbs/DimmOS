@@ -40,6 +40,30 @@ const generateURL: GenerateURL<Article | WindowDoc> = ({ doc }) => {
   return doc?.slug ? `${base}/${doc.slug}` : base
 }
 
+function withAiGenerationForSeoFields(defaultFields: Field[]): Field[] {
+  return defaultFields.map((field) => {
+    if (!('name' in field)) return field
+
+    if (field.name === 'title' && field.type === 'text') {
+      return withAiGeneration(field, {
+        instruction:
+          'Follow Google Search Central page title guidance: https://developers.google.com/search/docs/appearance/title-link#page-titles. Generate a descriptive, concise, unique page title from the full document context. The title must be 50-60 characters long, inclusive. Avoid keyword stuffing, vague text, repeated text, and boilerplate. Return only the title text.',
+        maxOutputTokens: 80,
+      })
+    }
+
+    if (field.name === 'description' && field.type === 'textarea') {
+      return withAiGeneration(field, {
+        instruction:
+          'Follow Google Search Central meta description guidance: https://developers.google.com/search/docs/appearance/snippet#meta-descriptions. Generate a unique, page-specific, human-readable meta description from the full document context. The description must be 100-150 characters long, inclusive. Accurately summarize the page, include relevant concrete information, and avoid keyword lists or boilerplate. Return only the description text.',
+        maxOutputTokens: 500,
+      })
+    }
+
+    return field
+  })
+}
+
 export default buildConfig({
   admin: {
     user: Users.slug,
@@ -154,7 +178,7 @@ export default buildConfig({
       generateTitle,
       generateURL,
       fields: ({ defaultFields }) => [
-        ...defaultFields,
+        ...withAiGenerationForSeoFields(defaultFields),
         {
           name: 'noIndex',
           type: 'checkbox',

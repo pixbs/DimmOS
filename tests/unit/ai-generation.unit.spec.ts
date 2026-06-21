@@ -29,6 +29,33 @@ describe('withAiGeneration', () => {
     })
   })
 
+  it('preserves existing Payload field components when adding afterInput', () => {
+    const field = withAiGeneration({
+      name: 'title',
+      type: 'text',
+      admin: {
+        components: {
+          Field: {
+            path: '@payloadcms/plugin-seo/client#MetaTitleComponent',
+          },
+        },
+      },
+    } as Field)
+    const admin = field.admin as {
+      components?: {
+        afterInput?: unknown
+        Field?: unknown
+      }
+    }
+
+    expect(admin.components?.Field).toMatchObject({
+      path: '@payloadcms/plugin-seo/client#MetaTitleComponent',
+    })
+    expect(admin.components?.afterInput).toMatchObject({
+      path: AI_GENERATE_FIELD_COMPONENT,
+    })
+  })
+
   it('rejects non-text fields', () => {
     expect(() => withAiGeneration({ name: 'enabled', type: 'checkbox' } as Field)).toThrow(
       /text or textarea/,
@@ -46,6 +73,35 @@ describe('findAiGenerationField', () => {
           fields: [
             withAiGeneration({ name: 'title', type: 'text', required: true }),
             { name: 'slug', type: 'text' },
+            {
+              name: 'meta',
+              type: 'group',
+              fields: [
+                withAiGeneration({
+                  name: 'title',
+                  type: 'text',
+                  admin: {
+                    components: {
+                      Field: {
+                        path: '@payloadcms/plugin-seo/client#MetaTitleComponent',
+                      },
+                    },
+                  },
+                } as Field),
+                withAiGeneration({
+                  name: 'description',
+                  type: 'textarea',
+                  admin: {
+                    components: {
+                      Field: {
+                        path: '@payloadcms/plugin-seo/client#MetaDescriptionComponent',
+                      },
+                    },
+                  },
+                } as Field),
+                { name: 'image', type: 'upload', relationTo: 'media' },
+              ],
+            },
             {
               name: 'content',
               type: 'blocks',
@@ -91,6 +147,11 @@ describe('findAiGenerationField', () => {
       { blockType: 'hero', description: '', title: '' },
       { blockType: 'stats', stats: [{ label: '', value: '42%' }] },
     ],
+    meta: {
+      description: '',
+      image: 1,
+      title: '',
+    },
     slug: 'existing-page',
     title: 'Existing title',
   }
@@ -118,9 +179,24 @@ describe('findAiGenerationField', () => {
     })
   })
 
+  it('finds opt-in SEO fields inside the meta group', () => {
+    expect(findAiGenerationField({ data, fields, path: 'meta.title' })).toMatchObject({
+      label: 'Title',
+      path: 'meta.title',
+      type: 'text',
+    })
+
+    expect(findAiGenerationField({ data, fields, path: 'meta.description' })).toMatchObject({
+      label: 'Description',
+      path: 'meta.description',
+      type: 'textarea',
+    })
+  })
+
   it('does not resolve unmarked text fields', () => {
     expect(findAiGenerationField({ data, fields, path: 'slug' })).toBeNull()
     expect(findAiGenerationField({ data, fields, path: 'content.1.stats.0.value' })).toBeNull()
+    expect(findAiGenerationField({ data, fields, path: 'meta.image' })).toBeNull()
   })
 })
 
