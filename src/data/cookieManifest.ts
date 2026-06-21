@@ -55,6 +55,19 @@ export const cookieManifest: ServiceEntry[] = [
     ],
   },
   {
+    name: 'Shortcut Positions',
+    category: 'functional',
+    description: 'Remembers where desktop shortcuts were placed on the wallpaper.',
+    cookies: [
+      {
+        storageType: 'localStorage',
+        name: 'shortcut-positions:v1',
+        duration: 'Persistent',
+        description: 'Saved x/y positions for desktop shortcut icons.',
+      },
+    ],
+  },
+  {
     name: 'Open Windows State',
     category: 'functional',
     description: 'Remembers which desktop windows are open during your current browser session.',

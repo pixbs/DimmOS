@@ -64,4 +64,57 @@ test.describe('Desktop interactions', () => {
     await expect(page.locator('html')).toHaveAttribute('data-dimm-cursor', 'system')
     await expect(page.locator('[data-dimm-custom-cursor]')).toHaveCount(0)
   })
+
+  test('desktop shortcuts can be dragged and persist after reload', async ({ page }) => {
+    await page.goto(BASE_URL)
+    await page.locator('[data-testid="preloader"]').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
+
+    const shortcut = page.locator(`[data-draggable-shortcut][data-shortcut-slug="${SLUG}"]`)
+    await expect(shortcut).toBeVisible({ timeout: 10000 })
+    const before = await shortcut.boundingBox()
+    expect(before).not.toBeNull()
+    if (!before) return
+
+    await page.mouse.move(before.x + before.width / 2, before.y + before.height / 2)
+    await page.mouse.down()
+    await page.mouse.move(before.x + before.width / 2 + 180, before.y + before.height / 2 + 110, { steps: 8 })
+    await page.mouse.up()
+
+    await expect
+      .poll(async () =>
+        page.evaluate((slug) => {
+          const raw = localStorage.getItem('shortcut-positions:v1')
+          return raw ? JSON.parse(raw)[slug]?.x : undefined
+        }, SLUG),
+      )
+      .toBeGreaterThan(0)
+
+    const after = await shortcut.boundingBox()
+    expect(after).not.toBeNull()
+    if (!after) return
+    expect(after.x).toBeGreaterThan(before.x + 40)
+    expect(after.y).toBeGreaterThan(before.y + 40)
+
+    await page.reload()
+    const restored = page.locator(`[data-draggable-shortcut][data-shortcut-slug="${SLUG}"]`)
+    await expect(restored).toBeVisible({ timeout: 10000 })
+    const restoredBox = await restored.boundingBox()
+    expect(restoredBox).not.toBeNull()
+    if (!restoredBox) return
+    expect(Math.abs(restoredBox.x - after.x)).toBeLessThan(4)
+    expect(Math.abs(restoredBox.y - after.y)).toBeLessThan(4)
+  })
+
+  test('reset shortcut positions clears persisted desktop icon placement', async ({ page }) => {
+    await page.addInitScript((slug) => {
+      localStorage.setItem('shortcut-positions:v1', JSON.stringify({ [slug]: { x: 260, y: 180 } }))
+    }, SLUG)
+
+    await page.goto(BASE_URL)
+    const shortcut = page.locator(`[data-draggable-shortcut][data-shortcut-slug="${SLUG}"]`)
+    await expect(shortcut).toBeVisible({ timeout: 10000 })
+
+    await page.evaluate(() => window.dispatchEvent(new Event('dimmos:reset-shortcut-positions')))
+    await expect.poll(() => page.evaluate(() => localStorage.getItem('shortcut-positions:v1'))).toBeNull()
+  })
 })

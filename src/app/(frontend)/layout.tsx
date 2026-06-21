@@ -127,7 +127,7 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
                     <Header />
                     <main>
                       <DesktopWallpaper />
-                      <div className="relative z-1 grid grid-cols-[repeat(var(--cols),var(--tile))] auto-rows-[calc(2*var(--tile))]">
+                      <div className="relative z-1 h-[calc(100vh-var(--header-height))]">
                         <ShortcutGrid shortcuts={shortcuts} />
                       </div>
                       {children}
