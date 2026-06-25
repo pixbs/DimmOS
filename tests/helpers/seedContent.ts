@@ -58,6 +58,37 @@ export async function cleanupWindow(slug: string) {
   await payload.delete({ collection: 'windows', where: { slug: { equals: slug } }, overrideAccess: true })
 }
 
+export async function seedStartupWindow(
+  slug: string,
+  options: {
+    order?: number
+    viewports?: ('desktop' | 'mobile')[]
+  } = {},
+) {
+  const payload = await getPayload({ config })
+  await payload.delete({ collection: 'windows', where: { slug: { equals: slug } }, overrideAccess: true })
+  return payload.create({
+    collection: 'windows',
+    overrideAccess: true,
+    data: {
+      title: `Startup ${slug}`,
+      slug,
+      showShortcut: false,
+      windowOpenOnStartup: true,
+      windowStartupOrder: options.order ?? 0,
+      windowStartupViewports: options.viewports ?? ['desktop'],
+      content: [
+        {
+          blockType: 'welcomeIntro',
+          title: `Startup ${slug}`,
+          role: 'Managed startup window',
+          descriptor: 'Opened from the root layout startup list.',
+        },
+      ],
+    },
+  })
+}
+
 export async function seedWindowWithBehavior(
   slug: string,
   behavior: {
@@ -337,6 +368,13 @@ export async function seedCaseStudy(slug: string) {
           title: 'Acme Field Guide',
           description: 'A complete rebrand and product system for a modern field-services company.',
         },
+        {
+          blockType: 'welcomeIntro',
+          title: 'Dimm Kyselov',
+          role: 'Product designer',
+          descriptor: 'I prioritize data-driven design process that builds upon human centricity.',
+        },
+        { blockType: 'interactivePortrait' },
         {
           blockType: 'summary',
           leftTitle: 'Overview',

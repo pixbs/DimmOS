@@ -16,6 +16,8 @@ import {
   ImageSectionView,
   DescriptionView,
   SectionTitleView,
+  WelcomeIntroView,
+  InteractivePortraitView,
 } from '@/components/content-blocks/sections'
 import { DocumentMediaProvider } from '@/components/content-blocks/document-media-context'
 import { Works } from '@/components/content-blocks/works'
@@ -61,6 +63,10 @@ function BlockRenderer({ block }: { block: ResolvedBlock }) {
       return <DescriptionView block={block} />
     case 'sectionTitle':
       return <SectionTitleView block={block} />
+    case 'welcomeIntro':
+      return <WelcomeIntroView block={block} />
+    case 'interactivePortrait':
+      return <InteractivePortraitView block={block} />
     case 'articleList':
       return <ArticleListBlock block={block} />
     default:

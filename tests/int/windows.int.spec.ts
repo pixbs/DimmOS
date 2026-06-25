@@ -82,6 +82,32 @@ describe('Windows collection', () => {
     expect(titleBlock.title).toBe('Section heading')
   })
 
+  it('creates a window with welcome intro and interactive portrait blocks', async () => {
+    const doc = await payload.create({
+      collection: 'windows',
+      data: {
+        title: 'Welcome Blocks Window',
+        slug: 'test-window-welcome-blocks',
+        content: [
+          {
+            blockType: 'welcomeIntro',
+            title: 'Dimm Kyselov',
+            role: 'Product designer',
+            descriptor: 'Data-driven design process.',
+          },
+          { blockType: 'interactivePortrait' },
+        ],
+      },
+      overrideAccess: true,
+    })
+
+    createdIds.push(doc.id)
+    expect(doc.content?.map((block) => block.blockType)).toEqual([
+      'welcomeIntro',
+      'interactivePortrait',
+    ])
+  })
+
   it('fetches window by slug', async () => {
     const { docs } = await payload.find({
       collection: 'windows',

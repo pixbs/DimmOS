@@ -10,6 +10,7 @@ import * as migration_20260528_175304 from './20260528_175304';
 import * as migration_20260612_111535 from './20260612_111535';
 import * as migration_20260616_130357_window_buttons from './20260616_130357_window_buttons';
 import * as migration_20260620_212531_article_content_sections from './20260620_212531_article_content_sections';
+import * as migration_20260625_175713_managed_startup_system_windows from './20260625_175713_managed_startup_system_windows';
 
 export const migrations = [
   {
@@ -70,6 +71,11 @@ export const migrations = [
   {
     up: migration_20260620_212531_article_content_sections.up,
     down: migration_20260620_212531_article_content_sections.down,
-    name: '20260620_212531_article_content_sections'
+    name: '20260620_212531_article_content_sections',
+  },
+  {
+    up: migration_20260625_175713_managed_startup_system_windows.up,
+    down: migration_20260625_175713_managed_startup_system_windows.down,
+    name: '20260625_175713_managed_startup_system_windows'
   },
 ];

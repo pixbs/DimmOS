@@ -21,6 +21,8 @@ const OUT_DIR = path.resolve(process.cwd(), 'public', 'block-previews')
 
 const BLOCK_TYPES = [
   'hero',
+  'welcomeIntro',
+  'interactivePortrait',
   'summary',
   'stats',
   'imageSection',

@@ -9,6 +9,8 @@ import {
   ImageSectionView,
   DescriptionView,
   SectionTitleView,
+  WelcomeIntroView,
+  InteractivePortraitView,
 } from './sections'
 
 // Article['content'] is the superset union (it includes the article-only Hero
@@ -42,6 +44,10 @@ function BlockRenderer({ block }: { block: ContentBlock }) {
       return <DescriptionView block={block} />
     case 'sectionTitle':
       return <SectionTitleView block={block} />
+    case 'welcomeIntro':
+      return <WelcomeIntroView block={block} />
+    case 'interactivePortrait':
+      return <InteractivePortraitView block={block} />
     case 'articleList':
       return (
         <Suspense fallback={<div />}>

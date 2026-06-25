@@ -1,17 +1,13 @@
 'use client'
 
-import { useEffect, useLayoutEffect, useRef, useState, Suspense, useTransition, useCallback } from 'react'
-import { motion, useAnimationControls } from 'framer-motion'
+import { useEffect, useState, Suspense, useTransition, useCallback } from 'react'
 import type { WindowContentResult } from '@/actions/getWindowContent'
 import { WindowToolbarProvider } from './window-toolbar-context'
 import { WindowToolbar } from './WindowToolbar'
-import { WindowTitleBar } from './title-bar'
-import { ResizeHandles } from './ResizeHandles'
 import { ContentView } from './content-view'
 import { promiseCache, getOrCreatePromise, seedPromise } from '@/lib/window-promise-cache'
-import { loadSavedPosition, mergePositionToStorage, parsePx, type SavedPosition } from '@/lib/window-positions'
-import { startPanelDrag } from '@/lib/window-drag'
 import { ContentErrorBoundary } from './content-error-boundary'
+import { ManagedWindowShell } from './managed-window-shell'
 import type { WindowBehaviorConfig } from '@/utilities/windowBehavior'
 
 const DEFAULT_BEHAVIOR: WindowBehaviorConfig = {
@@ -43,8 +39,6 @@ interface AdditionalWindowProps {
   isVisible?: boolean
   onReady?: () => void
 }
-
-const CASCADE_STEP = 32
 
 export function AdditionalWindow({
   rootSlug,
@@ -127,197 +121,25 @@ export function AdditionalWindow({
     [slug],
   )
 
-  // ── Window chrome state ───────────────────────────────────────────────────
-  const [isExpanded, setIsExpanded] = useState(false)
-  const panelRef = useRef<HTMLDivElement>(null)
-  const preExpandRef = useRef<SavedPosition | null>(null)
-
-  const onMinimizeRef = useRef(onMinimize)
-  onMinimizeRef.current = onMinimize
-  const onCloseRef = useRef(onClose)
-  onCloseRef.current = onClose
-
-  const prevIsVisibleRef = useRef<boolean | undefined>(undefined)
-  const controls = useAnimationControls()
-
-  // ── onReady reporting — fires once on mount ───────────────────────────────
-  const onReadyRef = useRef(onReady)
-  onReadyRef.current = onReady
-  useEffect(() => {
-    onReadyRef.current?.()
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- preloader ready signal must fire exactly once per mount
-
-  // ── 1. Restore saved position BEFORE first paint ──────────────────────────
-  useLayoutEffect(() => {
-    const panel = panelRef.current
-    if (!panel) return
-    const saved = loadSavedPosition(storageKey)
-    panel.style.setProperty('--win-x', `${saved.x ?? (80 + cascadeIndex * CASCADE_STEP)}px`)
-    panel.style.setProperty('--win-y', `${saved.y ?? (60 + cascadeIndex * CASCADE_STEP)}px`)
-    if (saved.w !== undefined) panel.style.setProperty('--win-w', `${saved.w}px`)
-    if (saved.h !== undefined) panel.style.setProperty('--win-h', `${saved.h}px`)
-  }, [storageKey, cascadeIndex])
-
-  // ── 2. Open animation ─────────────────────────────────────────────────────
-  useLayoutEffect(() => {
-    if (!isPreloaded) {
-      runOpenAnimation()
-      return
-    }
-
-    const wasVisible = prevIsVisibleRef.current
-    prevIsVisibleRef.current = isVisible
-
-    if (isVisible && wasVisible !== true) {
-      runOpenAnimation()
-    } else if (!isVisible && wasVisible !== undefined) {
-      controls.set({ scale: 0.82, opacity: 0 })
-    }
-  }, [isVisible]) // eslint-disable-line react-hooks/exhaustive-deps -- only visibility transitions drive the open/close animation; controls is stable
-
-  function runOpenAnimation() {
-    const el = panelRef.current
-    if (!el) return
-    const btn = document.querySelector<HTMLElement>(`[data-window-id="${rootSlug}"]`)
-    if (btn) {
-      const elRect = el.getBoundingClientRect()
-      const btnRect = btn.getBoundingClientRect()
-      const startX = btnRect.left + btnRect.width / 2 - (elRect.left + elRect.width / 2)
-      const startY = btnRect.top + btnRect.height / 2 - (elRect.top + elRect.height / 2)
-      controls.set({ x: startX, y: startY, scale: 0.08, opacity: 0 })
-      controls.start({ x: 0, y: 0, scale: 1, opacity: 1, transition: { duration: 0.4, ease: [0.32, 0.72, 0, 1] } })
-    } else {
-      controls.set({ scale: 0.82, opacity: 0 })
-      controls.start({ scale: 1, opacity: 1, transition: { type: 'spring', stiffness: 340, damping: 28, mass: 0.9 } })
-    }
-  }
-
-  // ── 3. Collapse animation ─────────────────────────────────────────────────
-  useEffect(() => {
-    if (!pendingMinimize) return
-
-    const el = panelRef.current
-    const btn = document.querySelector<HTMLElement>(`[data-window-id="${rootSlug}"]`)
-
-    if (!el || !btn) {
-      onMinimizeRef.current()
-      return
-    }
-
-    const elRect = el.getBoundingClientRect()
-    const btnRect = btn.getBoundingClientRect()
-    const targetX = btnRect.left + btnRect.width / 2 - (elRect.left + elRect.width / 2)
-    const targetY = btnRect.top + btnRect.height / 2 - (elRect.top + elRect.height / 2)
-
-    controls.start({
-      x: targetX,
-      y: targetY,
-      scale: 0.08,
-      opacity: 0,
-      transition: { duration: 0.32, ease: [0.32, 0.72, 0, 1] },
-    }).then(() => {
-      onMinimizeRef.current()
-    })
-  }, [pendingMinimize, rootSlug]) // eslint-disable-line react-hooks/exhaustive-deps -- controls and onMinimizeRef are stable; only the minimize trigger matters
-
-  async function handleClose() {
-    await controls.start({ scale: 0.82, opacity: 0, transition: { duration: 0.2, ease: 'easeIn' } })
-    onCloseRef.current()
-  }
-
-  function handleMinimizeButton() {
-    const el = panelRef.current
-    const btn = document.querySelector<HTMLElement>(`[data-window-id="${rootSlug}"]`)
-
-    if (!el || !btn) {
-      onMinimizeRef.current()
-      return
-    }
-
-    const elRect = el.getBoundingClientRect()
-    const btnRect = btn.getBoundingClientRect()
-    const targetX = btnRect.left + btnRect.width / 2 - (elRect.left + elRect.width / 2)
-    const targetY = btnRect.top + btnRect.height / 2 - (elRect.top + elRect.height / 2)
-
-    controls.start({
-      x: targetX,
-      y: targetY,
-      scale: 0.08,
-      opacity: 0,
-      transition: { duration: 0.32, ease: [0.32, 0.72, 0, 1] },
-    }).then(() => {
-      onMinimizeRef.current()
-    })
-  }
-
-  function expand() {
-    const panel = panelRef.current
-    if (!panel) return
-    const headerH = document.querySelector('header')?.offsetHeight ?? 40
-    if (!isExpanded) {
-      preExpandRef.current = {
-        x: parsePx(panel, '--win-x', 80),
-        y: parsePx(panel, '--win-y', 60),
-        w: panel.offsetWidth,
-        h: panel.offsetHeight,
-      }
-      panel.style.setProperty('--win-x', '0px')
-      panel.style.setProperty('--win-y', '0px')
-      panel.style.setProperty('--win-w', `${window.innerWidth}px`)
-      panel.style.setProperty('--win-h', `${window.innerHeight - headerH}px`)
-    } else {
-      const prev = preExpandRef.current
-      if (prev) {
-        panel.style.setProperty('--win-x', `${prev.x ?? 80}px`)
-        panel.style.setProperty('--win-y', `${prev.y ?? 60}px`)
-        if (prev.w !== undefined) panel.style.setProperty('--win-w', `${prev.w}px`)
-        else panel.style.removeProperty('--win-w')
-        if (prev.h !== undefined) panel.style.setProperty('--win-h', `${prev.h}px`)
-        else panel.style.removeProperty('--win-h')
-      } else {
-        panel.style.removeProperty('--win-x')
-        panel.style.removeProperty('--win-y')
-        panel.style.removeProperty('--win-w')
-        panel.style.removeProperty('--win-h')
-      }
-    }
-    setIsExpanded((v) => !v)
-  }
-
-  function handlePointerDown(e: React.PointerEvent) {
-    const panel = panelRef.current
-    if (!panel) return
-    startPanelDrag(e, panel, {
-      defaultX: 80,
-      defaultY: 60,
-      onDragEnd: (pos) => mergePositionToStorage(storageKey, pos),
-    })
-  }
-
   return (
-    <motion.div
-      ref={panelRef}
-      role="dialog"
-      aria-modal="true"
-      data-window-panel=""
-      data-state="open"
-      data-secondary-window={rootSlug}
-      style={{ '--win-z': String(zIndex) } as React.CSSProperties}
-      onPointerDown={onFocus}
-      className="w-full backdrop-blur-lg"
-      animate={controls}
+    <ManagedWindowShell
+      windowId={`content:${rootSlug}`}
+      secondaryWindowId={rootSlug}
+      title={currentTitle}
+      zIndex={zIndex}
+      cascadeIndex={cascadeIndex}
+      pendingMinimize={pendingMinimize}
+      storageKey={storageKey}
+      behavior={currentBehavior}
+      animationTargetId={rootSlug}
+      isPreloaded={isPreloaded}
+      isVisible={isVisible}
+      onReady={onReady}
+      onClose={onClose}
+      onFocus={onFocus}
+      onMinimize={onMinimize}
+      attributes={{ 'data-content-window': rootSlug }}
     >
-      <WindowTitleBar
-        title={currentTitle}
-        onClose={handleClose}
-        onMinimize={handleMinimizeButton}
-        onExpand={expand}
-        onPointerDown={handlePointerDown}
-        disableMinimize={!currentBehavior.collapsible}
-        expandable={currentBehavior.expandable}
-        expanded={isExpanded}
-      />
-
       <WindowToolbarProvider
         behavior={currentBehavior}
         canGoBack={canGoBack}
@@ -346,13 +168,6 @@ export function AdditionalWindow({
           </ContentErrorBoundary>
         </div>
       </WindowToolbarProvider>
-
-      {currentBehavior.resizable && !isExpanded && (
-        <ResizeHandles
-          panelRef={panelRef}
-          onResizeEnd={(w, h) => mergePositionToStorage(storageKey, { w, h })}
-        />
-      )}
-    </motion.div>
+    </ManagedWindowShell>
   )
 }

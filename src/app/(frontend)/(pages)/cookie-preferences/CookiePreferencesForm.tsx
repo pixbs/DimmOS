@@ -9,7 +9,7 @@ import { SetWindowOptions } from '@/components/window/title-context'
 import type { CookieService, CookieSetting } from '@/payload-types'
 
 // Fields the listing actually renders — matches the select in page.tsx
-type CookieServiceItem = Pick<
+export type CookieServiceItem = Pick<
   CookieService,
   'id' | 'name' | 'category' | 'legalName' | 'description' | 'privacyPolicyUrl' | 'cookies'
 >
@@ -64,9 +64,10 @@ function Toggle({
 interface Props {
   services: CookieServiceItem[]
   settings: CookieSetting
+  onSaved?: () => void
 }
 
-export function CookiePreferencesForm({ services, settings }: Props) {
+export function CookiePreferencesForm({ services, settings, onSaved }: Props) {
   const { consent, isLoading, saveConsent } = useCookieConsent()
   const router = useRouter()
 
@@ -106,7 +107,8 @@ export function CookiePreferencesForm({ services, settings }: Props) {
   async function handleSave() {
     setSaving(true)
     await saveConsent(Array.from(selectedCategories))
-    router.push('/')
+    if (onSaved) onSaved()
+    else router.push('/')
   }
 
   return (

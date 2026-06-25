@@ -3,7 +3,7 @@
 import type { CollectionConfig } from 'payload'
 import { createContentBlocksField } from '@/fields/contentBlocks'
 import { windowButtonsField } from '@/fields/windowButtons'
-import { windowBehaviorFields } from '@/fields/windowBehavior'
+import { windowBehaviorFields, windowStartupFields } from '@/fields/windowBehavior'
 import { createSlugField } from '@/fields/slugField'
 import { createShortcutFields } from '@/fields/shortcutFields'
 import { withAiGeneration } from '@/fields/ai-generation'
@@ -38,7 +38,7 @@ export const Windows: CollectionConfig = {
         },
         {
           label: 'Window',
-          fields: windowBehaviorFields,
+          fields: [...windowBehaviorFields, ...windowStartupFields],
         },
         // SEO tab appended here by @payloadcms/plugin-seo (tabbedUI: true)
       ],

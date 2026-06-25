@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render } from '@testing-library/react'
+import { fireEvent, render, waitFor } from '@testing-library/react'
 import type { Media } from '@/payload-types'
 
 // framer-motion's useScroll measures a scroll container via a frameloop that
@@ -15,6 +15,8 @@ import { StatsView } from '@/components/content-blocks/sections/stats'
 import { ImageSectionView } from '@/components/content-blocks/sections/image-section'
 import { DescriptionView } from '@/components/content-blocks/sections/description'
 import { SectionTitleView } from '@/components/content-blocks/sections/section-title'
+import { WelcomeIntroView } from '@/components/content-blocks/sections/welcome-intro'
+import { InteractivePortraitView } from '@/components/content-blocks/sections/interactive-portrait'
 import { DocumentMediaProvider } from '@/components/content-blocks/document-media-context'
 
 const fakeMedia = (url: string, alt: string): Media =>
@@ -122,5 +124,54 @@ describe('SectionTitleView', () => {
     )
     expect(container.querySelector('.sr-only')?.textContent).toBe('Section')
     expect(container.textContent).toContain('a description')
+  })
+})
+
+describe('WelcomeIntroView', () => {
+  it('renders title, role, and descriptor', () => {
+    const { container } = render(
+      <WelcomeIntroView
+        block={{
+          blockType: 'welcomeIntro',
+          title: 'Dimm Kyselov',
+          role: 'Product designer',
+          descriptor: 'I prioritize data-driven design process.',
+        }}
+      />,
+    )
+    expect(container.querySelector('.sr-only')?.textContent).toBe('Dimm Kyselov')
+    expect(container.textContent).toContain('Product designer')
+    expect(container.textContent).toContain('data-driven design')
+  })
+})
+
+describe('InteractivePortraitView', () => {
+  it('tracks pointer gaze on fine pointer devices', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })))
+
+    const { getByTestId } = render(<InteractivePortraitView block={{ blockType: 'interactivePortrait' }} />)
+    const portrait = getByTestId('interactive-portrait')
+
+    fireEvent.pointerMove(portrait, { clientX: 1000, clientY: 40 })
+
+    await waitFor(() => {
+      expect(Number(portrait.dataset.gazeX)).toBeGreaterThan(0)
+      expect(portrait.dataset.gazeMode).toBe('pointer')
+    })
+
+    vi.unstubAllGlobals()
+  })
+
+  it('uses idle gaze when no fine pointer is available', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })))
+
+    const { getByTestId } = render(<InteractivePortraitView block={{ blockType: 'interactivePortrait' }} />)
+    const portrait = getByTestId('interactive-portrait')
+
+    await waitFor(() => {
+      expect(portrait.dataset.gazeMode).toBe('idle')
+    })
+
+    vi.unstubAllGlobals()
   })
 })

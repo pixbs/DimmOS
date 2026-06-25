@@ -2,8 +2,14 @@
 
 import { useState, useCallback, useRef, useEffect } from 'react'
 import { usePathname, useRouter } from 'next/navigation'
-import { BASE_Z, loadWindowsFromSession, saveWindowsToSession } from '@/lib/window-state'
-import type { ManagedWindow } from '@/lib/window-state'
+import {
+  BASE_Z,
+  contentWindowId,
+  loadWindowsFromSession,
+  saveWindowsToSession,
+  systemWindowId,
+} from '@/lib/window-state'
+import type { ManagedWindow, SystemWindowKey } from '@/lib/window-state'
 import { getOrCreatePromise, evictPromises } from '@/lib/window-promise-cache'
 import { isDesktopViewport } from '@/lib/breakpoints'
 
@@ -14,13 +20,16 @@ export { BASE_Z } from '@/lib/window-state'
 export interface WindowManager {
   windows: ManagedWindow[]
   primarySlug: string | null
+  openContent: (slug: string) => void
   open: (slug: string) => void
-  close: (slug: string) => void
-  focus: (slug: string) => void
+  openStartupContent: (slugs: string[]) => void
+  openSystem: (key: SystemWindowKey) => void
+  close: (id: string) => void
+  focus: (id: string) => void
   /** Sets pendingMinimize=true — the window component runs its animation then calls actualMinimize */
-  minimize: (slug: string) => void
+  minimize: (id: string) => void
   /** Completes minimize: sets minimized=true, clears pendingMinimize */
-  actualMinimize: (slug: string) => void
+  actualMinimize: (id: string) => void
   /** Push newSlug onto the window's history stack and make it the current content */
   navigateInWindow: (rootSlug: string, newSlug: string) => void
   /** Go back one step in the window's history stack */
@@ -29,8 +38,20 @@ export interface WindowManager {
   forwardInWindow: (rootSlug: string) => void
 }
 
-function newWindowEntry(slug: string, zIndex: number, cascadeIndex: number): ManagedWindow {
+const SYSTEM_ROUTE_KEYS: Record<string, SystemWindowKey> = {
+  'cookie-preferences': 'cookie-preferences',
+}
+
+const SYSTEM_BASE_Z: Record<SystemWindowKey, number> = {
+  'display-options': 190,
+  'cookie-preferences': 220,
+  'cookie-notice': 240,
+}
+
+function newContentWindowEntry(slug: string, zIndex: number, cascadeIndex: number): ManagedWindow {
   return {
+    id: contentWindowId(slug),
+    kind: 'content',
     rootSlug: slug,
     slug,
     historyStack: [slug],
@@ -42,6 +63,37 @@ function newWindowEntry(slug: string, zIndex: number, cascadeIndex: number): Man
   }
 }
 
+function newSystemWindowEntry(key: SystemWindowKey, zIndex: number, cascadeIndex: number): ManagedWindow {
+  const id = systemWindowId(key)
+  return {
+    id,
+    kind: 'system',
+    systemKey: key,
+    rootSlug: id,
+    slug: id,
+    historyStack: [],
+    historyIndex: 0,
+    zIndex,
+    minimized: false,
+    cascadeIndex,
+    pendingMinimize: false,
+  }
+}
+
+function getWindowTarget(win: ManagedWindow): string {
+  return win.kind === 'system' ? win.id : win.rootSlug
+}
+
+function matchesWindow(win: ManagedWindow, target: string): boolean {
+  return (
+    win.id === target ||
+    win.rootSlug === target ||
+    win.slug === target ||
+    (win.kind === 'content' && win.id === contentWindowId(target)) ||
+    (win.kind === 'system' && win.systemKey === target)
+  )
+}
+
 function updateCosmeticUrl(
   wins: ManagedWindow[],
   realPrimary: string | null,
@@ -51,7 +103,7 @@ function updateCosmeticUrl(
   if (realPrimary !== null) return     // real route active — leave URL alone
   if (!isDesktopViewport()) return
 
-  const visible = wins.filter((w) => !w.minimized)
+  const visible = wins.filter((w) => w.kind === 'content' && !w.minimized)
   const target =
     visible.length === 0
       ? '/'
@@ -64,10 +116,11 @@ function updateCosmeticUrl(
 export function useWindowManager(): WindowManager {
   const pathname = usePathname()
   const router = useRouter()
-  const pathSlug = pathname === '/' ? null : pathname.slice(1)
+  const rawPathSlug = pathname === '/' ? null : pathname.slice(1)
+  const pathSlug = rawPathSlug && SYSTEM_ROUTE_KEYS[rawPathSlug] ? null : rawPathSlug
 
   const [windows, setWindows] = useState<ManagedWindow[]>(() =>
-    pathSlug ? [newWindowEntry(pathSlug, BASE_Z, 0)] : [],
+    pathSlug ? [newContentWindowEntry(pathSlug, BASE_Z, 0)] : [],
   )
   const [realPrimarySlug, setRealPrimarySlug] = useState<string | null>(pathSlug)
 
@@ -93,7 +146,7 @@ export function useWindowManager(): WindowManager {
       if (toAdd.length === 0) return prev
       return [...prev, ...toAdd]
     })
-  }, []) // eslint-disable-line react-hooks/exhaustive-deps -- mount-only sessionStorage restore; refs hold current state
+  }, [])
 
   // Effect 2: sync sessionStorage + cosmetic URL on every windows change
   useEffect(() => {
@@ -123,13 +176,13 @@ export function useWindowManager(): WindowManager {
         (w) => w.rootSlug !== oldPrimary && w.rootSlug !== pathSlug,
       )
       return [
-        ...(pathSlug ? [newWindowEntry(pathSlug, BASE_Z, 0)] : []),
+        ...(pathSlug ? [newContentWindowEntry(pathSlug, BASE_Z, 0)] : []),
         ...remaining,
       ]
     })
-  }, [pathSlug]) // eslint-disable-line react-hooks/exhaustive-deps -- only real pathname changes re-run this; refs track the rest
+  }, [pathSlug])
 
-  const open = useCallback(
+  const openContent = useCallback(
     (slug: string) => {
       if (typeof window !== 'undefined' && !isDesktopViewport()) {
         router.push(`/${slug}`)
@@ -138,15 +191,15 @@ export function useWindowManager(): WindowManager {
       if (slug === realPrimarySlugRef.current) {
         const prev = windowsRef.current
         const maxZ = Math.max(...prev.map((w) => w.zIndex), BASE_Z - 1)
-        setWindows(prev.map((w) => (w.rootSlug === slug ? { ...w, zIndex: maxZ + 1, minimized: false } : w)))
+        setWindows(prev.map((w) => (w.kind === 'content' && w.rootSlug === slug ? { ...w, zIndex: maxZ + 1, minimized: false } : w)))
         return
       }
       const prev = windowsRef.current
-      if (prev.some((w) => w.rootSlug === slug)) {
+      if (prev.some((w) => w.kind === 'content' && w.rootSlug === slug)) {
         const maxZ = Math.max(...prev.map((w) => w.zIndex), BASE_Z - 1)
         // Reset navigation to root — shortcut represents the root content of the window.
         setWindows(prev.map((w) =>
-          w.rootSlug === slug
+          w.kind === 'content' && w.rootSlug === slug
             ? { ...w, zIndex: maxZ + 1, minimized: false, slug: w.rootSlug, historyStack: [w.rootSlug], historyIndex: 0 }
             : w,
         ))
@@ -154,22 +207,58 @@ export function useWindowManager(): WindowManager {
         const maxZ = Math.max(...prev.map((w) => w.zIndex), BASE_Z - 1)
         const cascadeIndex = openCountRef.current++
         getOrCreatePromise(slug) // pre-seed promise before setWindows
-        setWindows([...prev, newWindowEntry(slug, maxZ + 1, cascadeIndex)])
+        setWindows([...prev, newContentWindowEntry(slug, maxZ + 1, cascadeIndex)])
       }
     },
     [router],
   )
 
+  const openStartupContent = useCallback((slugs: string[]) => {
+    if (!slugs.length) return
+    setWindows((prev) => {
+      let next = prev
+      let maxZ = Math.max(...next.map((w) => w.zIndex), BASE_Z - 1)
+      for (const slug of slugs) {
+        if (slug === realPrimarySlugRef.current) continue
+        const existing = next.find((w) => w.kind === 'content' && w.rootSlug === slug)
+        if (existing) {
+          maxZ += 1
+          next = next.map((w) => w === existing ? { ...w, zIndex: maxZ, minimized: false } : w)
+          continue
+        }
+        maxZ += 1
+        const cascadeIndex = openCountRef.current++
+        getOrCreatePromise(slug)
+        next = [...next, newContentWindowEntry(slug, maxZ, cascadeIndex)]
+      }
+      return next
+    })
+  }, [])
+
+  const openSystem = useCallback((key: SystemWindowKey) => {
+    setWindows((prev) => {
+      const id = systemWindowId(key)
+      const maxZ = Math.max(...prev.map((w) => w.zIndex), BASE_Z - 1, SYSTEM_BASE_Z[key] - 1)
+      const existing = prev.find((w) => w.id === id)
+      if (existing) {
+        return prev.map((w) => (w.id === id ? { ...w, zIndex: maxZ + 1, minimized: false } : w))
+      }
+      const cascadeIndex = openCountRef.current++
+      return [...prev, newSystemWindowEntry(key, maxZ + 1, cascadeIndex)]
+    })
+  }, [])
+
   const close = useCallback(
-    (slug: string) => {
+    (target: string) => {
       // Evict the window's content promises so reopening refetches fresh data.
       // Preloaded shortcut windows re-seed their root slug from SSR data on the
       // next render (seedPromise in AdditionalWindow), so only navigated history
       // entries actually pay a refetch.
-      const closing = windowsRef.current.find((w) => w.rootSlug === slug)
-      if (closing) evictPromises(closing.historyStack)
-      const next = windowsRef.current.filter((w) => w.rootSlug !== slug)
-      if (slug === realPrimarySlugRef.current) {
+      const closing = windowsRef.current.find((w) => matchesWindow(w, target))
+      if (closing?.kind === 'content') evictPromises(closing.historyStack)
+      const closeTarget = closing ? getWindowTarget(closing) : target
+      const next = windowsRef.current.filter((w) => !matchesWindow(w, target))
+      if (closeTarget === realPrimarySlugRef.current) {
         router.push('/')
       } else {
         setWindows(next)
@@ -178,25 +267,25 @@ export function useWindowManager(): WindowManager {
     [router],
   )
 
-  const focus = useCallback((slug: string) => {
+  const focus = useCallback((target: string) => {
     const prev = windowsRef.current
     const maxZ = Math.max(...prev.map((w) => w.zIndex), BASE_Z - 1)
-    setWindows(prev.map((w) => (w.rootSlug === slug ? { ...w, zIndex: maxZ + 1, minimized: false } : w)))
+    setWindows(prev.map((w) => (matchesWindow(w, target) ? { ...w, zIndex: maxZ + 1, minimized: false } : w)))
   }, [])
 
-  const minimize = useCallback((slug: string) => {
-    setWindows((prev) => prev.map((w) => (w.rootSlug === slug ? { ...w, pendingMinimize: true } : w)))
+  const minimize = useCallback((target: string) => {
+    setWindows((prev) => prev.map((w) => (matchesWindow(w, target) ? { ...w, pendingMinimize: true } : w)))
   }, [])
 
-  const actualMinimize = useCallback((slug: string) => {
-    setWindows((prev) => prev.map((w) => (w.rootSlug === slug ? { ...w, minimized: true, pendingMinimize: false } : w)))
+  const actualMinimize = useCallback((target: string) => {
+    setWindows((prev) => prev.map((w) => (matchesWindow(w, target) ? { ...w, minimized: true, pendingMinimize: false } : w)))
   }, [])
 
   const navigateInWindow = useCallback((rootSlug: string, newSlug: string) => {
     getOrCreatePromise(newSlug) // pre-seed in event handler context
     setWindows((prev) =>
       prev.map((w) => {
-        if (w.rootSlug !== rootSlug) return w
+        if (w.kind !== 'content' || w.rootSlug !== rootSlug) return w
         const truncated = w.historyStack.slice(0, w.historyIndex + 1)
         const newStack = [...truncated, newSlug]
         return { ...w, slug: newSlug, historyStack: newStack, historyIndex: newStack.length - 1 }
@@ -207,7 +296,7 @@ export function useWindowManager(): WindowManager {
   const backInWindow = useCallback((rootSlug: string) => {
     setWindows((prev) =>
       prev.map((w) => {
-        if (w.rootSlug !== rootSlug) return w
+        if (w.kind !== 'content' || w.rootSlug !== rootSlug) return w
         if (w.historyIndex <= 0) return w
         const newIndex = w.historyIndex - 1
         return { ...w, historyIndex: newIndex, slug: w.historyStack[newIndex] }
@@ -218,7 +307,7 @@ export function useWindowManager(): WindowManager {
   const forwardInWindow = useCallback((rootSlug: string) => {
     setWindows((prev) =>
       prev.map((w) => {
-        if (w.rootSlug !== rootSlug) return w
+        if (w.kind !== 'content' || w.rootSlug !== rootSlug) return w
         if (w.historyIndex >= w.historyStack.length - 1) return w
         const newIndex = w.historyIndex + 1
         return { ...w, historyIndex: newIndex, slug: w.historyStack[newIndex] }
@@ -229,7 +318,10 @@ export function useWindowManager(): WindowManager {
   return {
     windows,
     primarySlug: realPrimarySlug,
-    open,
+    openContent,
+    open: openContent,
+    openStartupContent,
+    openSystem,
     close,
     focus,
     minimize,
