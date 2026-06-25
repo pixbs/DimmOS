@@ -163,9 +163,11 @@ describe('WelcomeIntroView', () => {
     expect(container.querySelector('.sr-only')?.textContent).toBe('Dimm Kyselov')
     expect(container.textContent).toContain('Product designer')
     expect(container.textContent).toContain('data-driven design')
-    expect(container.querySelector('h2')?.className).toContain('text-2xl')
-    expect(container.querySelector('p')?.className).toContain('text-sm')
-    expect(container.querySelectorAll('p')[1]?.className).toContain('max-w-80')
+    expect(container.querySelector('[data-block-type="welcomeIntro"]')?.className).toContain('@container')
+    expect(container.querySelector('h1')?.className).toContain('clamp(1.5rem,7cqw,3rem)')
+    expect(container.querySelector('h1 [aria-hidden="true"]')?.className).toContain('justify-center')
+    expect(container.querySelector('p')?.className).toContain('clamp(0.875rem,2.2cqw,1.125rem)')
+    expect(container.querySelectorAll('p')[1]?.className).toContain('max-w-[min(100%,32rem)]')
     expect(container.querySelectorAll('p')[1]?.className).toContain('bg-bgs')
   })
 })
@@ -180,7 +182,7 @@ describe('InteractivePortraitView', () => {
     expect(svg?.getAttribute('height')).toBe('171')
     expect(svg?.getAttribute('fill')).toBe('none')
     expect(container.querySelectorAll('[data-look-index]')).toHaveLength(41)
-    expect(svg?.parentElement?.className).toContain('h-32')
+    expect(svg?.parentElement?.className).toContain('clamp(8rem,32cqw,14rem)')
   })
 
   it('tracks pointer gaze on fine pointer devices', async () => {

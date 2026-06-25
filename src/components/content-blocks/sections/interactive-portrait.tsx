@@ -270,11 +270,11 @@ export function InteractivePortraitView({ block: _block }: { block: InteractiveP
       ref={rootRef}
       data-block-type="interactivePortrait"
       data-testid="interactive-portrait"
-      className="flex justify-center py-1"
+      className="@container flex w-full justify-center py-1"
       aria-label="Interactive portrait"
       style={PORTRAIT_STYLE}
     >
-      <div className="aspect-square h-32 overflow-hidden rounded-full bg-bgs">
+      <div className="aspect-square h-[clamp(8rem,32cqw,14rem)] overflow-hidden rounded-full bg-bgs">
         <svg
           ref={svgRef}
           width="171"

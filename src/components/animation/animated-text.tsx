@@ -16,6 +16,8 @@ export interface AnimatedTextProps {
   as?: ElementType
   /** Classes applied to the wrapper element (font size, weight, colour, …). */
   className?: string
+  /** Classes applied to the animated visual copy. Useful for wrapped line alignment. */
+  innerClassName?: string
   /** Per-unit delay in seconds; larger = more pronounced cascade. Defaults to `0.04`. */
   stagger?: number
   /** Duration of each unit's slide-up, in seconds. Defaults to `0.6`. */
@@ -38,6 +40,7 @@ export function AnimatedText({
   split = 'words',
   as,
   className,
+  innerClassName,
   stagger = 0.04,
   duration = 0.6,
 }: AnimatedTextProps) {
@@ -52,7 +55,7 @@ export function AnimatedText({
   return (
     <Wrapper ref={ref} className={className}>
       <span className="sr-only">{children}</span>
-      <span aria-hidden className="inline-flex flex-wrap gap-x-[0.25em]">
+      <span aria-hidden className={`inline-flex flex-wrap gap-x-[0.25em] ${innerClassName ?? ''}`}>
         {words.map((units, wi) => (
           <span key={wi} className="inline-flex whitespace-nowrap">
             {units.map((unit, ui) => {

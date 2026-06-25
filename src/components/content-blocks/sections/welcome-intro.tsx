@@ -5,17 +5,22 @@ import type { WelcomeIntroViewBlock } from './welcome-title'
 
 export function WelcomeIntroView({ block }: { block: WelcomeIntroViewBlock }) {
   return (
-    <section data-block-type="welcomeIntro" className="flex flex-col items-center text-center">
+    <section data-block-type="welcomeIntro" className="@container flex w-full flex-col items-center text-center">
       <AnimatedText
-        as="h2"
+        as="h1"
         split="words"
-        className="text-2xl font-bold leading-tight text-fg"
+        className="mx-auto max-w-[min(100%,16ch)] text-center text-[clamp(1.5rem,7cqw,3rem)] font-semibold leading-tight text-fg"
+        innerClassName="w-full justify-center"
       >
         {block.title}
       </AnimatedText>
-      {block.role && <p className="mt-1 text-sm leading-snug text-fg">{block.role}</p>}
+      {block.role && (
+        <p className="mt-1 text-[clamp(0.875rem,2.2cqw,1.125rem)] leading-snug text-fg">
+          {block.role}
+        </p>
+      )}
       {block.descriptor && (
-        <p className="mt-4 w-full max-w-80 rounded-lg bg-bgs px-4 py-2.5 text-left text-[15px] leading-5 text-fg">
+        <p className="mt-4 w-full max-w-[min(100%,32rem)] rounded-lg bg-bgs px-4 py-2.5 text-left text-[clamp(0.9375rem,2.4cqw,1.0625rem)] leading-[1.35] text-fg">
           {block.descriptor}
         </p>
       )}
