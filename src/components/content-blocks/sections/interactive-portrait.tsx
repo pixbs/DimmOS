@@ -33,6 +33,7 @@ const PORTRAIT_STYLE = {
 } as CSSProperties
 
 function clamp(value: number, min: number, max: number) {
+  if (!Number.isFinite(value)) return 0
   return Math.max(min, Math.min(max, value))
 }
 
@@ -191,6 +192,7 @@ export function InteractivePortraitView({ block: _block }: { block: InteractiveP
 
     function pointerToLook(clientX: number, clientY: number) {
       const box = svgElement.getBoundingClientRect()
+      if (box.width <= 0 || box.height <= 0) return
       const cx = box.left + box.width / 2
       const cy = box.top + box.height / 2
       targetRef.current = {

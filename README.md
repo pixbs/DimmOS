@@ -930,7 +930,7 @@ shared set; Articles also get the doc-image-backed **Hero**.
 | Stats | `stats` | Up to three count-up figures (single value string like `"30Mil"`/`"$30,000"`/`"21%"` + label) |
 | Image | `imageSection` | Full-width image with the de-pixelation reveal |
 | Description | `description` | 1/3 animated title + 2/3 rich text |
-| Title | `sectionTitle` | Letter-by-letter animated title |
+| Title | `sectionTitle` | Letter-by-letter animated title with optional role/description; after `interactivePortrait` it renders with the compact welcome-card styling |
 | Hero | `hero` | **Articles only** — animated title + 2/3 parallax image from the article's `bgImage`/`fgImage` |
 
 Article-only fields (Content tab): `year`, `tags` (relationship → **Tags**

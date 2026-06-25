@@ -1,9 +1,9 @@
 'use client'
 
-import type { WelcomeIntroBlock } from '@/payload-types'
 import { AnimatedText } from '@/components/animation'
+import type { WelcomeIntroViewBlock } from './welcome-title'
 
-export function WelcomeIntroView({ block }: { block: WelcomeIntroBlock }) {
+export function WelcomeIntroView({ block }: { block: WelcomeIntroViewBlock }) {
   return (
     <section data-block-type="welcomeIntro" className="flex flex-col items-center text-center">
       <AnimatedText

@@ -168,6 +168,7 @@ const TitleBlock: Block = {
   imageAltText: 'Preview of the Title section',
   fields: [
     withAiGeneration({ name: 'title', type: 'text', required: true }),
+    withAiGeneration({ name: 'role', type: 'text' }),
     withAiGeneration({ name: 'description', type: 'textarea' }),
   ],
 }

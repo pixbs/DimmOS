@@ -430,6 +430,7 @@ export interface DescriptionBlock {
  */
 export interface TitleBlock {
   title: string;
+  role?: string | null;
   description?: string | null;
   id?: string | null;
   blockName?: string | null;
@@ -1075,6 +1076,7 @@ export interface DescriptionBlockSelect<T extends boolean = true> {
  */
 export interface TitleBlockSelect<T extends boolean = true> {
   title?: T;
+  role?: T;
   description?: T;
   id?: T;
   blockName?: T;

@@ -17,6 +17,7 @@ import { DescriptionView } from '@/components/content-blocks/sections/descriptio
 import { SectionTitleView } from '@/components/content-blocks/sections/section-title'
 import { WelcomeIntroView } from '@/components/content-blocks/sections/welcome-intro'
 import { InteractivePortraitView } from '@/components/content-blocks/sections/interactive-portrait'
+import { shouldRenderTitleAsWelcomeIntro, titleBlockToWelcomeIntro } from '@/components/content-blocks/sections/welcome-title'
 import { DocumentMediaProvider } from '@/components/content-blocks/document-media-context'
 
 const fakeMedia = (url: string, alt: string): Media =>
@@ -116,14 +117,34 @@ describe('DescriptionView', () => {
 })
 
 describe('SectionTitleView', () => {
-  it('renders the title and description', () => {
+  it('renders the title, role, and description', () => {
     const { container } = render(
       <SectionTitleView
-        block={{ blockType: 'sectionTitle', title: 'Section', description: 'a description' }}
+        block={{ blockType: 'sectionTitle', title: 'Section', role: 'Role', description: 'a description' }}
       />,
     )
     expect(container.querySelector('.sr-only')?.textContent).toBe('Section')
+    expect(container.textContent).toContain('Role')
     expect(container.textContent).toContain('a description')
+  })
+})
+
+describe('welcome title compatibility', () => {
+  it('maps a portrait-prefaced section title into the welcome intro shape', () => {
+    const titleBlock = {
+      blockType: 'sectionTitle' as const,
+      title: 'Dimm Kyselov',
+      role: 'Product designer',
+      description: 'I prioritize data-driven design process.',
+    }
+
+    expect(shouldRenderTitleAsWelcomeIntro(titleBlock, { blockType: 'interactivePortrait' })).toBe(true)
+    expect(titleBlockToWelcomeIntro(titleBlock)).toEqual({
+      blockType: 'welcomeIntro',
+      title: 'Dimm Kyselov',
+      role: 'Product designer',
+      descriptor: 'I prioritize data-driven design process.',
+    })
   })
 })
 
@@ -165,14 +186,43 @@ describe('InteractivePortraitView', () => {
   it('tracks pointer gaze on fine pointer devices', async () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })))
 
-    const { getByTestId } = render(<InteractivePortraitView block={{ blockType: 'interactivePortrait' }} />)
+    const { container, getByTestId } = render(<InteractivePortraitView block={{ blockType: 'interactivePortrait' }} />)
     const portrait = getByTestId('interactive-portrait')
+    const svg = container.querySelector<SVGSVGElement>('svg')
+    if (svg) {
+      vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue({
+        x: 0,
+        y: 0,
+        left: 0,
+        top: 0,
+        right: 128,
+        bottom: 128,
+        width: 128,
+        height: 128,
+        toJSON: () => ({}),
+      })
+    }
 
     fireEvent.pointerMove(portrait, { clientX: 1000, clientY: 40 })
 
     await waitFor(() => {
       expect(Number(portrait.dataset.gazeX)).toBeGreaterThan(0)
       expect(portrait.dataset.gazeMode).toBe('pointer')
+    })
+
+    vi.unstubAllGlobals()
+  })
+
+  it('does not corrupt paths when pointer events arrive before layout is measurable', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })))
+
+    const { container } = render(<InteractivePortraitView block={{ blockType: 'interactivePortrait' }} />)
+    const facePath = container.querySelector<SVGPathElement>('[data-look-index="16"]')
+
+    fireEvent.pointerMove(window, { clientX: 0, clientY: 0 })
+
+    await waitFor(() => {
+      expect(facePath?.getAttribute('d')).not.toContain('NaN')
     })
 
     vi.unstubAllGlobals()
