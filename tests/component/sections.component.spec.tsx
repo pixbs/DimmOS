@@ -142,6 +142,10 @@ describe('WelcomeIntroView', () => {
     expect(container.querySelector('.sr-only')?.textContent).toBe('Dimm Kyselov')
     expect(container.textContent).toContain('Product designer')
     expect(container.textContent).toContain('data-driven design')
+    expect(container.querySelector('h2')?.className).toContain('text-2xl')
+    expect(container.querySelector('p')?.className).toContain('text-sm')
+    expect(container.querySelectorAll('p')[1]?.className).toContain('max-w-80')
+    expect(container.querySelectorAll('p')[1]?.className).toContain('bg-bgs')
   })
 })
 
@@ -155,6 +159,7 @@ describe('InteractivePortraitView', () => {
     expect(svg?.getAttribute('height')).toBe('171')
     expect(svg?.getAttribute('fill')).toBe('none')
     expect(container.querySelectorAll('[data-look-index]')).toHaveLength(41)
+    expect(svg?.parentElement?.className).toContain('h-32')
   })
 
   it('tracks pointer gaze on fine pointer devices', async () => {

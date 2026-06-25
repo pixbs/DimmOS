@@ -1,25 +1,24 @@
 'use client'
 
 import type { WelcomeIntroBlock } from '@/payload-types'
-import { AnimatedDivider, AnimatedText } from '@/components/animation'
+import { AnimatedText } from '@/components/animation'
 
 export function WelcomeIntroView({ block }: { block: WelcomeIntroBlock }) {
   return (
-    <section data-block-type="welcomeIntro" className="flex flex-col items-center gap-3 pt-4 text-center">
+    <section data-block-type="welcomeIntro" className="flex flex-col items-center text-center">
       <AnimatedText
         as="h2"
         split="words"
-        className="text-3xl font-bold text-fg @2xl:text-4xl"
+        className="text-2xl font-bold leading-tight text-fg"
       >
         {block.title}
       </AnimatedText>
-      {block.role && <p className="text-base text-fg/80">{block.role}</p>}
+      {block.role && <p className="mt-1 text-sm leading-snug text-fg">{block.role}</p>}
       {block.descriptor && (
-        <p className="max-w-xl rounded-lg bg-bgs/70 px-5 py-3 text-left text-sm leading-relaxed text-fg/85 @2xl:text-base">
+        <p className="mt-4 w-full max-w-80 rounded-lg bg-bgs px-4 py-2.5 text-left text-[15px] leading-5 text-fg">
           {block.descriptor}
         </p>
       )}
-      <AnimatedDivider className="mt-4" />
     </section>
   )
 }

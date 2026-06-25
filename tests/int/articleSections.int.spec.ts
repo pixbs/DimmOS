@@ -71,13 +71,13 @@ describe('Article sections + article-only fields', () => {
         tags: [tag.id],
         content: [
           { blockType: 'hero', title: 'Hero title', description: 'Hero copy' },
+          { blockType: 'interactivePortrait' },
           {
             blockType: 'welcomeIntro',
             title: 'Dimm Kyselov',
             role: 'Product designer',
             descriptor: 'Data-driven design process.',
           },
-          { blockType: 'interactivePortrait' },
           { blockType: 'summary', leftTitle: 'L', leftBody: 'lb', rightTitle: 'R', rightBody: 'rb' },
           { blockType: 'stats', stats: [{ value: '10Mil', label: 'Users' }] },
           { blockType: 'description', title: 'Big title' },
@@ -90,8 +90,8 @@ describe('Article sections + article-only fields', () => {
     expect(doc.tags?.length).toBe(1)
     expect(doc.content?.map((b) => b.blockType)).toEqual([
       'hero',
-      'welcomeIntro',
       'interactivePortrait',
+      'welcomeIntro',
       'summary',
       'stats',
       'description',

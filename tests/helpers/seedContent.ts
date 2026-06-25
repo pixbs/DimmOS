@@ -78,6 +78,7 @@ export async function seedStartupWindow(
       windowStartupOrder: options.order ?? 0,
       windowStartupViewports: options.viewports ?? ['desktop'],
       content: [
+        { blockType: 'interactivePortrait' },
         {
           blockType: 'welcomeIntro',
           title: `Startup ${slug}`,
@@ -368,13 +369,13 @@ export async function seedCaseStudy(slug: string) {
           title: 'Acme Field Guide',
           description: 'A complete rebrand and product system for a modern field-services company.',
         },
+        { blockType: 'interactivePortrait' },
         {
           blockType: 'welcomeIntro',
           title: 'Dimm Kyselov',
           role: 'Product designer',
-          descriptor: 'I prioritize data-driven design process that builds upon human centricity.',
+          descriptor: 'I prioritize data-driven design process that builds upon human centricity, and are iterable for speed to market development.',
         },
-        { blockType: 'interactivePortrait' },
         {
           blockType: 'summary',
           leftTitle: 'Overview',

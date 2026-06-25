@@ -89,13 +89,13 @@ describe('Windows collection', () => {
         title: 'Welcome Blocks Window',
         slug: 'test-window-welcome-blocks',
         content: [
+          { blockType: 'interactivePortrait' },
           {
             blockType: 'welcomeIntro',
             title: 'Dimm Kyselov',
             role: 'Product designer',
             descriptor: 'Data-driven design process.',
           },
-          { blockType: 'interactivePortrait' },
         ],
       },
       overrideAccess: true,
@@ -103,8 +103,8 @@ describe('Windows collection', () => {
 
     createdIds.push(doc.id)
     expect(doc.content?.map((block) => block.blockType)).toEqual([
-      'welcomeIntro',
       'interactivePortrait',
+      'welcomeIntro',
     ])
   })
 
