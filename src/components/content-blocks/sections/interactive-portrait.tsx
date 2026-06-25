@@ -275,7 +275,10 @@ export function InteractivePortraitView({ block: _block }: { block: InteractiveP
       <div className="aspect-square h-36 overflow-hidden rounded-full bg-bgs @2xl:h-44">
         <svg
           ref={svgRef}
+          width="171"
+          height="171"
           viewBox="0 0 171 171"
+          fill="none"
           role="img"
           aria-label="Portrait that follows pointer movement"
           className="block h-full w-full bg-bgs"

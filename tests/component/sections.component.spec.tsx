@@ -146,6 +146,17 @@ describe('WelcomeIntroView', () => {
 })
 
 describe('InteractivePortraitView', () => {
+  it('preserves the source SVG root fill mode so stroke paths do not fill black', () => {
+    const { container } = render(<InteractivePortraitView block={{ blockType: 'interactivePortrait' }} />)
+    const svg = container.querySelector('svg')
+
+    expect(svg?.getAttribute('viewBox')).toBe('0 0 171 171')
+    expect(svg?.getAttribute('width')).toBe('171')
+    expect(svg?.getAttribute('height')).toBe('171')
+    expect(svg?.getAttribute('fill')).toBe('none')
+    expect(container.querySelectorAll('[data-look-index]')).toHaveLength(41)
+  })
+
   it('tracks pointer gaze on fine pointer devices', async () => {
     vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })))
 
