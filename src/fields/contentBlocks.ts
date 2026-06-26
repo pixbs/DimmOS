@@ -168,14 +168,37 @@ const TitleBlock: Block = {
   imageAltText: 'Preview of the Title section',
   fields: [
     withAiGeneration({ name: 'title', type: 'text', required: true }),
+    withAiGeneration({ name: 'role', type: 'text' }),
     withAiGeneration({ name: 'description', type: 'textarea' }),
   ],
+}
+
+/** Welcome intro: a compact identity/title section for the welcome window. */
+const WelcomeIntroBlock: Block = {
+  slug: 'welcomeIntro',
+  interfaceName: 'WelcomeIntroBlock',
+  labels: { singular: 'Welcome Intro', plural: 'Welcome Intros' },
+  fields: [
+    withAiGeneration({ name: 'title', type: 'text', required: true }),
+    withAiGeneration({ name: 'role', type: 'text' }),
+    withAiGeneration({ name: 'descriptor', type: 'textarea' }),
+  ],
+}
+
+/** Interactive portrait: fixed SVG avatar with pointer/idle gaze behavior. */
+const InteractivePortraitBlock: Block = {
+  slug: 'interactivePortrait',
+  interfaceName: 'InteractivePortraitBlock',
+  labels: { singular: 'Interactive Portrait', plural: 'Interactive Portraits' },
+  fields: [],
 }
 
 /** Blocks available to every content collection (Articles and Windows). */
 const sharedBlocks: Block[] = [
   RichTextBlock,
   ArticleListBlock,
+  WelcomeIntroBlock,
+  InteractivePortraitBlock,
   SummaryBlock,
   StatsBlock,
   ImageSectionBlock,

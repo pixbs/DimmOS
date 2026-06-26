@@ -9,7 +9,10 @@ import {
   ImageSectionView,
   DescriptionView,
   SectionTitleView,
+  WelcomeIntroView,
+  InteractivePortraitView,
 } from './sections'
+import { shouldRenderTitleAsWelcomeIntro, titleBlockToWelcomeIntro } from './sections/welcome-title'
 
 // Article['content'] is the superset union (it includes the article-only Hero
 // block); Window['content'] is a subset of it, so this single renderer type
@@ -20,13 +23,13 @@ export function ContentBlocks({ blocks }: { blocks: ContentBlock[] }) {
   return (
     <>
       {blocks.map((block, i) => (
-        <BlockRenderer key={i} block={block} />
+        <BlockRenderer key={i} block={block} previousBlock={blocks[i - 1]} />
       ))}
     </>
   )
 }
 
-function BlockRenderer({ block }: { block: ContentBlock }) {
+function BlockRenderer({ block, previousBlock }: { block: ContentBlock; previousBlock?: ContentBlock }) {
   switch (block.blockType) {
     case 'richText':
       return <RichTextView block={block} />
@@ -41,7 +44,14 @@ function BlockRenderer({ block }: { block: ContentBlock }) {
     case 'description':
       return <DescriptionView block={block} />
     case 'sectionTitle':
+      if (shouldRenderTitleAsWelcomeIntro(block, previousBlock)) {
+        return <WelcomeIntroView block={titleBlockToWelcomeIntro(block)} />
+      }
       return <SectionTitleView block={block} />
+    case 'welcomeIntro':
+      return <WelcomeIntroView block={block} />
+    case 'interactivePortrait':
+      return <InteractivePortraitView block={block} />
     case 'articleList':
       return (
         <Suspense fallback={<div />}>

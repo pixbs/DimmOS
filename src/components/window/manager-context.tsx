@@ -8,7 +8,10 @@ const noop = () => {}
 const WindowManagerContext = createContext<WindowManager>({
   windows: [],
   primarySlug: null,
+  openContent: noop,
   open: noop,
+  openStartupContent: noop,
+  openSystem: noop,
   close: noop,
   focus: noop,
   minimize: noop,

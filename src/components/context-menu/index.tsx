@@ -7,7 +7,6 @@ import { isDesktopViewport } from '@/lib/breakpoints'
 import { clearShortcutPositions } from '@/lib/shortcut-positions'
 import { classifyHref, copyText, getSlugFromHref, toAbsoluteUrl } from '@/lib/context-menu'
 import { useWindowManagerContext } from '@/components/window/manager-context'
-import { useDisplayOptions } from '@/components/display-options'
 import { EASE_OUT_QUAD } from '@/lib/easing'
 
 type MenuItem = {
@@ -57,7 +56,6 @@ function currentUrlForSlug(slug: string): string {
 
 export function DesktopContextMenu() {
   const manager = useWindowManagerContext()
-  const { openDisplayOptions, closeDisplayOptions } = useDisplayOptions()
   const [menu, setMenu] = useState<MenuState | null>(null)
   const [mounted, setMounted] = useState(false)
   const menuRef = useRef<HTMLDivElement>(null)
@@ -110,8 +108,17 @@ export function DesktopContextMenu() {
       if (taskbarButton) {
         const rootSlug = taskbarButton.dataset.taskbarWindow
         if (!rootSlug) return
-        const win = manager.windows.find((w) => w.rootSlug === rootSlug)
+        const win = manager.windows.find((w) => w.rootSlug === rootSlug || w.id === rootSlug)
         if (!win) return
+        if (win.kind === 'system') {
+          openAt(e, 'Taskbar menu', [
+            win.minimized
+              ? { label: 'Restore', icon: 'ri-window-line', action: () => manager.focus(win.id) }
+              : { label: 'Collapse', icon: 'ri-subtract-line', action: () => manager.minimize(win.id) },
+            { label: 'Close', icon: 'ri-close-line', action: () => manager.close(win.id) },
+          ])
+          return
+        }
         const currentSlug = win.slug
         const url = currentUrlForSlug(currentSlug)
         openAt(e, 'Taskbar menu', [
@@ -150,8 +157,6 @@ export function DesktopContextMenu() {
 
       const panel = target.closest<HTMLElement>('[data-window-panel]')
       if (panel) {
-        const isDisplayOptions = panel.hasAttribute('data-display-options-window')
-        const isCookieBanner = panel.hasAttribute('data-cookie-banner')
         const items: MenuItem[] = []
         const minimize = getPanelButton(panel, ['Minimize'])
         const expand = getPanelButton(panel, ['Expand to full screen', 'Restore window'])
@@ -176,9 +181,7 @@ export function DesktopContextMenu() {
           label: 'Close',
           icon: 'ri-close-line',
           action: () => {
-            if (isDisplayOptions) closeDisplayOptions()
-            else if (isCookieBanner) window.dispatchEvent(new Event('dimmos:close-cookie-banner'))
-            else clickPanelButton(panel, ['Close', 'Close display options', 'Close cookie notice'])
+            clickPanelButton(panel, ['Close', 'Close display options', 'Close cookie notice'])
           },
         })
         openAt(e, 'Window menu', items)
@@ -188,7 +191,7 @@ export function DesktopContextMenu() {
       if (target.closest('[data-shortcut-surface], main')) {
         openAt(e, 'Wallpaper menu', [
           { label: 'About DimmOS', icon: 'ri-information-line', action: () => manager.open('about') },
-          { label: 'Display options', icon: 'ri-settings-3-line', action: openDisplayOptions },
+          { label: 'Display options', icon: 'ri-settings-3-line', action: () => manager.openSystem('display-options') },
           {
             label: 'Reset icons',
             icon: 'ri-refresh-line',
@@ -203,7 +206,7 @@ export function DesktopContextMenu() {
 
     document.addEventListener('contextmenu', onContextMenu)
     return () => document.removeEventListener('contextmenu', onContextMenu)
-  }, [closeDisplayOptions, manager, openDisplayOptions])
+  }, [manager])
 
   if (!mounted) return null
 

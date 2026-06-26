@@ -40,24 +40,11 @@ function applyCursorMode(mode: CursorMode): void {
 
 export function DisplayOptionsStateProvider({ children }: { children: ReactNode }) {
   const [options, setOptions] = useState<DisplayOptions>(getInitialOptions)
-  const [isDisplayOptionsOpen, setIsDisplayOptionsOpen] = useState(false)
 
   useEffect(() => {
     const stored = loadDisplayOptions()
     setOptions(stored)
     applyCursorMode(stored.cursorMode)
-  }, [])
-
-  useEffect(() => {
-    function onOpen() {
-      setIsDisplayOptionsOpen(true)
-    }
-    window.addEventListener('dimmos:open-display-options', onOpen)
-    document.documentElement.dataset.displayOptionsReady = 'true'
-    return () => {
-      window.removeEventListener('dimmos:open-display-options', onOpen)
-      delete document.documentElement.dataset.displayOptionsReady
-    }
   }, [])
 
   const setCursorMode = useCallback((cursorMode: CursorMode) => {
@@ -74,11 +61,11 @@ export function DisplayOptionsStateProvider({ children }: { children: ReactNode 
       options,
       cursorMode: options.cursorMode,
       setCursorMode,
-      isDisplayOptionsOpen,
-      openDisplayOptions: () => setIsDisplayOptionsOpen(true),
-      closeDisplayOptions: () => setIsDisplayOptionsOpen(false),
+      isDisplayOptionsOpen: false,
+      openDisplayOptions: () => window.dispatchEvent(new Event('dimmos:open-display-options')),
+      closeDisplayOptions: () => {},
     }),
-    [isDisplayOptionsOpen, options, setCursorMode],
+    [options, setCursorMode],
   )
 
   return (

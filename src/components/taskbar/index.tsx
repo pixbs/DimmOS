@@ -6,6 +6,11 @@ import { useWindowManagerContext } from '@/components/window/manager-context'
 import { useShortcutRegistry } from '@/components/shortcut/registry-context'
 
 const CATEGORY_ORDER = ['windows', 'articles', 'forms'] as const
+const SYSTEM_META = {
+  'cookie-notice': { icon: 'ri-shield-check-fill', color: '#F22F57', name: 'Cookie Notice' },
+  'cookie-preferences': { icon: 'ri-shield-keyhole-fill', color: '#F22F57', name: 'Cookie Preferences' },
+  'display-options': { icon: 'ri-settings-3-fill', color: '#4A9EFF', name: 'Display Options' },
+} as const
 
 const FALLBACK_ICONS: Record<string, string> = {
   windows:  'ri-window-fill',
@@ -68,16 +73,18 @@ export function Taskbar() {
   if (openWindows.length === 0) return null
 
   const maxZ = Math.max(50, ...openWindows.map((w) => w.zIndex))
+  const contentWindows = openWindows.filter((w) => w.kind === 'content')
+  const systemWindows = openWindows.filter((w) => w.kind === 'system' && w.systemKey && w.systemKey !== 'cookie-notice')
 
   // Windows not in the CMS registry (e.g. a 404'd slug)
-  const orphanWindows = openWindows.filter((w) => {
+  const orphanWindows = contentWindows.filter((w) => {
     const meta = registry.get(w.rootSlug) ?? registry.get(w.slug)
     return !meta
   })
 
   // Group registered windows by CMS category
   const groups = CATEGORY_ORDER
-    .map((cat) => openWindows.filter((w) => {
+    .map((cat) => contentWindows.filter((w) => {
       const meta = registry.get(w.rootSlug) ?? registry.get(w.slug)
       return meta?.category === cat
     }))
@@ -85,6 +92,7 @@ export function Taskbar() {
 
   const hasRegular = groups.length > 0
   const hasOrphan = orphanWindows.length > 0
+  const hasSystem = systemWindows.length > 0
 
   return (
     <div
@@ -140,6 +148,28 @@ export function Taskbar() {
           onMinimize={() => minimize(win.rootSlug)}
         />
       ))}
+
+      {(hasRegular || hasOrphan) && hasSystem && (
+        <div
+          className="w-px h-8 self-center"
+          style={{ background: 'color-mix(in srgb, white 15%, transparent)' }}
+        />
+      )}
+
+      {systemWindows.map((win) => {
+        const meta = win.systemKey ? SYSTEM_META[win.systemKey] : null
+        return (
+          <TaskbarButton
+            key={win.id}
+            win={{ rootSlug: win.id, minimized: win.minimized }}
+            icon={meta?.icon ?? 'ri-window-fill'}
+            color={meta?.color ?? '#4A9EFF'}
+            name={meta?.name ?? win.id}
+            onFocus={() => focus(win.id)}
+            onMinimize={() => minimize(win.id)}
+          />
+        )
+      })}
     </div>
   )
 }

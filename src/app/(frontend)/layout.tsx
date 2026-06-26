@@ -6,7 +6,6 @@ import config from '@payload-config'
 import type { Metadata } from 'next'
 import { PostHogProvider, PostHogPageView } from '@posthog/next'
 import Header from '@/components/header'
-import CookieBanner from '@/components/cookie-banner'
 import { CookieConsentProvider } from '@/components/cookie-banner/context'
 import { PostHogConsentGate } from '@/components/analytics/PostHogConsentGate'
 import { SentryReplayProvider } from '@/components/analytics/SentryReplayProvider'
@@ -44,12 +43,38 @@ async function fetchData() {
   const payload = await getPayload({ config })
   // Fetch all docs (no showShortcut filter) so the registry covers every possible window,
   // including pages opened via direct URL navigation that may not have showShortcut set.
-  const select = { title: true, slug: true, shortcutName: true, shortcutIcon: true, shortcutOrder: true, showShortcut: true } as const
+  const contentSelect = {
+    title: true,
+    slug: true,
+    shortcutName: true,
+    shortcutIcon: true,
+    shortcutOrder: true,
+    showShortcut: true,
+    windowOpenOnStartup: true,
+    windowStartupViewports: true,
+    windowStartupOrder: true,
+  } as const
+  const formSelect = { title: true, slug: true, shortcutName: true, shortcutIcon: true, shortcutOrder: true, showShortcut: true } as const
 
-  const [windows, articles, forms] = await Promise.all([
-    payload.find({ collection: 'windows',  select, depth: 0, limit: 200, overrideAccess: false }),
-    payload.find({ collection: 'articles', select, depth: 0, limit: 200, overrideAccess: false }),
-    payload.find({ collection: 'forms',    select, depth: 0, limit: 200, overrideAccess: false }),
+  const [windows, articles, forms, cookieServices, cookieSettings] = await Promise.all([
+    payload.find({ collection: 'windows',  select: contentSelect, depth: 0, limit: 200, overrideAccess: false }),
+    payload.find({ collection: 'articles', select: contentSelect, depth: 0, limit: 200, overrideAccess: false }),
+    payload.find({ collection: 'forms',    select: formSelect, depth: 0, limit: 200, overrideAccess: false }),
+    payload.find({
+      collection: 'cookie-services',
+      select: {
+        name: true,
+        category: true,
+        legalName: true,
+        description: true,
+        privacyPolicyUrl: true,
+        cookies: true,
+      } as const,
+      limit: 100,
+      depth: 0,
+      overrideAccess: false,
+    }),
+    payload.findGlobal({ slug: 'cookie-settings', overrideAccess: false }),
   ])
 
   const allDocs = [
@@ -81,14 +106,39 @@ async function fetchData() {
     }))
 
   const shortcutSlugs = shortcuts.map((s) => s.slug)
-  const preloadedContents = await fetchAllShortcutContents(shortcutSlugs)
+  const startupWindows = [...windows.docs, ...articles.docs]
+    .filter((doc) => doc.windowOpenOnStartup)
+    .sort((a, b) => {
+      const startupDelta = (a.windowStartupOrder ?? 0) - (b.windowStartupOrder ?? 0)
+      if (startupDelta !== 0) return startupDelta
+      const shortcutDelta = (a.shortcutOrder ?? Infinity) - (b.shortcutOrder ?? Infinity)
+      if (shortcutDelta !== 0) return shortcutDelta
+      return a.title.localeCompare(b.title)
+    })
+    .map((doc) => ({
+      slug: doc.slug,
+      viewports: (doc.windowStartupViewports?.length ? doc.windowStartupViewports : ['desktop']) as ('desktop' | 'mobile')[],
+    }))
 
-  return { shortcuts, registryEntries, shortcutSlugs, preloadedContents }
+  const preloadedContentSlugs = [...new Set([...shortcutSlugs, ...startupWindows.map((entry) => entry.slug)])]
+  const preloadedContents = await fetchAllShortcutContents(preloadedContentSlugs)
+
+  return {
+    shortcuts,
+    registryEntries,
+    shortcutSlugs,
+    startupWindows,
+    preloadedContents,
+    systemWindowData: {
+      cookieSettings,
+      cookieServices: cookieServices.docs,
+    },
+  }
 }
 
 export default async function RootLayout(props: { children: React.ReactNode }) {
   const { children } = props
-  const { shortcuts, registryEntries, shortcutSlugs, preloadedContents } = await fetchData()
+  const { shortcuts, registryEntries, shortcutSlugs, startupWindows, preloadedContents, systemWindowData } = await fetchData()
 
   return (
     <html lang="en" className={onest.className} suppressHydrationWarning>
@@ -124,7 +174,12 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             <Suspense>
               <DisplayOptionsProvider>
                 <ShortcutRegistryProvider shortcuts={registryEntries}>
-                  <WindowManagerProvider preloadedContents={preloadedContents} shortcutSlugs={shortcutSlugs}>
+                  <WindowManagerProvider
+                    preloadedContents={preloadedContents}
+                    shortcutSlugs={shortcutSlugs}
+                    startupWindows={startupWindows}
+                    systemWindowData={systemWindowData}
+                  >
                     <Header />
                     <main>
                       <DesktopWallpaper />
@@ -133,7 +188,6 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
                       </div>
                       {children}
                     </main>
-                    <CookieBanner />
                     <DesktopContextMenu />
                     <DesktopCursor />
                   </WindowManagerProvider>

@@ -63,3 +63,37 @@ export const windowBehaviorFields: Field[] = [
     },
   },
 ]
+
+export const windowStartupFields: Field[] = [
+  {
+    name: 'windowOpenOnStartup',
+    type: 'checkbox',
+    defaultValue: false,
+    admin: {
+      description: 'Open this content window automatically on the root desktop/mobile session.',
+    },
+  },
+  {
+    name: 'windowStartupViewports',
+    type: 'select',
+    hasMany: true,
+    defaultValue: ['desktop'],
+    options: [
+      { label: 'Desktop', value: 'desktop' },
+      { label: 'Mobile', value: 'mobile' },
+    ],
+    admin: {
+      description: 'Viewport classes where this startup window should open.',
+      condition: (data) => Boolean(data?.windowOpenOnStartup),
+    },
+  },
+  {
+    name: 'windowStartupOrder',
+    type: 'number',
+    defaultValue: 0,
+    admin: {
+      description: 'Lower numbers open first. Ties fall back to shortcut order and title.',
+      condition: (data) => Boolean(data?.windowOpenOnStartup),
+    },
+  },
+]

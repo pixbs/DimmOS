@@ -214,6 +214,8 @@ export interface Window {
     | (
         | RichTextBlock
         | ArticleListBlock
+        | WelcomeIntroBlock
+        | InteractivePortraitBlock
         | SummaryBlock
         | StatsBlock
         | ImageSectionBlock
@@ -257,6 +259,18 @@ export interface Window {
    * Allow back / forward navigation within the window. Links that would open a new window will instead navigate in-place and build a per-window history.
    */
   windowDisplayHistory?: boolean | null;
+  /**
+   * Open this content window automatically on the root desktop/mobile session.
+   */
+  windowOpenOnStartup?: boolean | null;
+  /**
+   * Viewport classes where this startup window should open.
+   */
+  windowStartupViewports?: ('desktop' | 'mobile')[] | null;
+  /**
+   * Lower numbers open first. Ties fall back to shortcut order and title.
+   */
+  windowStartupOrder?: number | null;
   meta?: {
     title?: string | null;
     description?: string | null;
@@ -315,6 +329,27 @@ export interface ArticleListBlock {
   id?: string | null;
   blockName?: string | null;
   blockType: 'articleList';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "WelcomeIntroBlock".
+ */
+export interface WelcomeIntroBlock {
+  title: string;
+  role?: string | null;
+  descriptor?: string | null;
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'welcomeIntro';
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "InteractivePortraitBlock".
+ */
+export interface InteractivePortraitBlock {
+  id?: string | null;
+  blockName?: string | null;
+  blockType: 'interactivePortrait';
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
@@ -395,6 +430,7 @@ export interface DescriptionBlock {
  */
 export interface TitleBlock {
   title: string;
+  role?: string | null;
   description?: string | null;
   id?: string | null;
   blockName?: string | null;
@@ -433,6 +469,8 @@ export interface Article {
         | HeroBlock
         | RichTextBlock
         | ArticleListBlock
+        | WelcomeIntroBlock
+        | InteractivePortraitBlock
         | SummaryBlock
         | StatsBlock
         | ImageSectionBlock
@@ -476,6 +514,18 @@ export interface Article {
    * Allow back / forward navigation within the window. Links that would open a new window will instead navigate in-place and build a per-window history.
    */
   windowDisplayHistory?: boolean | null;
+  /**
+   * Open this content window automatically on the root desktop/mobile session.
+   */
+  windowOpenOnStartup?: boolean | null;
+  /**
+   * Viewport classes where this startup window should open.
+   */
+  windowStartupViewports?: ('desktop' | 'mobile')[] | null;
+  /**
+   * Lower numbers open first. Ties fall back to shortcut order and title.
+   */
+  windowStartupOrder?: number | null;
   meta?: {
     title?: string | null;
     description?: string | null;
@@ -899,6 +949,8 @@ export interface WindowsSelect<T extends boolean = true> {
     | {
         richText?: T | RichTextBlockSelect<T>;
         articleList?: T | ArticleListBlockSelect<T>;
+        welcomeIntro?: T | WelcomeIntroBlockSelect<T>;
+        interactivePortrait?: T | InteractivePortraitBlockSelect<T>;
         summary?: T | SummaryBlockSelect<T>;
         stats?: T | StatsBlockSelect<T>;
         imageSection?: T | ImageSectionBlockSelect<T>;
@@ -917,6 +969,9 @@ export interface WindowsSelect<T extends boolean = true> {
   windowDisplayViewToggle?: T;
   windowDefaultView?: T;
   windowDisplayHistory?: T;
+  windowOpenOnStartup?: T;
+  windowStartupViewports?: T;
+  windowStartupOrder?: T;
   meta?:
     | T
     | {
@@ -947,6 +1002,25 @@ export interface ArticleListBlockSelect<T extends boolean = true> {
   sortField?: T;
   sortDirection?: T;
   limit?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "WelcomeIntroBlock_select".
+ */
+export interface WelcomeIntroBlockSelect<T extends boolean = true> {
+  title?: T;
+  role?: T;
+  descriptor?: T;
+  id?: T;
+  blockName?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "InteractivePortraitBlock_select".
+ */
+export interface InteractivePortraitBlockSelect<T extends boolean = true> {
   id?: T;
   blockName?: T;
 }
@@ -1002,6 +1076,7 @@ export interface DescriptionBlockSelect<T extends boolean = true> {
  */
 export interface TitleBlockSelect<T extends boolean = true> {
   title?: T;
+  role?: T;
   description?: T;
   id?: T;
   blockName?: T;
@@ -1037,6 +1112,8 @@ export interface ArticlesSelect<T extends boolean = true> {
         hero?: T | HeroBlockSelect<T>;
         richText?: T | RichTextBlockSelect<T>;
         articleList?: T | ArticleListBlockSelect<T>;
+        welcomeIntro?: T | WelcomeIntroBlockSelect<T>;
+        interactivePortrait?: T | InteractivePortraitBlockSelect<T>;
         summary?: T | SummaryBlockSelect<T>;
         stats?: T | StatsBlockSelect<T>;
         imageSection?: T | ImageSectionBlockSelect<T>;
@@ -1055,6 +1132,9 @@ export interface ArticlesSelect<T extends boolean = true> {
   windowDisplayViewToggle?: T;
   windowDefaultView?: T;
   windowDisplayHistory?: T;
+  windowOpenOnStartup?: T;
+  windowStartupViewports?: T;
+  windowStartupOrder?: T;
   meta?:
     | T
     | {
