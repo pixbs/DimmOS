@@ -123,6 +123,7 @@ export function useWindowManager(): WindowManager {
     pathSlug ? [newContentWindowEntry(pathSlug, BASE_Z, 0)] : [],
   )
   const [realPrimarySlug, setRealPrimarySlug] = useState<string | null>(pathSlug)
+  const [sessionRestored, setSessionRestored] = useState(false)
 
   const windowsRef = useRef(windows)
   windowsRef.current = windows
@@ -137,22 +138,25 @@ export function useWindowManager(): WindowManager {
   // Effect 1: restore floating windows from sessionStorage (mount only)
   useEffect(() => {
     const stored = loadWindowsFromSession()
-    if (stored.length === 0) return
-    setWindows((prev) => {
-      const curPrimary = realPrimarySlugRef.current
-      const toAdd = stored.filter(
-        (w) => !prev.some((p) => p.rootSlug === w.rootSlug) && w.rootSlug !== curPrimary,
-      )
-      if (toAdd.length === 0) return prev
-      return [...prev, ...toAdd]
-    })
+    if (stored.length > 0) {
+      setWindows((prev) => {
+        const curPrimary = realPrimarySlugRef.current
+        const toAdd = stored.filter(
+          (w) => !prev.some((p) => p.rootSlug === w.rootSlug) && w.rootSlug !== curPrimary,
+        )
+        if (toAdd.length === 0) return prev
+        return [...prev, ...toAdd]
+      })
+    }
+    setSessionRestored(true)
   }, [])
 
   // Effect 2: sync sessionStorage + cosmetic URL on every windows change
   useEffect(() => {
+    if (!sessionRestored) return
     saveWindowsToSession(windows)
     updateCosmeticUrl(windows, realPrimarySlugRef.current, cosmeticChangeRef)
-  }, [windows])
+  }, [sessionRestored, windows])
 
   // Effect 3: handle real Next.js navigation — swap primary, keep secondaries
   const prevPathSlugRef = useRef(pathSlug)
