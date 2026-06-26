@@ -39,6 +39,9 @@ describe('Window behavior fields', () => {
       expect(doc.windowCollapsible).toBe(true)
       expect(doc.windowExpandable).toBe(false)
       expect(doc.windowResizable).toBe(true)
+      expect(doc.windowOpenOnStartup).toBe(false)
+      expect(doc.windowStartupViewports).toEqual(['desktop'])
+      expect(doc.windowStartupOrder).toBe(0)
     })
 
     it('persists windowCollapsible: false', async () => {
@@ -107,6 +110,24 @@ describe('Window behavior fields', () => {
       expect(updated.windowExpandable).toBe(true)
       expect(updated.windowResizable).toBe(false)
     })
+
+    it('persists startup fields on a window', async () => {
+      const doc = await payload.create({
+        collection: 'windows',
+        data: {
+          title: 'Startup Window',
+          slug: 'test-win-startup',
+          windowOpenOnStartup: true,
+          windowStartupViewports: ['desktop', 'mobile'],
+          windowStartupOrder: 12,
+        },
+        overrideAccess: true,
+      })
+      windowIds.push(doc.id)
+      expect(doc.windowOpenOnStartup).toBe(true)
+      expect(doc.windowStartupViewports).toEqual(['desktop', 'mobile'])
+      expect(doc.windowStartupOrder).toBe(12)
+    })
   })
 
   describe('Articles collection', () => {
@@ -124,6 +145,9 @@ describe('Window behavior fields', () => {
       expect(doc.windowCollapsible).toBe(true)
       expect(doc.windowExpandable).toBe(false)
       expect(doc.windowResizable).toBe(true)
+      expect(doc.windowOpenOnStartup).toBe(false)
+      expect(doc.windowStartupViewports).toEqual(['desktop'])
+      expect(doc.windowStartupOrder).toBe(0)
     })
 
     it('persists all three behavior fields on an article', async () => {
@@ -143,6 +167,25 @@ describe('Window behavior fields', () => {
       expect(doc.windowCollapsible).toBe(false)
       expect(doc.windowExpandable).toBe(true)
       expect(doc.windowResizable).toBe(false)
+    })
+
+    it('persists startup fields on an article', async () => {
+      const doc = await payload.create({
+        collection: 'articles',
+        data: {
+          title: 'Startup Article',
+          slug: 'test-art-startup',
+          type: 'service',
+          windowOpenOnStartup: true,
+          windowStartupViewports: ['mobile'],
+          windowStartupOrder: 4,
+        },
+        overrideAccess: true,
+      })
+      articleIds.push(doc.id)
+      expect(doc.windowOpenOnStartup).toBe(true)
+      expect(doc.windowStartupViewports).toEqual(['mobile'])
+      expect(doc.windowStartupOrder).toBe(4)
     })
   })
 
@@ -182,6 +225,10 @@ describe('Window behavior fields', () => {
       expect(doc.windowCollapsible).toBe(true)
       expect(doc.windowExpandable).toBe(false)
       expect(doc.windowResizable).toBe(true)
+      const rawDoc = doc as unknown as Record<string, unknown>
+      expect(rawDoc.windowOpenOnStartup).toBeUndefined()
+      expect(rawDoc.windowStartupViewports).toBeUndefined()
+      expect(rawDoc.windowStartupOrder).toBeUndefined()
     })
 
     it('persists all three behavior fields on a form', async () => {

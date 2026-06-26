@@ -39,6 +39,8 @@ test.describe('Case study section blocks', () => {
     const win = page.locator('[data-testid="page-drawer"]')
     for (const blockType of [
       'hero',
+      'welcomeIntro',
+      'interactivePortrait',
       'summary',
       'stats',
       'imageSection',

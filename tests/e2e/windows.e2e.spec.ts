@@ -20,6 +20,19 @@ async function bypassCookieBanner({ page }: { page: Page }) {
   })
 }
 
+async function openSecondaryWindowFromRoot(page: Page, slug: string) {
+  await page.addInitScript((s) => {
+    try {
+      const url = new URL(window.location.href)
+      if (url.pathname !== '/') return
+      url.searchParams.set('open', s)
+      window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
+    } catch {
+      // Ignore non-standard initial documents such as about:blank.
+    }
+  }, slug)
+}
+
 test.describe('Windows — shared setup', () => {
   test.beforeAll(async () => {
     await seedWindow(SLUG)
@@ -215,11 +228,7 @@ test.describe('Windows — shared setup', () => {
     })
 
     test('focusing the active secondary window keeps the cosmetic URL', async ({ page }) => {
-      await page.addInitScript(() => {
-        sessionStorage.setItem('open-windows', JSON.stringify([
-          { slug: 'e2e-test-window', zIndex: 51, minimized: false, cascadeIndex: 0 },
-        ]))
-      })
+      await openSecondaryWindowFromRoot(page, SLUG)
       await page.goto(BASE_URL)
       const win = page.locator(`[data-secondary-window="${SLUG}"]`)
       await expect(win).toBeVisible({ timeout: 10000 })
@@ -231,11 +240,7 @@ test.describe('Windows — shared setup', () => {
     })
 
     test('closing a secondary window resets the cosmetic URL to /', async ({ page }) => {
-      await page.addInitScript(() => {
-        sessionStorage.setItem('open-windows', JSON.stringify([
-          { slug: 'e2e-test-window', zIndex: 51, minimized: false, cascadeIndex: 0 },
-        ]))
-      })
+      await openSecondaryWindowFromRoot(page, SLUG)
       await page.goto(BASE_URL)
       const win = page.locator(`[data-secondary-window="${SLUG}"]`)
       await expect(win).toBeVisible({ timeout: 10000 })

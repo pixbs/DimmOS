@@ -31,7 +31,7 @@ Interactive OS-style portfolio built on Next.js + Payload CMS. The UI metaphor i
 src/
 ├── app/
 │   ├── (frontend)/              # Public-facing routes
-│   │   ├── layout.tsx           # Root layout: Header + CookieConsentProvider + CookieBanner + shortcuts grid
+│   │   ├── layout.tsx           # Root layout: Header + providers + managed windows + shortcuts grid
 │   │   ├── page.tsx             # Homepage shell (shortcuts rendered in layout)
 │   │   ├── (pages)/             # Routes that open inside PageDrawer
 │   │   │   ├── layout.tsx       # Wraps children in <PageDrawer>
@@ -47,10 +47,10 @@ src/
 │   ├── CookieServices.ts        # Cookie service catalogue
 │   └── CookieConsents.ts        # Consent audit log (write-protected, custom endpoint)
 ├── fields/
-│   ├── contentBlocks.ts         # Shared blocks field: richText, image, gallery, embed, cta, articleList
+│   ├── contentBlocks.ts         # Shared blocks field: richText, articleList, welcome, portrait, sections
 │   ├── slugField.ts             # createSlugField() factory + validateSlug (shared by all content collections)
 │   ├── shortcutFields.ts        # createShortcutFields() factory (Shortcut tab on all content collections)
-│   └── windowBehavior.ts        # Window tab fields (chrome + toolbar flags)
+│   └── windowBehavior.ts        # Window tab fields (chrome + toolbar + startup flags)
 ├── globals/
 │   └── CookieSettings.ts        # Banner copy + consentVersion
 ├── actions/
@@ -65,7 +65,7 @@ src/
 │   └── breakpoints.ts           # DESKTOP_BREAKPOINT (1024) + isDesktopViewport()
 ├── components/
 │   ├── drawer/                  # Drawer system (see mechanics below)
-│   ├── cookie-banner/           # Consent banner + context
+│   ├── cookie-banner/           # Consent context; visible notice/preferences render as managed system windows
 │   ├── header/                  # Logo + Clock
 │   ├── preloader/               # Boot preloader progress bar + context
 │   ├── shortcut/                # Desktop icon tiles
@@ -73,13 +73,16 @@ src/
 │   ├── taskbar/                 # Desktop taskbar (window list)
 │   ├── content-blocks/          # THE block renderer: server switch + pure per-block views (views.tsx)
 │   ├── window/
-│   │   ├── AdditionalWindow.tsx         # Floating window: owns history stack, content loading, animations
-│   │   ├── WindowManagerProvider.tsx    # Mounts pre-rendered + on-demand windows; renders Taskbar
+│   │   ├── AdditionalWindow.tsx         # Content window: owns history stack + content loading
+│   │   ├── managed-window-shell.tsx     # Shared chrome/drag/resize/minimize shell for content + system windows
+│   │   ├── system-window.tsx            # Managed system-window wrapper
+│   │   ├── system-window-registry.tsx   # Cookie notice/preferences + display options registry
+│   │   ├── WindowManagerProvider.tsx    # Mounts startup/preloaded/on-demand/system windows; renders Taskbar
 │   │   ├── WindowToolbar.tsx            # Toolbar UI (back/forward, search, grid/table toggle)
 │   │   ├── window-toolbar-context.tsx   # WindowToolbarProvider + useWindowToolbar()
 │   │   ├── title-context.tsx            # Per-route title + chrome flags + toolbar flags (SetWindowOptions / SetWindowToolbar)
 │   │   ├── title-bar.tsx                # Window chrome: traffic-light buttons + drag handle
-│   │   ├── manager-context.tsx          # useWindowManagerContext() (open/close/focus/minimize)
+│   │   ├── manager-context.tsx          # useWindowManagerContext() (openContent/openSystem/close/focus/minimize)
 │   │   ├── content-view.tsx             # Client renderer: use(promise) + shared block views
 │   │   ├── content-error-boundary.tsx   # BSOD-styled fallback + Retry for failed content loads
 │   │   └── ResizeHandles.tsx            # E / S / SE resize handles with pointer capture
@@ -148,12 +151,12 @@ On **mobile** (no window system), `not-found.tsx` renders a full-page BSOD overl
 **Window manager API:**
 - `manager.openDeferred(slug)` — queues `slug` to open as an on-demand window once `realPrimarySlug` clears (after the redirect). Uses a `[pendingOpen, realPrimarySlug]` effect so the window isn't immediately removed by Effect 3's primary-clear logic.
 
-**Taskbar:** windows without a CMS registry entry (including any 404'd slug) appear with `ri-error-warning-fill` and brand-red color. The window's `rootSlug` is the literal failed path segment (e.g. `asdasd`).
+**Taskbar:** content windows without a CMS registry entry (including any 404'd slug) appear with `ri-error-warning-fill` and brand-red color. System windows use built-in taskbar metadata for cookie notice/preferences and display options.
 
 ---
 
 ### DrawerShell — generic bottom sheet
-- Used by: `CookieBanner`, the `/test` page demo
+- Used by: the `/test` page demo and simple drawer experiments. Cookie notice/preferences now render through managed system windows.
 - CSS: `translate-y-full` (closed) → `translate-y-0` (open)
 - Dismiss: drag > 40% panel height, Escape key, backdrop click
 - z-index: dialog at z-50, backdrop at z-40
@@ -184,7 +187,7 @@ Use `data-testid="page-drawer"` (set on `PageDrawerShell`) rather than `[role="d
 
 **Flow:**
 1. `CookieConsentProvider` mounts → reads localStorage → fetches `/api/globals/cookie-settings?depth=0`
-2. If invalid → `needsBanner = true` → `CookieBanner` auto-opens
+2. If invalid → `needsBanner = true` → `WindowManagerProvider` opens `system:cookie-notice`
 3. User picks Accept All / Reject / Configure
 4. `saveConsent(categories)`:
    - generates new `crypto.randomUUID()` (every consent event is a distinct audit record)
@@ -212,9 +215,11 @@ Use `data-testid="page-drawer"` (set on `PageDrawerShell`) rather than `[role="d
 | `cookie-consents` | Audit log | Create: endpoint only; read/update/delete: admin |
 | `cookie-settings` (global) | Config | Read: public; update: admin |
 
-**Windows and Articles** share a `content` blocks field built by `createContentBlocksField()` in `src/fields/contentBlocks.ts`: `richText`, `articleList` (Works), and the case-study section blocks `summary`, `stats`, `imageSection`, `description`, `sectionTitle`; Articles additionally get the doc-image-backed `hero`. The `articleList` block queries articles by `type` at render time (server-side via `resolveBlocks` in `src/lib/windowContent.ts`), resolving each article's cover images, tags, and year, and passes a resolved `articles` array to the client; it never fetches on the client. Both collections have `afterChange`/`afterDelete` hooks that call `revalidateTag('window-content')` + `revalidatePath` for instant cache busting on save. See [Content section blocks & scroll animations](#content-section-blocks--scroll-animations) for the full set.
+**Windows and Articles** share a `content` blocks field built by `createContentBlocksField()` in `src/fields/contentBlocks.ts`: `richText`, `articleList` (Works), `welcomeIntro`, `interactivePortrait`, and the case-study section blocks `summary`, `stats`, `imageSection`, `description`, `sectionTitle`; Articles additionally get the doc-image-backed `hero`. The `articleList` block queries articles by `type` at render time (server-side via `resolveBlocks` in `src/lib/windowContent.ts`), resolving each article's cover images, tags, and year, and passes a resolved `articles` array to the client; it never fetches on the client. Both collections have `afterChange`/`afterDelete` hooks that call `revalidateTag('window-content')` + `revalidatePath` for instant cache busting on save. See [Content section blocks & scroll animations](#content-section-blocks--scroll-animations) for the full set.
 
 **Window toolbar fields** (`windowDisplaySearch`, `windowDisplayViewToggle`, `windowDefaultView`, `windowDisplayHistory`) are on all three collections via `windowBehaviorFields`. See [Phase 2.5](#25-window-toolbar--search-view-toggle-in-window-history) for architecture details.
+
+**Startup window fields** (`windowOpenOnStartup`, `windowStartupViewports`, `windowStartupOrder`) are on Windows and Articles only via `windowStartupFields`. Root layout fetches eligible docs, sorts by startup order → shortcut order → title, and opens them once per page session through the managed window stack.
 
 **Querying conventions:**
 - Always pass `select` to limit returned fields in listing queries. Use `as const` so TypeScript infers literal `true` values required by Payload's `select` type.
@@ -516,14 +521,24 @@ Every content collection (`windows`, `articles`, `forms`) now has a **Window** t
 | `windowDefaultView` | select (`grid`/`table`) | `grid` | Initial view mode when `windowDisplayViewToggle` is true |
 | `windowDisplayHistory` | checkbox | `false` | Renders back / forward buttons; article links navigate in-window instead of opening new windows |
 
+**Startup fields** (Windows and Articles only)
+
+| Field | Type | Default | Effect |
+|-------|------|---------|--------|
+| `windowOpenOnStartup` | checkbox | `false` | Opens this content window automatically when the visitor lands on `/` |
+| `windowStartupViewports` | multi-select (`desktop`/`mobile`) | `['desktop']` | Limits startup opening by viewport |
+| `windowStartupOrder` | number | `0` | Sorts startup windows before `shortcutOrder` and title |
+
 **Adding to a new collection:**
 
 ```ts
-import { windowBehaviorFields } from '@/fields/windowBehavior'
+import { windowBehaviorFields, windowStartupFields } from '@/fields/windowBehavior'
 
 // Inside the tabs array:
-{ label: 'Window', fields: windowBehaviorFields },
+{ label: 'Window', fields: [...windowBehaviorFields, ...windowStartupFields] },
 ```
+
+Use only `windowBehaviorFields` for Forms.
 
 **Reading in the page route (`[slug]/page.tsx`):**
 
@@ -541,7 +556,7 @@ import { windowBehaviorFields } from '@/fields/windowBehavior'
 />
 ```
 
-Secondary windows opened via `useWindowManager.open(slug)` get behavior automatically from `getWindowContent` which returns `behavior: WindowBehaviorConfig` alongside the content.
+Content windows opened via `useWindowManager.openContent(slug)` (or the compatibility alias `open(slug)`) get behavior automatically from `getWindowContent` which returns `behavior: WindowBehaviorConfig` alongside the content. System windows open with `openSystem('cookie-notice' | 'cookie-preferences' | 'display-options')`.
 
 **Resize implementation** uses pointer capture on each handle (`role="separator"`, keyboard arrow keys, `data-resizing` attribute suppresses CSS transitions during drag). Size is persisted to `localStorage['window-positions'][slug]` as `{ x, y, w, h }`.
 
@@ -554,11 +569,18 @@ Secondary windows opened via `useWindowManager.open(slug)` get behavior automati
 
 ### 2.1 Window state management
 
-- [ ] Write unit tests for the URL state parsing util:
+- Managed window identities are typed:
+  - `content:{slug}` for Windows, Articles, and Forms content.
+  - `system:cookie-notice`, `system:cookie-preferences`, `system:display-options` for system windows.
+- `useWindowManager` exposes `openContent(slug)`, `open(slug)` as a compatibility alias, `openSystem(key)`, `close(id)`, `focus(id)`, `minimize(id)`, and content-only in-window navigation.
+- Content windows persist open state in `sessionStorage['open-windows']`; system windows do not persist open state. Both content and system windows can persist geometry in `localStorage['window-positions']` using stable IDs.
+- `systemWindowRegistry` defines each system window's title, default geometry, z-index priority, behavior flags, and renderer. Cookie notice/preference and Display Options all use `managed-window-shell.tsx`.
+- Root `/` startup content is opened once per page session after viewport resolution. Desktop renders all eligible managed windows; mobile keeps the managed stack and shows the focused/top window as the active sheet.
+
+- [x] Write unit tests for the URL state parsing util:
   - `parseOpenWindows('?open=works,welcome')` → `['works', 'welcome']`
   - Invalid or unknown slugs are filtered out
-- [ ] Implement state:
-  - URL search param `?open=slug1,slug2` drives which windows are rendered (SSR-readable; server sets correct OG tags)
+- [x] Implement state:
   - `localStorage['window-positions']` stores `{ [slug]: { x, y, w, h } }` — restored client-side only
   - `useWindowManager` hook (`src/hooks/useWindowManager.ts`) manages open list, positions, zIndex stack
 
@@ -667,7 +689,7 @@ false → total = 0     → isComplete = true   (mobile: exit immediately)
 true  → total = N     → waits for N ready   (desktop: count up to 100%)
 ```
 
-Pre-rendered windows and the Taskbar only render when `isDesktop === true`. On mobile, all content is served via the `PageDrawerShell` route system as before.
+Pre-rendered windows and the Taskbar only render when `isDesktop === true`. On mobile, regular route navigation still uses `PageDrawerShell`; managed startup/system windows keep their stack in `useWindowManager` and render the focused/top window as the active sheet.
 
 **Key files:**
 - `src/lib/windowContent.ts` — server-only `unstable_cache` fetch + `WindowContentResult` type
@@ -902,11 +924,13 @@ shared set; Articles also get the doc-image-backed **Hero**.
 |---|---|---|
 | Rich Text | `richText` | Lexical rich text |
 | Works / Article List | `articleList` | Grid + table views (toggle via window toolbar); table rows show tags + year with a mouse-following hover preview |
+| Welcome Intro | `welcomeIntro` | Animated title, role, and descriptor for the welcome surface |
+| Interactive Portrait | `interactivePortrait` | React/SVG portrait with pointer-follow gaze, idle gaze loop, and blinking |
 | Summary | `summary` | 1/3 + 2/3 columns with a draw-on-scroll divider |
 | Stats | `stats` | Up to three count-up figures (single value string like `"30Mil"`/`"$30,000"`/`"21%"` + label) |
 | Image | `imageSection` | Full-width image with the de-pixelation reveal |
 | Description | `description` | 1/3 animated title + 2/3 rich text |
-| Title | `sectionTitle` | Letter-by-letter animated title |
+| Title | `sectionTitle` | Letter-by-letter animated title with optional role/description; after `interactivePortrait` it renders with the compact welcome-card styling |
 | Hero | `hero` | **Articles only** — animated title + 2/3 parallax image from the article's `bgImage`/`fgImage` |
 
 Article-only fields (Content tab): `year`, `tags` (relationship → **Tags**

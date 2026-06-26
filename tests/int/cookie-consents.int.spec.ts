@@ -36,6 +36,7 @@ describe('CookieConsents collection', () => {
       req: mockReq as any,
       operation: 'create',
       collection: null as any,
+      context: {},
     })
 
     expect(result.ipAddress).toBe('1.2.3.4')
@@ -52,6 +53,7 @@ describe('CookieConsents collection', () => {
       req: mockReq as any,
       operation: 'update',
       collection: null as any,
+      context: {},
     })
 
     // Should return data unchanged on update

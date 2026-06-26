@@ -1,5 +1,14 @@
-import { describe, it, expect } from 'vitest'
-import { parseOpenWindows, serializeOpenWindows } from '../../src/lib/window-state'
+import { describe, it, expect, vi } from 'vitest'
+import {
+  BASE_Z,
+  contentWindowId,
+  loadWindowsFromSession,
+  parseOpenWindows,
+  saveWindowsToSession,
+  serializeOpenWindows,
+  systemWindowId,
+  type ManagedWindow,
+} from '../../src/lib/window-state'
 
 describe('parseOpenWindows', () => {
   it('returns slugs from the open param', () => {
@@ -54,5 +63,54 @@ describe('serializeOpenWindows', () => {
     const serialized = serializeOpenWindows(slugs)
     const params = new URLSearchParams(`open=${serialized}`)
     expect(parseOpenWindows(params)).toEqual(slugs)
+  })
+})
+
+describe('managed window session persistence', () => {
+  it('persists content windows but not system window open state', () => {
+    const storage = new Map<string, string>()
+    vi.stubGlobal('window', {
+      sessionStorage: {
+        getItem: (key: string) => storage.get(key) ?? null,
+        setItem: (key: string, value: string) => storage.set(key, value),
+      },
+    })
+
+    const contentWindow: ManagedWindow = {
+      id: contentWindowId('about'),
+      kind: 'content',
+      rootSlug: 'about',
+      slug: 'about',
+      historyStack: ['about'],
+      historyIndex: 0,
+      zIndex: BASE_Z,
+      minimized: false,
+      cascadeIndex: 0,
+      pendingMinimize: false,
+    }
+    const systemWindow: ManagedWindow = {
+      id: systemWindowId('display-options'),
+      kind: 'system',
+      systemKey: 'display-options',
+      rootSlug: systemWindowId('display-options'),
+      slug: systemWindowId('display-options'),
+      historyStack: [],
+      historyIndex: 0,
+      zIndex: BASE_Z + 1,
+      minimized: false,
+      cascadeIndex: 1,
+      pendingMinimize: false,
+    }
+
+    saveWindowsToSession([contentWindow, systemWindow])
+
+    const raw = storage.get('open-windows')
+    expect(raw).toContain('about')
+    expect(raw).not.toContain('display-options')
+    expect(loadWindowsFromSession()).toMatchObject([
+      { id: contentWindowId('about'), kind: 'content', rootSlug: 'about' },
+    ])
+
+    vi.unstubAllGlobals()
   })
 })

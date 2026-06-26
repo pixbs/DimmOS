@@ -1,5 +1,5 @@
 import { describe, it, expect, vi } from 'vitest'
-import { render } from '@testing-library/react'
+import { fireEvent, render, waitFor } from '@testing-library/react'
 import type { Media } from '@/payload-types'
 
 // framer-motion's useScroll measures a scroll container via a frameloop that
@@ -15,6 +15,9 @@ import { StatsView } from '@/components/content-blocks/sections/stats'
 import { ImageSectionView } from '@/components/content-blocks/sections/image-section'
 import { DescriptionView } from '@/components/content-blocks/sections/description'
 import { SectionTitleView } from '@/components/content-blocks/sections/section-title'
+import { WelcomeIntroView } from '@/components/content-blocks/sections/welcome-intro'
+import { InteractivePortraitView } from '@/components/content-blocks/sections/interactive-portrait'
+import { shouldRenderTitleAsWelcomeIntro, titleBlockToWelcomeIntro } from '@/components/content-blocks/sections/welcome-title'
 import { DocumentMediaProvider } from '@/components/content-blocks/document-media-context'
 
 const fakeMedia = (url: string, alt: string): Media =>
@@ -114,13 +117,129 @@ describe('DescriptionView', () => {
 })
 
 describe('SectionTitleView', () => {
-  it('renders the title and description', () => {
+  it('renders the title, role, and description', () => {
     const { container } = render(
       <SectionTitleView
-        block={{ blockType: 'sectionTitle', title: 'Section', description: 'a description' }}
+        block={{ blockType: 'sectionTitle', title: 'Section', role: 'Role', description: 'a description' }}
       />,
     )
     expect(container.querySelector('.sr-only')?.textContent).toBe('Section')
+    expect(container.textContent).toContain('Role')
     expect(container.textContent).toContain('a description')
+  })
+})
+
+describe('welcome title compatibility', () => {
+  it('maps a portrait-prefaced section title into the welcome intro shape', () => {
+    const titleBlock = {
+      blockType: 'sectionTitle' as const,
+      title: 'Dimm Kyselov',
+      role: 'Product designer',
+      description: 'I prioritize data-driven design process.',
+    }
+
+    expect(shouldRenderTitleAsWelcomeIntro(titleBlock, { blockType: 'interactivePortrait' })).toBe(true)
+    expect(titleBlockToWelcomeIntro(titleBlock)).toEqual({
+      blockType: 'welcomeIntro',
+      title: 'Dimm Kyselov',
+      role: 'Product designer',
+      descriptor: 'I prioritize data-driven design process.',
+    })
+  })
+})
+
+describe('WelcomeIntroView', () => {
+  it('renders title, role, and descriptor', () => {
+    const { container } = render(
+      <WelcomeIntroView
+        block={{
+          blockType: 'welcomeIntro',
+          title: 'Dimm Kyselov',
+          role: 'Product designer',
+          descriptor: 'I prioritize data-driven design process.',
+        }}
+      />,
+    )
+    expect(container.querySelector('.sr-only')?.textContent).toBe('Dimm Kyselov')
+    expect(container.textContent).toContain('Product designer')
+    expect(container.textContent).toContain('data-driven design')
+    expect(container.querySelector('[data-block-type="welcomeIntro"]')?.className).toContain('@container')
+    expect(container.querySelector('h1')?.className).toContain('clamp(1.5rem,7cqw,3rem)')
+    expect(container.querySelector('h1 [aria-hidden="true"]')?.className).toContain('justify-center')
+    expect(container.querySelector('p')?.className).toContain('clamp(0.875rem,2.2cqw,1.125rem)')
+    expect(container.querySelectorAll('p')[1]?.className).toContain('max-w-[min(100%,32rem)]')
+    expect(container.querySelectorAll('p')[1]?.className).toContain('bg-bgs')
+  })
+})
+
+describe('InteractivePortraitView', () => {
+  it('preserves the source SVG root fill mode so stroke paths do not fill black', () => {
+    const { container } = render(<InteractivePortraitView block={{ blockType: 'interactivePortrait' }} />)
+    const svg = container.querySelector('svg')
+
+    expect(svg?.getAttribute('viewBox')).toBe('0 0 171 171')
+    expect(svg?.getAttribute('width')).toBe('171')
+    expect(svg?.getAttribute('height')).toBe('171')
+    expect(svg?.getAttribute('fill')).toBe('none')
+    expect(container.querySelectorAll('[data-look-index]')).toHaveLength(41)
+    expect(svg?.parentElement?.className).toContain('clamp(8rem,32cqw,14rem)')
+  })
+
+  it('tracks pointer gaze on fine pointer devices', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })))
+
+    const { container, getByTestId } = render(<InteractivePortraitView block={{ blockType: 'interactivePortrait' }} />)
+    const portrait = getByTestId('interactive-portrait')
+    const svg = container.querySelector<SVGSVGElement>('svg')
+    if (svg) {
+      vi.spyOn(svg, 'getBoundingClientRect').mockReturnValue({
+        x: 0,
+        y: 0,
+        left: 0,
+        top: 0,
+        right: 128,
+        bottom: 128,
+        width: 128,
+        height: 128,
+        toJSON: () => ({}),
+      })
+    }
+
+    fireEvent.pointerMove(portrait, { clientX: 1000, clientY: 40 })
+
+    await waitFor(() => {
+      expect(Number(portrait.dataset.gazeX)).toBeGreaterThan(0)
+      expect(portrait.dataset.gazeMode).toBe('pointer')
+    })
+
+    vi.unstubAllGlobals()
+  })
+
+  it('does not corrupt paths when pointer events arrive before layout is measurable', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: true })))
+
+    const { container } = render(<InteractivePortraitView block={{ blockType: 'interactivePortrait' }} />)
+    const facePath = container.querySelector<SVGPathElement>('[data-look-index="16"]')
+
+    fireEvent.pointerMove(window, { clientX: 0, clientY: 0 })
+
+    await waitFor(() => {
+      expect(facePath?.getAttribute('d')).not.toContain('NaN')
+    })
+
+    vi.unstubAllGlobals()
+  })
+
+  it('uses idle gaze when no fine pointer is available', async () => {
+    vi.stubGlobal('matchMedia', vi.fn(() => ({ matches: false })))
+
+    const { getByTestId } = render(<InteractivePortraitView block={{ blockType: 'interactivePortrait' }} />)
+    const portrait = getByTestId('interactive-portrait')
+
+    await waitFor(() => {
+      expect(portrait.dataset.gazeMode).toBe('idle')
+    })
+
+    vi.unstubAllGlobals()
   })
 })

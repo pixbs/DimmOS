@@ -30,4 +30,9 @@ describe('AnimatedText', () => {
     const { container } = render(<AnimatedText as="h1">Title</AnimatedText>)
     expect(container.querySelector('h1')).toBeTruthy()
   })
+
+  it('passes classes to the animated visual copy', () => {
+    const { container } = render(<AnimatedText innerClassName="justify-center">Centered Title</AnimatedText>)
+    expect(container.querySelector('[aria-hidden="true"]')?.className).toContain('justify-center')
+  })
 })

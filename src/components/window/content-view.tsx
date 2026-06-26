@@ -16,7 +16,10 @@ import {
   ImageSectionView,
   DescriptionView,
   SectionTitleView,
+  WelcomeIntroView,
+  InteractivePortraitView,
 } from '@/components/content-blocks/sections'
+import { shouldRenderTitleAsWelcomeIntro, titleBlockToWelcomeIntro } from '@/components/content-blocks/sections/welcome-title'
 import { DocumentMediaProvider } from '@/components/content-blocks/document-media-context'
 import { Works } from '@/components/content-blocks/works'
 import type { Article } from '@/payload-types'
@@ -45,7 +48,7 @@ function ArticleListBlock({ block }: { block: ResolvedBlock & { blockType: 'arti
   )
 }
 
-function BlockRenderer({ block }: { block: ResolvedBlock }) {
+function BlockRenderer({ block, previousBlock }: { block: ResolvedBlock; previousBlock?: ResolvedBlock }) {
   switch (block.blockType) {
     case 'richText':
       return <RichTextView block={block} />
@@ -60,7 +63,14 @@ function BlockRenderer({ block }: { block: ResolvedBlock }) {
     case 'description':
       return <DescriptionView block={block} />
     case 'sectionTitle':
+      if (shouldRenderTitleAsWelcomeIntro(block, previousBlock)) {
+        return <WelcomeIntroView block={titleBlockToWelcomeIntro(block)} />
+      }
       return <SectionTitleView block={block} />
+    case 'welcomeIntro':
+      return <WelcomeIntroView block={block} />
+    case 'interactivePortrait':
+      return <InteractivePortraitView block={block} />
     case 'articleList':
       return <ArticleListBlock block={block} />
     default:
@@ -76,7 +86,7 @@ function ArticleBlockContent({ article, blocks }: { article: Article; blocks: Re
       <DocumentMediaProvider background={article.bgImage} foreground={article.fgImage}>
         <div className="flex flex-col gap-6 px-6 py-8">
           {blocks.map((block, i) => (
-            <BlockRenderer key={i} block={block} />
+            <BlockRenderer key={i} block={block} previousBlock={blocks[i - 1]} />
           ))}
         </div>
       </DocumentMediaProvider>
@@ -118,7 +128,7 @@ export function ContentView({
       <WindowScaffold footer={data.buttons.length ? <WindowButtons buttons={data.buttons} /> : undefined}>
         <div className="flex flex-col gap-6 px-6 py-8">
           {data.blocks.map((block, i) => (
-            <BlockRenderer key={i} block={block} />
+            <BlockRenderer key={i} block={block} previousBlock={data.blocks[i - 1]} />
           ))}
         </div>
       </WindowScaffold>

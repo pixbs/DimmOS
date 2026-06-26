@@ -18,11 +18,11 @@ async function getConsent(page: Page) {
 }
 
 async function expectDrawerOpen(dialog: ReturnType<Page['locator']>) {
-  await expect(dialog).toHaveAttribute('data-state', 'open', { timeout: 10000 })
+  await expect(dialog).toBeVisible({ timeout: 10000 })
 }
 
 async function expectDrawerClosed(dialog: ReturnType<Page['locator']>) {
-  await expect(dialog).toHaveAttribute('data-state', 'closed', { timeout: 5000 })
+  await expect(dialog).not.toBeVisible({ timeout: 5000 })
 }
 
 test.describe('Cookie Banner', () => {
@@ -31,10 +31,9 @@ test.describe('Cookie Banner', () => {
     await clearConsent(page)
     await page.reload()
 
-    // The banner drawer uses z-50 (DrawerShell)
-    const banner = page.locator('[role="dialog"]').filter({ hasText: 'Cookie Notice' })
+    const banner = page.locator('[data-system-window-key="cookie-notice"]')
     await expectDrawerOpen(banner)
-    await expect(banner.locator('h2')).toContainText('Cookie')
+    await expect(banner.locator('h2')).toContainText(/cookies/i)
   })
 
   test('Accept All closes banner and stores all categories', async ({ page }) => {
@@ -42,7 +41,7 @@ test.describe('Cookie Banner', () => {
     await clearConsent(page)
     await page.reload()
 
-    const banner = page.locator('[role="dialog"]').filter({ hasText: 'Cookie Notice' })
+    const banner = page.locator('[data-system-window-key="cookie-notice"]')
     await expectDrawerOpen(banner)
     await page.getByRole('button', { name: 'Accept All' }).click()
 
@@ -62,7 +61,7 @@ test.describe('Cookie Banner', () => {
     await clearConsent(page)
     await page.reload()
 
-    const banner = page.locator('[role="dialog"]').filter({ hasText: 'Cookie Notice' })
+    const banner = page.locator('[data-system-window-key="cookie-notice"]')
     await expectDrawerOpen(banner)
     await page.getByRole('button', { name: 'Accept All' }).click()
     await expectDrawerClosed(banner)
@@ -79,7 +78,7 @@ test.describe('Cookie Banner', () => {
     await clearConsent(page)
     await page.reload()
 
-    const banner = page.locator('[role="dialog"]').filter({ hasText: 'Cookie Notice' })
+    const banner = page.locator('[data-system-window-key="cookie-notice"]')
     await expectDrawerOpen(banner)
     await page.getByRole('button', { name: 'Reject' }).click()
 
@@ -88,20 +87,17 @@ test.describe('Cookie Banner', () => {
     expect(consent!.categories).toEqual(['essential'])
   })
 
-  test('Configure navigates to /cookie-preferences page', async ({ page }) => {
+  test('Configure opens the managed cookie preferences window', async ({ page }) => {
     await page.goto(BASE_URL)
     await clearConsent(page)
     await page.reload()
 
-    const banner = page.locator('[role="dialog"]').filter({ hasText: 'Cookie Notice' })
+    const banner = page.locator('[data-system-window-key="cookie-notice"]')
     await expectDrawerOpen(banner)
     await page.getByRole('button', { name: 'Configure' }).click()
 
-    await page.waitForURL(`${BASE_URL}/cookie-preferences`, { timeout: 5000 })
-    expect(page.url()).toContain('/cookie-preferences')
-
-    // The preferences page-drawer (PageDrawerShell) should be open.
-    // It contains the Save Preferences button.
+    await expectDrawerClosed(banner)
+    await expect(page.locator('[data-system-window-key="cookie-preferences"]')).toBeVisible({ timeout: 5000 })
     await expect(page.getByRole('button', { name: 'Save Preferences' })).toBeVisible({ timeout: 5000 })
   })
 
@@ -110,14 +106,12 @@ test.describe('Cookie Banner', () => {
     await clearConsent(page)
     await page.reload()
 
-    const banner = page.locator('[role="dialog"]').filter({ hasText: 'Cookie Notice' })
+    const banner = page.locator('[data-system-window-key="cookie-notice"]')
     await expectDrawerOpen(banner)
     await page.getByRole('button', { name: 'Configure' }).click()
-    await page.waitForURL(`${BASE_URL}/cookie-preferences`)
+    const preferences = page.locator('[data-system-window-key="cookie-preferences"]')
+    await expect(preferences).toBeVisible()
 
-    // Wait for the cookie notice banner to finish closing before interacting
-    // (suppressBanner becomes true once primarySlug updates; the 300ms CSS
-    // transition may still be running when waitForURL resolves)
     await expectDrawerClosed(banner)
 
     // Essential toggle should be disabled (always on)
@@ -132,7 +126,7 @@ test.describe('Cookie Banner', () => {
     }
 
     await page.getByRole('button', { name: 'Save Preferences' }).click()
-    await page.waitForURL(BASE_URL, { timeout: 5000 })
+    await expect(preferences).not.toBeVisible({ timeout: 5000 })
 
     const consent = await getConsent(page)
     expect(consent).not.toBeNull()
@@ -145,16 +139,16 @@ test.describe('Cookie Banner', () => {
     await clearConsent(page)
     await page.reload()
 
-    const banner = page.locator('[role="dialog"]').filter({ hasText: 'Cookie Notice' })
+    const banner = page.locator('[data-system-window-key="cookie-notice"]')
     await expectDrawerOpen(banner)
     await page.getByRole('button', { name: 'Configure' }).click()
-    await page.waitForURL(`${BASE_URL}/cookie-preferences`)
+    const preferences = page.locator('[data-system-window-key="cookie-preferences"]')
 
     await expect(page.getByRole('button', { name: 'Save Preferences' })).toBeVisible()
 
     // Close without saving
     await page.getByRole('button', { name: 'Close', exact: true }).click()
-    await page.waitForURL(BASE_URL, { timeout: 5000 })
+    await expect(preferences).not.toBeVisible({ timeout: 5000 })
 
     // Banner should reappear since no consent was saved
     await expectDrawerOpen(banner)
@@ -170,7 +164,7 @@ test.describe('Cookie Banner', () => {
     await page.reload()
 
     // Accept all first
-    const banner = page.locator('[role="dialog"]').filter({ hasText: 'Cookie Notice' })
+    const banner = page.locator('[data-system-window-key="cookie-notice"]')
     await expectDrawerOpen(banner)
     await page.getByRole('button', { name: 'Accept All' }).click()
     await expectDrawerClosed(banner)
@@ -180,6 +174,7 @@ test.describe('Cookie Banner', () => {
 
     // Navigate directly to preferences (already has consent — update flow)
     await page.goto(`${BASE_URL}/cookie-preferences`)
+    await expect(page.locator('[data-system-window-key="cookie-preferences"]')).toBeVisible({ timeout: 5000 })
     await expect(page.getByRole('button', { name: 'Save Preferences' })).toBeVisible({ timeout: 5000 })
 
     // All toggles should reflect current consent (all enabled after Accept All)

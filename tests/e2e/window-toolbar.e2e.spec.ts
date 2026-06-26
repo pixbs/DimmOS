@@ -19,12 +19,17 @@ function bypassCookies(page: Page) {
   })
 }
 
-// Open a secondary window by injecting it into sessionStorage before navigating to /
+// Open a secondary window through the same root URL contract the app supports.
 function openSecondaryWindow(page: Page, slug: string) {
   return page.addInitScript((s) => {
-    sessionStorage.setItem('open-windows', JSON.stringify([
-      { slug: s, zIndex: 51, minimized: false, cascadeIndex: 0 },
-    ]))
+    try {
+      const url = new URL(window.location.href)
+      if (url.pathname !== '/') return
+      url.searchParams.set('open', s)
+      window.history.replaceState(null, '', `${url.pathname}${url.search}${url.hash}`)
+    } catch {
+      // Ignore non-standard initial documents such as about:blank.
+    }
   }, slug)
 }
 

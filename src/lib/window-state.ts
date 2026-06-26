@@ -1,7 +1,31 @@
 const SLUG_RE = /^[a-z0-9]+(?:-[a-z0-9]+)*$/
+export const SYSTEM_WINDOW_KEYS = ['cookie-notice', 'cookie-preferences', 'display-options'] as const
+
+export type SystemWindowKey = (typeof SYSTEM_WINDOW_KEYS)[number]
+export type ManagedWindowKind = 'content' | 'system'
+export type ContentWindowId = `content:${string}`
+export type SystemWindowId = `system:${SystemWindowKey}`
+export type ManagedWindowId = ContentWindowId | SystemWindowId
 
 function isValidSlug(s: string): boolean {
   return SLUG_RE.test(s)
+}
+
+export function contentWindowId(slug: string): ContentWindowId {
+  return `content:${slug}`
+}
+
+export function systemWindowId(key: SystemWindowKey): SystemWindowId {
+  return `system:${key}`
+}
+
+export function isSystemWindowKey(key: string): key is SystemWindowKey {
+  return (SYSTEM_WINDOW_KEYS as readonly string[]).includes(key)
+}
+
+export function isSystemWindowId(id: string): id is SystemWindowId {
+  if (!id.startsWith('system:')) return false
+  return isSystemWindowKey(id.slice('system:'.length))
 }
 
 export function parseOpenWindows(
@@ -19,6 +43,10 @@ export function serializeOpenWindows(slugs: string[]): string {
 // --- Window session state ---
 
 export interface ManagedWindow {
+  /** Typed stable identity, e.g. content:about or system:cookie-notice. */
+  id: ManagedWindowId
+  kind: ManagedWindowKind
+  systemKey?: SystemWindowKey
   /** Stable identity: preloading, localStorage key, animation targets. Never changes. */
   rootSlug: string
   /** Current content slug — changes on in-window navigation. What the taskbar shows. */
@@ -55,6 +83,8 @@ export function loadWindowsFromSession(): ManagedWindow[] {
           typeof w.minimized === 'boolean',
       )
       .map((w): ManagedWindow => ({
+        id: contentWindowId(w.slug),
+        kind: 'content',
         rootSlug: w.slug,   // saved as 'slug' for backward compat; always restore at root
         slug: w.slug,
         historyStack: [w.slug],
@@ -79,12 +109,14 @@ export function saveWindowsToSession(wins: ManagedWindow[]): void {
     window.sessionStorage.setItem(
       SESSION_KEY,
       JSON.stringify(
-        wins.map((w) => ({
-          slug: w.rootSlug,
-          zIndex: w.zIndex,
-          minimized: w.minimized,
-          cascadeIndex: w.cascadeIndex,
-        })),
+        wins
+          .filter((w) => w.kind === 'content')
+          .map((w) => ({
+            slug: w.rootSlug,
+            zIndex: w.zIndex,
+            minimized: w.minimized,
+            cascadeIndex: w.cascadeIndex,
+          })),
       ),
     )
   } catch (error) {

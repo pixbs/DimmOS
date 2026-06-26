@@ -17,6 +17,7 @@ export function SectionTitleView({ block }: { block: TitleBlock }) {
       >
         {block.title}
       </AnimatedText>
+      {block.role && <p className="text-sm font-medium text-fg/75">{block.role}</p>}
       {block.description && (
         <p className="max-w-2xl leading-relaxed text-fg/60">{block.description}</p>
       )}
