@@ -33,7 +33,7 @@ test.describe('Cookie Banner', () => {
 
     const banner = page.locator('[data-system-window-key="cookie-notice"]')
     await expectDrawerOpen(banner)
-    await expect(banner.locator('h2')).toContainText('Cookie')
+    await expect(banner.locator('h2')).toContainText(/cookies/i)
   })
 
   test('Accept All closes banner and stores all categories', async ({ page }) => {

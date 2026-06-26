@@ -1,5 +1,5 @@
 import { StrictMode, type ReactNode } from 'react'
-import { renderHook, waitFor } from '@testing-library/react'
+import { act, renderHook, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { useWindowManager } from '@/hooks/useWindowManager'
 
@@ -47,5 +47,15 @@ describe('useWindowManager', () => {
     expect(JSON.parse(window.sessionStorage.getItem('open-windows') ?? '[]')).toEqual([
       { slug: 'restored-window', zIndex: 51, minimized: false, cascadeIndex: 2 },
     ])
+
+    act(() => {
+      result.current.close('restored-window')
+    })
+
+    await waitFor(() => {
+      expect(result.current.windows.map((win) => win.rootSlug)).not.toContain('restored-window')
+    })
+
+    expect(JSON.parse(window.sessionStorage.getItem('open-windows') ?? '[]')).toEqual([])
   })
 })

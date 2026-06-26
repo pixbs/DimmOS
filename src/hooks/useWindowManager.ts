@@ -124,6 +124,7 @@ export function useWindowManager(): WindowManager {
   )
   const [realPrimarySlug, setRealPrimarySlug] = useState<string | null>(pathSlug)
   const [sessionRestored, setSessionRestored] = useState(false)
+  const restoredSessionSlugsRef = useRef<string[]>([])
 
   const windowsRef = useRef(windows)
   windowsRef.current = windows
@@ -138,6 +139,7 @@ export function useWindowManager(): WindowManager {
   // Effect 1: restore floating windows from sessionStorage (mount only)
   useEffect(() => {
     const stored = loadWindowsFromSession()
+    restoredSessionSlugsRef.current = stored.map((win) => win.rootSlug)
     if (stored.length > 0) {
       setWindows((prev) => {
         const curPrimary = realPrimarySlugRef.current
@@ -154,6 +156,12 @@ export function useWindowManager(): WindowManager {
   // Effect 2: sync sessionStorage + cosmetic URL on every windows change
   useEffect(() => {
     if (!sessionRestored) return
+    const isWaitingForRestoredWindows = restoredSessionSlugsRef.current.some((slug) =>
+      slug !== realPrimarySlugRef.current &&
+      !windows.some((win) => win.kind === 'content' && win.rootSlug === slug)
+    )
+    if (isWaitingForRestoredWindows) return
+    restoredSessionSlugsRef.current = []
     saveWindowsToSession(windows)
     updateCosmeticUrl(windows, realPrimarySlugRef.current, cosmeticChangeRef)
   }, [sessionRestored, windows])
