@@ -1,9 +1,10 @@
 'use client'
 
-import { useEffect, useMemo, useState, type ReactNode } from 'react'
+import { useEffect, useMemo, useRef, useState, type ReactNode } from 'react'
 import { usePathname } from 'next/navigation'
 import { useWindowManager } from '@/hooks/useWindowManager'
 import { useIsDesktop } from '@/hooks/useIsDesktop'
+import { parseOpenWindows } from '@/lib/window-state'
 import { useWindowManagerContext, WindowManagerContextProvider } from './manager-context'
 import { AdditionalWindow } from './AdditionalWindow'
 import { SystemWindow } from './system-window'
@@ -238,6 +239,7 @@ function WindowLifecycleControllers({
 }) {
   const { needsBanner, isLoading } = useCookieConsent()
   const { openSystem, close, openStartupContent } = useWindowManagerContext()
+  const openedQueryRef = useRef<string | null>(null)
 
   useEffect(() => {
     if (isLoading) return
@@ -265,6 +267,22 @@ function WindowLifecycleControllers({
       delete document.documentElement.dataset.displayOptionsReady
     }
   }, [openSystem])
+
+  useEffect(() => {
+    if (!isDesktopResolved || pathname !== '/') return
+    const params = new URLSearchParams(window.location.search)
+    const rawOpenParam = params.get('open') ?? ''
+    if (!rawOpenParam) {
+      openedQueryRef.current = null
+      return
+    }
+    if (openedQueryRef.current === rawOpenParam) return
+    openedQueryRef.current = rawOpenParam
+
+    const slugs = parseOpenWindows(params)
+    if (slugs.length === 0) return
+    openStartupContent(slugs)
+  }, [isDesktopResolved, openStartupContent, pathname])
 
   useEffect(() => {
     if (!isDesktopResolved || pathname !== '/' || startupWindows.length === 0) return
