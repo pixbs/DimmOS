@@ -24,14 +24,14 @@ export function Shortcut({ icon, name, href, color, slug, className, onClick }: 
       data-cursor-action="window"
       draggable={false}
       className={cn(
-        'flex flex-col items-center justify-center gap-2 no-underline text-white [-webkit-tap-highlight-color:transparent]',
+        'flex flex-col items-center gap-[calc(var(--tile)*0.125)] no-underline text-white [-webkit-tap-highlight-color:transparent] justify-center',
         className ?? 'col-span-2',
       )}
     >
       <motion.div
         whileTap={{ scale: 0.92 }}
         transition={{ duration: 0.12, ease: 'easeOut' }}
-        className="h-12 w-12 rounded-md flex items-center justify-center text-[24px] leading-none"
+        className="h-[calc(var(--tile)*0.75)] w-[calc(var(--tile)*0.75)] rounded-md flex items-center justify-center text-[calc(var(--tile)*0.375)] leading-none"
         style={{
           background: `color-mix(in srgb, ${color} 22%, #0d0d0d)`,
           transition: 'background 120ms ease, backdrop-filter 120ms ease',
