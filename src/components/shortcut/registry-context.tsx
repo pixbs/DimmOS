@@ -5,6 +5,8 @@ import { createContext, useContext, useMemo, type ReactNode } from 'react'
 export interface ShortcutMeta {
   icon: string
   name: string
+  title: string
+  documentTitle?: string
   color: string
   category: 'windows' | 'articles' | 'forms'
 }

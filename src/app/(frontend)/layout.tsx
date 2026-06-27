@@ -23,6 +23,7 @@ import 'remixicon/fonts/remixicon.css'
 export const dynamic = 'force-dynamic'
 
 const onest = Onest({ subsets: ['latin'] })
+const SITE_TITLE = "Dimm's OS"
 
 export const metadata: Metadata = {
   title: "Dimm's OS",
@@ -46,6 +47,7 @@ async function fetchData() {
   const contentSelect = {
     title: true,
     slug: true,
+    meta: true,
     shortcutName: true,
     shortcutIcon: true,
     shortcutOrder: true,
@@ -87,6 +89,13 @@ async function fetchData() {
   const registryEntries = allDocs.map((doc) => ({
     icon:     doc.shortcutIcon ?? 'ri-file-fill',
     name:     doc.shortcutName ?? doc.title,
+    title:    doc.title,
+    documentTitle:
+      'meta' in doc && doc.meta?.title
+        ? doc.meta.title
+        : doc._col === 'forms'
+          ? doc.title
+          : `${doc.title} \u2014 ${SITE_TITLE}`,
     slug:     doc.slug,
     color:    COLLECTION_META[doc._col].color,
     category: doc._col,

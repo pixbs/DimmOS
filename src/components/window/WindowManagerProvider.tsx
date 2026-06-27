@@ -14,6 +14,7 @@ import { PagePreloader } from '@/components/preloader/PagePreloader'
 import type { WindowContentResult } from '@/lib/windowContent'
 import type { SystemWindowData } from './system-window-types'
 import { useCookieConsent } from '@/components/cookie-banner/context'
+import { WindowHeadSync } from './window-head-sync'
 
 interface WindowManagerProviderProps {
   children: ReactNode
@@ -103,6 +104,7 @@ function WindowManagerInner({
 
   return (
     <WindowManagerContextProvider manager={manager}>
+      <WindowHeadSync />
       <WindowLifecycleControllers
         isDesktop={isDesktop}
         isDesktopResolved={isDesktopResolved}
