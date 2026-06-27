@@ -9,8 +9,6 @@ import { useWindowManagerContext, WindowManagerContextProvider } from './manager
 import { AdditionalWindow } from './AdditionalWindow'
 import { SystemWindow } from './system-window'
 import { Taskbar } from '@/components/taskbar'
-import { PreloaderProvider, usePreloader } from '@/components/preloader/preloader-context'
-import { PagePreloader } from '@/components/preloader/PagePreloader'
 import type { WindowContentResult } from '@/lib/windowContent'
 import type { SystemWindowData } from './system-window-types'
 import { useCookieConsent } from '@/components/cookie-banner/context'
@@ -45,25 +43,20 @@ export function WindowManagerProvider({
     [shortcutSlugs, startupWindows],
   )
 
-  const total = isDesktop === null ? null : isDesktop ? preloadedSlugs.length : 0
-
   return (
-    <PreloaderProvider total={total}>
-      <WindowManagerInner
-        isDesktop={isDesktop ?? false}
-        isDesktopResolved={isDesktop !== null}
-        preloadedContents={preloadedContents}
-        preloadedSlugs={preloadedSlugs}
-        startupWindows={startupWindows}
-        systemWindowData={systemWindowData}
-      >
-        {children}
-      </WindowManagerInner>
-    </PreloaderProvider>
+    <WindowManagerInner
+      isDesktop={isDesktop ?? false}
+      isDesktopResolved={isDesktop !== null}
+      preloadedContents={preloadedContents}
+      preloadedSlugs={preloadedSlugs}
+      startupWindows={startupWindows}
+      systemWindowData={systemWindowData}
+    >
+      {children}
+    </WindowManagerInner>
   )
 }
 
-// Inner component sits inside PreloaderProvider so it can call usePreloader()
 function WindowManagerInner({
   children,
   isDesktop,
@@ -83,7 +76,6 @@ function WindowManagerInner({
 }) {
   const manager = useWindowManager()
   const pathname = usePathname()
-  const { reportReady } = usePreloader()
   const [, setClosedSlugs] = useState<Set<string>>(new Set())
 
   function isWindowVisible(rootSlug: string): boolean {
@@ -111,7 +103,6 @@ function WindowManagerInner({
         pathname={pathname}
         startupWindows={startupWindows}
       />
-      <PagePreloader />
       {children}
 
       {/* Pre-rendered shortcut windows — always mounted, CSS-hidden when not open */}
@@ -137,7 +128,6 @@ function WindowManagerInner({
               pendingMinimize={win?.pendingMinimize ?? false}
               preloadedData={preloadedContents[rootSlug] ?? null}
               isVisible={visible}
-              onReady={reportReady}
               onClose={() => {
                 setClosedSlugs((p) => new Set([...p, rootSlug]))
                 manager.close(rootSlug)

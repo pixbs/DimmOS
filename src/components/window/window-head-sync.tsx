@@ -24,9 +24,13 @@ function parseCssContent(content: string): string {
 }
 
 function roundRect(ctx: CanvasRenderingContext2D, x: number, y: number, w: number, h: number, r: number) {
-  if ('roundRect' in ctx) {
+  const ctxWithRoundRect = ctx as CanvasRenderingContext2D & {
+    roundRect?: CanvasRenderingContext2D['roundRect']
+  }
+
+  if (typeof ctxWithRoundRect.roundRect === 'function') {
     ctx.beginPath()
-    ctx.roundRect(x, y, w, h, r)
+    ctxWithRoundRect.roundRect(x, y, w, h, r)
     ctx.closePath()
     return
   }

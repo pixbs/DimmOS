@@ -49,7 +49,7 @@ test.describe('Desktop interactions', () => {
 
   test('website cursor is the default and identifies window-opening shortcuts', async ({ page }) => {
     await page.goto(BASE_URL)
-    await page.locator('[data-testid="preloader"]').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
+    await page.locator('[data-route-preloader]').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
     await dismissCookieNotice(page)
 
     await expect(page.locator('html')).toHaveAttribute('data-dimm-cursor', 'website')
@@ -86,7 +86,7 @@ test.describe('Desktop interactions', () => {
 
   test('desktop shortcuts can be dragged and persist after reload', async ({ page }) => {
     await page.goto(BASE_URL)
-    await page.locator('[data-testid="preloader"]').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
+    await page.locator('[data-route-preloader]').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
     await dismissCookieNotice(page)
 
     const shortcut = page.locator(`[data-draggable-shortcut][data-shortcut-slug="${SLUG}"]`)
@@ -208,7 +208,7 @@ test.describe('Desktop interactions', () => {
 
   test('shortcut context menu opens a DimmOS window', async ({ page }) => {
     await page.goto(BASE_URL)
-    await page.locator('[data-testid="preloader"]').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
+    await page.locator('[data-route-preloader]').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
     await dismissCookieNotice(page)
 
     await page.locator(`[data-draggable-shortcut][data-shortcut-slug="${SLUG}"]`).click({ button: 'right' })
@@ -220,7 +220,7 @@ test.describe('Desktop interactions', () => {
 
   test('taskbar context menu can close the current window', async ({ page }) => {
     await page.goto(BASE_URL)
-    await page.locator('[data-testid="preloader"]').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
+    await page.locator('[data-route-preloader]').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
     await dismissCookieNotice(page)
     await page.locator(`[data-draggable-shortcut][data-shortcut-slug="${SLUG}"]`).click()
     await expect(page.locator(`[data-secondary-window="${SLUG}"]`)).toBeVisible({ timeout: 10000 })
@@ -235,7 +235,7 @@ test.describe('Desktop interactions', () => {
 
   test('window and link context menus are shown inside windows', async ({ page }) => {
     await page.goto(BASE_URL)
-    await page.locator('[data-testid="preloader"]').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
+    await page.locator('[data-route-preloader]').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
     await dismissCookieNotice(page)
     await page.locator(`[data-draggable-shortcut][data-shortcut-slug="${SLUG}"]`).click()
     const win = page.locator(`[data-secondary-window="${SLUG}"]`)

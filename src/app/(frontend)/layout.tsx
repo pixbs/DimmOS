@@ -17,6 +17,7 @@ import { DesktopWallpaper } from '@/components/desktop-wallpaper'
 import { DisplayOptionsProvider } from '@/components/display-options'
 import { DesktopCursor } from '@/components/desktop-cursor'
 import { DesktopContextMenu } from '@/components/context-menu'
+import { RoutePreloader } from '@/components/preloader/route-preloader'
 import './styles.css'
 import 'remixicon/fonts/remixicon.css'
 
@@ -39,6 +40,16 @@ const COLLECTION_META = {
 } as const
 
 type CollectionSlug = keyof typeof COLLECTION_META
+
+function getDocumentTitle(doc: {
+  _col: CollectionSlug
+  meta?: { title?: string | null } | null
+  title: string
+}): string {
+  if (doc.meta?.title) return doc.meta.title
+  if (doc._col === 'forms') return doc.title
+  return `${doc.title} \u2014 ${SITE_TITLE}`
+}
 
 async function fetchData() {
   const payload = await getPayload({ config })
@@ -90,12 +101,7 @@ async function fetchData() {
     icon:     doc.shortcutIcon ?? 'ri-file-fill',
     name:     doc.shortcutName ?? doc.title,
     title:    doc.title,
-    documentTitle:
-      'meta' in doc && doc.meta?.title
-        ? doc.meta.title
-        : doc._col === 'forms'
-          ? doc.title
-          : `${doc.title} \u2014 ${SITE_TITLE}`,
+    documentTitle: getDocumentTitle(doc),
     slug:     doc.slug,
     color:    COLLECTION_META[doc._col].color,
     category: doc._col,
@@ -145,9 +151,36 @@ async function fetchData() {
   }
 }
 
-export default async function RootLayout(props: { children: React.ReactNode }) {
-  const { children } = props
+async function FrontendDataShell({ children }: { children: React.ReactNode }) {
   const { shortcuts, registryEntries, shortcutSlugs, startupWindows, preloadedContents, systemWindowData } = await fetchData()
+
+  return (
+    <DisplayOptionsProvider>
+      <ShortcutRegistryProvider shortcuts={registryEntries}>
+        <WindowManagerProvider
+          preloadedContents={preloadedContents}
+          shortcutSlugs={shortcutSlugs}
+          startupWindows={startupWindows}
+          systemWindowData={systemWindowData}
+        >
+          <Header />
+          <main>
+            <DesktopWallpaper />
+            <div className="relative z-1 h-[calc(100vh-var(--header-height))]">
+              <ShortcutGrid shortcuts={shortcuts} />
+            </div>
+            {children}
+          </main>
+          <DesktopContextMenu />
+          <DesktopCursor />
+        </WindowManagerProvider>
+      </ShortcutRegistryProvider>
+    </DisplayOptionsProvider>
+  )
+}
+
+export default function RootLayout(props: { children: React.ReactNode }) {
+  const { children } = props
 
   return (
     <html lang="en" className={onest.className} suppressHydrationWarning>
@@ -180,28 +213,8 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             <PostHogConsentGate />
             <SentryReplayProvider />
             <PostHogPageView />
-            <Suspense>
-              <DisplayOptionsProvider>
-                <ShortcutRegistryProvider shortcuts={registryEntries}>
-                  <WindowManagerProvider
-                    preloadedContents={preloadedContents}
-                    shortcutSlugs={shortcutSlugs}
-                    startupWindows={startupWindows}
-                    systemWindowData={systemWindowData}
-                  >
-                    <Header />
-                    <main>
-                      <DesktopWallpaper />
-                      <div className="relative z-1 h-[calc(100vh-var(--header-height))]">
-                        <ShortcutGrid shortcuts={shortcuts} />
-                      </div>
-                      {children}
-                    </main>
-                    <DesktopContextMenu />
-                    <DesktopCursor />
-                  </WindowManagerProvider>
-                </ShortcutRegistryProvider>
-              </DisplayOptionsProvider>
+            <Suspense fallback={<RoutePreloader />}>
+              <FrontendDataShell>{children}</FrontendDataShell>
             </Suspense>
           </CookieConsentProvider>
         </PostHogProvider>

@@ -6,7 +6,7 @@ import { DESKTOP_BREAKPOINT } from '@/lib/breakpoints'
 /**
  * Tri-state viewport check: null before the first client-side measurement
  * (SSR / hydration), then true/false tracking resize. The null state lets
- * consumers (preloader total, window mounting) defer until the viewport is
+ * consumers such as window mounting defer until the viewport is
  * actually known instead of assuming mobile.
  */
 export function useIsDesktop(): boolean | null {

@@ -13,6 +13,7 @@ async function bypassCookieBanner(page: Page) {
       timestamp: Date.now(),
       version: '1.0',
     }))
+    sessionStorage.setItem('managed-startup-opened:desktop', 'true')
   })
 }
 

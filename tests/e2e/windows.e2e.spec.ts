@@ -209,7 +209,7 @@ test.describe('Windows — shared setup', () => {
 
     test('opening a pre-rendered window shows content without Loading state', async ({ page }) => {
       await page.goto(BASE_URL)
-      await page.locator('[data-testid="preloader"]').waitFor({ state: 'hidden', timeout: 10000 })
+      await page.locator('[data-route-preloader]').waitFor({ state: 'hidden', timeout: 10000 })
       await page.locator(`a[href="/${SLUG}"]`).click()
       const win = page.locator(`[data-secondary-window="${SLUG}"]`)
       await expect(win).toBeVisible({ timeout: 2000 })
@@ -233,7 +233,7 @@ test.describe('Windows — shared setup', () => {
       const win = page.locator(`[data-secondary-window="${SLUG}"]`)
       await expect(win).toBeVisible({ timeout: 10000 })
       await expect(page).toHaveURL(`${BASE_URL}/${SLUG}`)
-      await page.locator('[data-testid="preloader"]').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {})
+      await page.locator('[data-route-preloader]').waitFor({ state: 'hidden', timeout: 10000 }).catch(() => {})
       await win.locator('.win-titlebar--bar').click()
       await page.waitForTimeout(300)
       await expect(page).toHaveURL(`${BASE_URL}/${SLUG}`)

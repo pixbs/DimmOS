@@ -34,8 +34,8 @@ function openSecondaryWindow(page: Page, slug: string) {
 }
 
 async function waitForWindowContent(page: Page, slug: string) {
-  // Wait for preloader overlay to clear — it blocks actionability for clicks
-  await page.locator('[data-testid="preloader"]').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
+  // Wait for the route preloader to clear before clicking toolbar controls.
+  await page.locator('[data-route-preloader]').waitFor({ state: 'hidden', timeout: 15000 }).catch(() => {})
   const win = page.locator(`[data-secondary-window="${slug}"]`)
   await expect(win).toBeVisible({ timeout: 10000 })
   // Wait for loading to finish
