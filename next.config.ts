@@ -21,6 +21,10 @@ const nextConfig: NextConfig = {
       },
     ],
   },
+  outputFileTracingIncludes: {
+    '/*': ['./node_modules/@sparticuz/chromium/bin/**/*'],
+  },
+  serverExternalPackages: ['@sparticuz/chromium'],
   webpack: (webpackConfig) => {
     webpackConfig.resolve.extensionAlias = {
       '.cjs': ['.cts', '.cjs'],
