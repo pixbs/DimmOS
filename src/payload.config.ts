@@ -3,7 +3,7 @@ import { resendAdapter } from '@payloadcms/email-resend'
 import { lexicalEditor } from '@payloadcms/richtext-lexical'
 import { formBuilderPlugin } from '@payloadcms/plugin-form-builder'
 import { seoPlugin } from '@payloadcms/plugin-seo'
-import type { GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
+import type { GenerateImage, GenerateTitle, GenerateURL } from '@payloadcms/plugin-seo/types'
 import { sentryPlugin } from '@payloadcms/plugin-sentry'
 import { vercelBlobStorage } from '@payloadcms/storage-vercel-blob'
 import * as Sentry from '@sentry/nextjs'
@@ -29,6 +29,8 @@ import { createSlugField } from './fields/slugField'
 import { createShortcutFields } from './fields/shortcutFields'
 import { withAiGeneration } from './fields/ai-generation'
 import { aiGenerateFieldEndpoint } from './endpoints/ai-generate-field'
+import { generateSeoMetaImage } from './lib/seo-image/generation'
+import { getRelationId } from './lib/seo-image/media'
 
 const filename = fileURLToPath(import.meta.url)
 const dirname = path.dirname(filename)
@@ -41,6 +43,27 @@ const generateTitle: GenerateTitle<Article | WindowDoc> = ({ doc }) =>
 const generateURL: GenerateURL<Article | WindowDoc> = ({ doc }) => {
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? ''
   return doc?.slug ? `${base}/${doc.slug}` : base
+}
+
+const generateImage: GenerateImage<Record<string, unknown>> = async ({
+  collectionConfig,
+  doc,
+  id,
+  req,
+}) => {
+  const collection = collectionConfig?.slug
+  if (collection !== 'windows' && collection !== 'articles') return ''
+  const documentId = getRelationId(doc?.id) ?? getRelationId(id)
+  if (!documentId) return ''
+
+  const generatedImageId = await generateSeoMetaImage({
+    collection,
+    doc: { ...doc, id: documentId },
+    force: true,
+    req,
+  })
+
+  return generatedImageId ?? ''
 }
 
 function withAiGenerationForSeoFields(defaultFields: Field[]): Field[] {
@@ -189,6 +212,7 @@ export default buildConfig({
       collections: ['windows', 'articles'],
       uploadsCollection: 'media',
       tabbedUI: true,
+      generateImage,
       generateTitle,
       generateURL,
       fields: ({ defaultFields }) => [

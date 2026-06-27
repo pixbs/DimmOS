@@ -27,6 +27,7 @@ function isPosition(value: unknown): value is ShortcutPosition {
 }
 
 export function getShortcutCols(surfaceWidth: number): number {
+  if (surfaceWidth >= 1536) return 32
   if (surfaceWidth >= 1280) return 20
   if (surfaceWidth >= 768) return 12
   return 6

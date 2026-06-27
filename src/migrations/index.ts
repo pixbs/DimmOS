@@ -12,6 +12,7 @@ import * as migration_20260616_130357_window_buttons from './20260616_130357_win
 import * as migration_20260620_212531_article_content_sections from './20260620_212531_article_content_sections';
 import * as migration_20260625_175713_managed_startup_system_windows from './20260625_175713_managed_startup_system_windows';
 import * as migration_20260625_211504_welcome_title_role from './20260625_211504_welcome_title_role';
+import * as migration_20260627_000103 from './20260627_000103';
 
 export const migrations = [
   {
@@ -82,6 +83,11 @@ export const migrations = [
   {
     up: migration_20260625_211504_welcome_title_role.up,
     down: migration_20260625_211504_welcome_title_role.down,
-    name: '20260625_211504_welcome_title_role'
+    name: '20260625_211504_welcome_title_role',
+  },
+  {
+    up: migration_20260627_000103.up,
+    down: migration_20260627_000103.down,
+    name: '20260627_000103'
   },
 ];

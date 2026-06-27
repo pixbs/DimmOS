@@ -8,6 +8,10 @@ import { createSlugField } from '@/fields/slugField'
 import { createShortcutFields } from '@/fields/shortcutFields'
 import { withAiGeneration } from '@/fields/ai-generation'
 import { createRevalidationHooks } from '@/hooks/revalidateContent'
+import { createGeneratedMetaImageHooks } from '@/hooks/seo/generated-meta-image'
+
+const revalidationHooks = createRevalidationHooks()
+const generatedMetaImageHooks = createGeneratedMetaImageHooks('articles')
 
 export const Articles: CollectionConfig = {
   slug: 'articles',
@@ -18,7 +22,10 @@ export const Articles: CollectionConfig = {
     update: ({ req: { user } }) => !!user,
     delete: ({ req: { user } }) => !!user,
   },
-  hooks: createRevalidationHooks(),
+  hooks: {
+    afterChange: [...revalidationHooks.afterChange, ...generatedMetaImageHooks.afterChange],
+    afterDelete: [...revalidationHooks.afterDelete, ...generatedMetaImageHooks.afterDelete],
+  },
   fields: [
     {
       type: 'tabs',

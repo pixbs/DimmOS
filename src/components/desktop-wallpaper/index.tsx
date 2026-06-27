@@ -33,6 +33,7 @@ const IDLE_WAVE_AMP  = 0.2   // amplitude as fraction of the shorter screen dime
 // ─────────────────────────────────────────────────────────────────────────────
 
 function getCols(w: number) {
+  if (w >= 1536) return 32
   if (w >= 1280) return 20
   if (w >= 768)  return 12
   return 6

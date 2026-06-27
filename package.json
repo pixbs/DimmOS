@@ -17,10 +17,10 @@
     "seed:cookies": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" node src/scripts/seedCookieServices.ts",
     "seed:case-study": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" node src/scripts/seed-case-study.ts",
     "seed:block-previews": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" node src/scripts/seed-block-previews.ts",
-    "seed:e2e": "cross-env PAYLOAD_DISABLE_BLOB_STORAGE=true NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" node tests/helpers/e2e-seed.ts",
-    "test:e2e": "cross-env PAYLOAD_DISABLE_BLOB_STORAGE=true NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
-    "test:int": "cross-env PAYLOAD_DISABLE_BLOB_STORAGE=true NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts",
-    "test:dom": "cross-env PAYLOAD_DISABLE_BLOB_STORAGE=true NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.dom.mts"
+    "seed:e2e": "cross-env PAYLOAD_DISABLE_BLOB_STORAGE=true SEO_IMAGE_GENERATION_DISABLED=true NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" node tests/helpers/e2e-seed.ts",
+    "test:e2e": "cross-env PAYLOAD_DISABLE_BLOB_STORAGE=true SEO_IMAGE_GENERATION_DISABLED=true NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" playwright test --config=playwright.config.ts",
+    "test:int": "cross-env PAYLOAD_DISABLE_BLOB_STORAGE=true SEO_IMAGE_GENERATION_DISABLED=true NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.mts",
+    "test:dom": "cross-env PAYLOAD_DISABLE_BLOB_STORAGE=true SEO_IMAGE_GENERATION_DISABLED=true NODE_OPTIONS=--no-deprecation vitest run --config ./vitest.config.dom.mts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.105.0",
@@ -35,6 +35,7 @@
     "@payloadcms/ui": "3.84.1",
     "@posthog/next": "^0.4.68",
     "@sentry/nextjs": "^10.55.0",
+    "@sparticuz/chromium": "^149.0.0",
     "@tailwindcss/postcss": "^4.2.4",
     "clsx": "^2.1.1",
     "cross-env": "^7.0.3",
@@ -43,6 +44,7 @@
     "graphql": "^16.8.1",
     "next": "16.2.3",
     "payload": "3.84.1",
+    "playwright-core": "1.58.2",
     "react": "19.2.4",
     "react-dom": "19.2.4",
     "remixicon": "^4.9.1",
