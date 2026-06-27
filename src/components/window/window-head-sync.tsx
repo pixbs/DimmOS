@@ -8,6 +8,7 @@ import { systemWindowRegistry } from '@/components/window/system-window-registry
 
 type HeadWindowMeta = {
   color: string
+  documentTitle: string
   icon: string
 }
 
@@ -98,6 +99,7 @@ export function WindowHeadSync() {
   const registry = useShortcutRegistry()
   const managedIconRef = useRef<HTMLLinkElement | null>(null)
   const originalIconHrefRef = useRef<string | null | undefined>(undefined)
+  const originalTitleRef = useRef<string | null>(null)
 
   const activeMeta = useMemo<HeadWindowMeta | null>(() => {
     const activeWindow = windows
@@ -111,18 +113,25 @@ export function WindowHeadSync() {
 
     if (activeWindow.kind === 'system' && activeWindow.systemKey) {
       const entry = systemWindowRegistry[activeWindow.systemKey]
-      return { color: entry.color, icon: entry.icon }
+      return { color: entry.color, documentTitle: entry.title, icon: entry.icon }
     }
 
     if (activeWindow.kind === 'content') {
       const meta = registry.get(activeWindow.slug) ?? registry.get(activeWindow.rootSlug)
-      if (meta) return { color: meta.color, icon: meta.icon }
+      if (meta) {
+        return {
+          color: meta.color,
+          documentTitle: meta.documentTitle ?? meta.title,
+          icon: meta.icon,
+        }
+      }
     }
 
     return null
   }, [registry, windows])
 
   const faviconKey = activeMeta ? `${activeMeta.color}:${activeMeta.icon}` : ''
+  const documentTitle = activeMeta?.documentTitle ?? null
 
   useEffect(() => {
     let cancelled = false
@@ -167,6 +176,17 @@ export function WindowHeadSync() {
       cancelled = true
     }
   }, [activeMeta, faviconKey])
+
+  useEffect(() => {
+    originalTitleRef.current ??= document.title
+
+    if (documentTitle) {
+      document.title = documentTitle
+      return
+    }
+
+    document.title = originalTitleRef.current
+  }, [documentTitle])
 
   return null
 }
