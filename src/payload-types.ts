@@ -187,6 +187,12 @@ export interface User {
 export interface Media {
   id: number;
   alt: string;
+  seoGeneratedMetaImage?: {
+    sourceCollection?: ('windows' | 'articles') | null;
+    sourceDocumentId?: string | null;
+    contentSignature?: string | null;
+    generatedAt?: string | null;
+  };
   updatedAt: string;
   createdAt: string;
   url?: string | null;
@@ -925,6 +931,14 @@ export interface UsersSelect<T extends boolean = true> {
  */
 export interface MediaSelect<T extends boolean = true> {
   alt?: T;
+  seoGeneratedMetaImage?:
+    | T
+    | {
+        sourceCollection?: T;
+        sourceDocumentId?: T;
+        contentSignature?: T;
+        generatedAt?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
   url?: T;
