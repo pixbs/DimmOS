@@ -13,8 +13,19 @@ type MetaDoc = {
   } | null
 }
 
+function createPageTitle(doc: MetaDoc | null): string {
+  if (doc?.meta?.title) return doc.meta.title
+  if (doc?.title) return `${doc.title} \u2014 ${SITE_TITLE}`
+  return SITE_TITLE
+}
+
+function createFallbackOgImageUrl(doc: MetaDoc | null, base: string): string {
+  if (!doc?.slug) return `${base}/og`
+  return `${base}/og/${encodeURIComponent(doc.slug)}`
+}
+
 export function generateMeta(doc: MetaDoc | null): Metadata {
-  const title = doc?.meta?.title || (doc?.title ? `${doc.title} — ${SITE_TITLE}` : SITE_TITLE)
+  const title = createPageTitle(doc)
   const description = doc?.meta?.description || undefined
   const image = doc?.meta?.image
   const ogImageUrl = image && typeof image !== 'number' ? image.url ?? undefined : undefined
@@ -22,6 +33,7 @@ export function generateMeta(doc: MetaDoc | null): Metadata {
   // Relative canonical falls back to Next's metadataBase resolution when
   // NEXT_PUBLIC_SITE_URL is unset (e.g. local dev).
   const base = process.env.NEXT_PUBLIC_SITE_URL ?? ''
+  const openGraphImages = [{ url: ogImageUrl ?? createFallbackOgImageUrl(doc, base) }]
 
   return {
     title,
@@ -30,7 +42,7 @@ export function generateMeta(doc: MetaDoc | null): Metadata {
     openGraph: {
       title: title ?? undefined,
       description: description ?? undefined,
-      ...(ogImageUrl ? { images: [{ url: ogImageUrl }] } : {}),
+      images: openGraphImages,
     },
     twitter: { card: 'summary_large_image' },
     robots: { index: !doc?.meta?.noIndex },

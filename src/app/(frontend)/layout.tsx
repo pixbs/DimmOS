@@ -27,7 +27,7 @@ const onest = Onest({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: "Dimm's OS",
   description: 'Interactive OS-style portfolio — an OS-metaphor desktop built on Next.js + Payload CMS.',
-  openGraph: { title: "Dimm's OS" },
+  openGraph: { title: "Dimm's OS", images: [{ url: '/og' }] },
   twitter: { card: 'summary_large_image' },
 }
 
