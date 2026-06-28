@@ -4,14 +4,9 @@ import { Fragment } from 'react'
 import { cn } from '@/lib/utils'
 import { useWindowManagerContext } from '@/components/window/manager-context'
 import { useShortcutRegistry } from '@/components/shortcut/registry-context'
+import { systemWindowRegistry } from '@/components/window/system-window-registry'
 
 const CATEGORY_ORDER = ['windows', 'articles', 'forms'] as const
-const SYSTEM_META = {
-  'cookie-notice': { icon: 'ri-shield-check-fill', color: '#F22F57', name: 'Cookie Notice' },
-  'cookie-preferences': { icon: 'ri-shield-keyhole-fill', color: '#F22F57', name: 'Cookie Preferences' },
-  'display-options': { icon: 'ri-settings-3-fill', color: '#4A9EFF', name: 'Display Options' },
-} as const
-
 const FALLBACK_ICONS: Record<string, string> = {
   windows:  'ri-window-fill',
   articles: 'ri-folder-fill',
@@ -157,14 +152,14 @@ export function Taskbar() {
       )}
 
       {systemWindows.map((win) => {
-        const meta = win.systemKey ? SYSTEM_META[win.systemKey] : null
+        const meta = win.systemKey ? systemWindowRegistry[win.systemKey] : null
         return (
           <TaskbarButton
             key={win.id}
             win={{ rootSlug: win.id, minimized: win.minimized }}
             icon={meta?.icon ?? 'ri-window-fill'}
             color={meta?.color ?? '#4A9EFF'}
-            name={meta?.name ?? win.id}
+            name={meta?.title ?? win.id}
             onFocus={() => focus(win.id)}
             onMinimize={() => minimize(win.id)}
           />

@@ -17,17 +17,19 @@ import { DesktopWallpaper } from '@/components/desktop-wallpaper'
 import { DisplayOptionsProvider } from '@/components/display-options'
 import { DesktopCursor } from '@/components/desktop-cursor'
 import { DesktopContextMenu } from '@/components/context-menu'
+import { RoutePreloader } from '@/components/preloader/route-preloader'
 import './styles.css'
 import 'remixicon/fonts/remixicon.css'
 
 export const dynamic = 'force-dynamic'
 
 const onest = Onest({ subsets: ['latin'] })
+const SITE_TITLE = "Dimm's OS"
 
 export const metadata: Metadata = {
   title: "Dimm's OS",
   description: 'Interactive OS-style portfolio — an OS-metaphor desktop built on Next.js + Payload CMS.',
-  openGraph: { title: "Dimm's OS" },
+  openGraph: { title: "Dimm's OS", images: [{ url: '/og' }] },
   twitter: { card: 'summary_large_image' },
 }
 
@@ -39,6 +41,16 @@ const COLLECTION_META = {
 
 type CollectionSlug = keyof typeof COLLECTION_META
 
+function getDocumentTitle(doc: {
+  _col: CollectionSlug
+  meta?: { title?: string | null } | null
+  title: string
+}): string {
+  if (doc.meta?.title) return doc.meta.title
+  if (doc._col === 'forms') return doc.title
+  return `${doc.title} \u2014 ${SITE_TITLE}`
+}
+
 async function fetchData() {
   const payload = await getPayload({ config })
   // Fetch all docs (no showShortcut filter) so the registry covers every possible window,
@@ -46,6 +58,7 @@ async function fetchData() {
   const contentSelect = {
     title: true,
     slug: true,
+    meta: true,
     shortcutName: true,
     shortcutIcon: true,
     shortcutOrder: true,
@@ -87,6 +100,8 @@ async function fetchData() {
   const registryEntries = allDocs.map((doc) => ({
     icon:     doc.shortcutIcon ?? 'ri-file-fill',
     name:     doc.shortcutName ?? doc.title,
+    title:    doc.title,
+    documentTitle: getDocumentTitle(doc),
     slug:     doc.slug,
     color:    COLLECTION_META[doc._col].color,
     category: doc._col,
@@ -136,9 +151,36 @@ async function fetchData() {
   }
 }
 
-export default async function RootLayout(props: { children: React.ReactNode }) {
-  const { children } = props
+async function FrontendDataShell({ children }: { children: React.ReactNode }) {
   const { shortcuts, registryEntries, shortcutSlugs, startupWindows, preloadedContents, systemWindowData } = await fetchData()
+
+  return (
+    <DisplayOptionsProvider>
+      <ShortcutRegistryProvider shortcuts={registryEntries}>
+        <WindowManagerProvider
+          preloadedContents={preloadedContents}
+          shortcutSlugs={shortcutSlugs}
+          startupWindows={startupWindows}
+          systemWindowData={systemWindowData}
+        >
+          <Header />
+          <main>
+            <DesktopWallpaper />
+            <div className="relative z-1 h-[calc(100vh-var(--header-height))]">
+              <ShortcutGrid shortcuts={shortcuts} />
+            </div>
+            {children}
+          </main>
+          <DesktopContextMenu />
+          <DesktopCursor />
+        </WindowManagerProvider>
+      </ShortcutRegistryProvider>
+    </DisplayOptionsProvider>
+  )
+}
+
+export default function RootLayout(props: { children: React.ReactNode }) {
+  const { children } = props
 
   return (
     <html lang="en" className={onest.className} suppressHydrationWarning>
@@ -171,28 +213,8 @@ export default async function RootLayout(props: { children: React.ReactNode }) {
             <PostHogConsentGate />
             <SentryReplayProvider />
             <PostHogPageView />
-            <Suspense>
-              <DisplayOptionsProvider>
-                <ShortcutRegistryProvider shortcuts={registryEntries}>
-                  <WindowManagerProvider
-                    preloadedContents={preloadedContents}
-                    shortcutSlugs={shortcutSlugs}
-                    startupWindows={startupWindows}
-                    systemWindowData={systemWindowData}
-                  >
-                    <Header />
-                    <main>
-                      <DesktopWallpaper />
-                      <div className="relative z-1 h-[calc(100vh-var(--header-height))]">
-                        <ShortcutGrid shortcuts={shortcuts} />
-                      </div>
-                      {children}
-                    </main>
-                    <DesktopContextMenu />
-                    <DesktopCursor />
-                  </WindowManagerProvider>
-                </ShortcutRegistryProvider>
-              </DisplayOptionsProvider>
+            <Suspense fallback={<RoutePreloader />}>
+              <FrontendDataShell>{children}</FrontendDataShell>
             </Suspense>
           </CookieConsentProvider>
         </PostHogProvider>
