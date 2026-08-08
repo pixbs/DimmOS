@@ -2,7 +2,7 @@ import 'dotenv/config'
 import { mkdir } from 'node:fs/promises'
 import path from 'node:path'
 import { chromium } from '@playwright/test'
-import { seedCaseStudy, cleanupCaseStudy } from '../../tests/helpers/seedContent.js'
+import { cleanupCaseStudy, seedCaseStudy } from './seed-content.js'
 
 /**
  * Generate the admin block-selection previews.

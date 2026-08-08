@@ -1,41 +1,40 @@
 import { defineConfig, devices } from '@playwright/test'
 
-/**
- * Read environment variables from file.
- * https://github.com/motdotla/dotenv
- */
-import 'dotenv/config'
+const baseURL = process.env.PLAYWRIGHT_BASE_URL ?? 'http://127.0.0.1:3000'
 
-/**
- * See https://playwright.dev/docs/test-configuration.
- */
 export default defineConfig({
   testDir: './tests/e2e',
-  /* Fail the build on CI if you accidentally left test.only in the source code. */
-  forbidOnly: !!process.env.CI,
-  /* Retry on CI only */
-  retries: process.env.CI ? 2 : 0,
-  /* Opt out of parallel tests on CI. */
-  workers: process.env.CI ? 1 : undefined,
-  /* Reporter to use. See https://playwright.dev/docs/test-reporters */
-  reporter: 'html',
-  /* Shared settings for all the projects below. See https://playwright.dev/docs/api/class-testoptions. */
+  outputDir: 'artifacts/playwright/results',
+  forbidOnly: true,
+  fullyParallel: false,
+  retries: 0,
+  workers: 1,
+  reporter: [
+    ['line'],
+    ['junit', { outputFile: 'artifacts/playwright/junit.xml' }],
+    ['html', { outputFolder: 'artifacts/playwright/html', open: 'never' }],
+  ],
   use: {
-    baseURL: 'http://localhost:3000',
-    trace: 'on-first-retry',
-    ...(process.env.CI && {
-      launchOptions: { args: ['--no-sandbox', '--disable-setuid-sandbox'] },
-    }),
+    baseURL,
+    trace: 'retain-on-failure',
+    screenshot: 'only-on-failure',
+    video: 'retain-on-failure',
+    launchOptions: { args: ['--no-sandbox', '--disable-setuid-sandbox'] },
   },
   projects: [
     {
-      name: 'chromium',
-      use: { ...devices['Desktop Chrome'], channel: 'chromium' },
+      name: 'chromium-desktop',
+      use: { ...devices['Desktop Chrome'], browserName: 'chromium' },
+    },
+    {
+      name: 'chromium-mobile',
+      use: { ...devices['Pixel 7'], browserName: 'chromium' },
     },
   ],
   webServer: {
-    command: process.env.CI ? 'bun start' : 'bun run dev',
-    reuseExistingServer: !process.env.CI,
-    url: 'http://localhost:3000',
+    command: 'bun run start',
+    reuseExistingServer: false,
+    timeout: 120_000,
+    url: baseURL,
   },
 })
