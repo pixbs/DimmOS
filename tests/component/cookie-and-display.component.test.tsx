@@ -138,7 +138,7 @@ describe('cookie controls', () => {
     await screen.getByRole('button', { name: 'Save Preferences' }).click()
 
     await expect.poll(() => auditBody).toMatchObject({ categories: ['essential', 'analytics'] })
-    expect(onSaved).toHaveBeenCalledOnce()
+    await expect.poll(() => onSaved.mock.calls).toHaveLength(1)
   })
 })
 

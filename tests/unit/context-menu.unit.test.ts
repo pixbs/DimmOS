@@ -39,4 +39,34 @@ describe('context menu URL behavior', () => {
 
     expect(writeText).toHaveBeenCalledExactlyOnceWith('share me')
   })
+
+  it('uses the temporary textarea fallback when the Clipboard API is unavailable', async () => {
+    const select = vi.fn()
+    const setAttribute = vi.fn()
+    const textarea = {
+      select,
+      setAttribute,
+      style: {} as Record<string, string>,
+      value: '',
+    }
+    const appendChild = vi.fn()
+    const removeChild = vi.fn()
+    const execCommand = vi.fn(() => true)
+    vi.stubGlobal('navigator', {})
+    vi.stubGlobal('document', {
+      body: { appendChild, removeChild },
+      createElement: vi.fn(() => textarea),
+      execCommand,
+    })
+
+    await copyText('fallback text')
+
+    expect(textarea.value).toBe('fallback text')
+    expect(setAttribute).toHaveBeenCalledWith('readonly', '')
+    expect(textarea.style).toMatchObject({ position: 'fixed', left: '-9999px' })
+    expect(appendChild).toHaveBeenCalledWith(textarea)
+    expect(select).toHaveBeenCalledOnce()
+    expect(execCommand).toHaveBeenCalledWith('copy')
+    expect(removeChild).toHaveBeenCalledWith(textarea)
+  })
 })

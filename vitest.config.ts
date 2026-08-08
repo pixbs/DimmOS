@@ -5,6 +5,13 @@ import { defineConfig, defineProject } from 'vitest/config'
 import tsconfigPaths from 'vite-tsconfig-paths'
 
 const coverageModules = [
+  'src/collections/Articles.ts',
+  'src/collections/CookieConsents.ts',
+  'src/collections/CookieServices.ts',
+  'src/collections/Media.ts',
+  'src/collections/Tags.ts',
+  'src/collections/Users.ts',
+  'src/collections/Windows.ts',
   'src/components/animation/animated-divider.tsx',
   'src/components/animation/animated-text.tsx',
   'src/components/content-blocks/sections/image-section.tsx',
@@ -20,21 +27,31 @@ const coverageModules = [
   'src/components/window/window-scaffold.tsx',
   'src/fields/ai-generation.ts',
   'src/fields/slugField.ts',
+  'src/globals/CookieSettings.ts',
+  'src/hooks/cookies/captureRequestMetadata.ts',
+  'src/hooks/forms/enforcePreDefinedEmail.ts',
+  'src/hooks/forms/verifyRecaptcha.ts',
+  'src/hooks/revalidateContent.ts',
+  'src/hooks/seo/generated-meta-image.ts',
+  'src/endpoints/ai-generate-field.ts',
   'src/components/content-blocks/sections/welcome-title.ts',
   'src/components/window/footer-button.ts',
   'src/lib/breakpoints.ts',
+  'src/lib/articleList.ts',
   'src/lib/context-menu.ts',
   'src/lib/display-options.ts',
   'src/lib/easing.ts',
   'src/lib/parseStat.ts',
   'src/lib/pixelate.ts',
   'src/lib/seo-image/media.ts',
+  'src/lib/seo-image/generation.ts',
   'src/lib/seo-image/signature.ts',
   'src/lib/shortcut-positions.ts',
   'src/lib/splitText.ts',
   'src/lib/utils.ts',
   'src/lib/window-positions.ts',
   'src/lib/window-state.ts',
+  'src/lib/windowContent.ts',
   'src/utilities/generateMeta.ts',
   'src/utilities/windowBehavior.ts',
 ]
@@ -67,6 +84,14 @@ export default defineConfig({
     projects: [
       defineProject({
         plugins: [tsconfigPaths()],
+        resolve: {
+          alias: [
+            {
+              find: /^server-only$/,
+              replacement: fileURLToPath(new URL('./tests/stubs/empty.ts', import.meta.url)),
+            },
+          ],
+        },
         test: {
           name: 'unit',
           environment: 'node',
@@ -138,11 +163,39 @@ export default defineConfig({
       }),
       defineProject({
         plugins: [tsconfigPaths(), react()],
+        resolve: {
+          alias: [
+            {
+              find: /^@anthropic-ai\/sdk$/,
+              replacement: fileURLToPath(
+                new URL('./tests/stubs/node-anthropic.ts', import.meta.url),
+              ),
+            },
+            {
+              find: /^next\/cache$/,
+              replacement: fileURLToPath(
+                new URL('./tests/stubs/node-next-cache.ts', import.meta.url),
+              ),
+            },
+            {
+              find: /^next\/server$/,
+              replacement: fileURLToPath(
+                new URL('./tests/stubs/node-next-server.ts', import.meta.url),
+              ),
+            },
+            {
+              find: /^server-only$/,
+              replacement: fileURLToPath(new URL('./tests/stubs/empty.ts', import.meta.url)),
+            },
+          ],
+        },
         test: {
           name: 'integration',
           environment: 'node',
           include: ['tests/integration/**/*.integration.test.{ts,tsx}'],
+          isolate: false,
           maxWorkers: 1,
+          sequence: { groupOrder: 1 },
           setupFiles: ['./tests/setup/integration.setup.ts'],
         },
       }),

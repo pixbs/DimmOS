@@ -3,7 +3,7 @@ set -euo pipefail
 
 suite="${1:-all}"
 case "$suite" in
-  all|integration|e2e|all-browsers) ;;
+  all|coverage|integration|e2e|all-browsers) ;;
   *)
     echo "Unknown test suite: $suite" >&2
     exit 2

@@ -13,8 +13,12 @@ case "${TEST_SUITE:-all}" in
     bun run test:unit
     bun run test:component
     bun run test:component
-    bun run test:coverage
+    bun run test:integration:run
+    bun run test:coverage:run
     bun run build
+    ;;
+  coverage)
+    bun run test:coverage:run
     ;;
   integration)
     bun run test:integration:run
