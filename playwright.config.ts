@@ -24,10 +24,12 @@ export default defineConfig({
   projects: [
     {
       name: 'chromium-desktop',
+      testMatch: '**/*.desktop.e2e.test.ts',
       use: { ...devices['Desktop Chrome'], browserName: 'chromium' },
     },
     {
       name: 'chromium-mobile',
+      testMatch: '**/*.mobile.e2e.test.ts',
       use: { ...devices['Pixel 7'], browserName: 'chromium' },
     },
   ],

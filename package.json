@@ -21,6 +21,7 @@
     "test:integration": "bash tests/scripts/run-test-stack.sh integration",
     "test:e2e": "bash tests/scripts/run-test-stack.sh e2e",
     "test:e2e:all-browsers": "bash tests/scripts/run-test-stack.sh all-browsers",
+    "test:e2e:seed": "cross-env NODE_OPTIONS=--no-deprecation bun tests/fixtures/e2e.ts",
     "test:coverage": "bash tests/scripts/run-test-stack.sh coverage",
     "test:coverage:run": "vitest run --project unit --project component --project integration --coverage && bun tests/scripts/assert-coverage.mjs",
     "test:watch": "vitest --project unit --project component",

@@ -15,7 +15,9 @@ case "${TEST_SUITE:-all}" in
     bun run test:component
     bun run test:integration:run
     bun run test:coverage:run
+    bun run test:e2e:seed
     bun run build
+    bun run test:e2e:run --project=chromium-desktop --project=chromium-mobile
     ;;
   coverage)
     bun run test:coverage:run
@@ -24,6 +26,8 @@ case "${TEST_SUITE:-all}" in
     bun run test:integration:run
     ;;
   e2e)
+    bun run test:e2e:seed
+    bun run build
     bun run test:e2e:run --project=chromium-desktop --project=chromium-mobile
     ;;
   all-browsers)
