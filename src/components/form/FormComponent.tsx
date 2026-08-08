@@ -1,10 +1,10 @@
 'use client'
 
-import { useEffect, useState } from 'react'
+import { useState } from 'react'
 
 declare global {
   interface Window {
-    grecaptcha: {
+    grecaptcha?: {
       ready: (cb: () => void) => void
       execute: (siteKey: string, options: { action: string }) => Promise<string>
     }
@@ -16,6 +16,49 @@ import type { Form } from '@/payload-types'
 
 type FormFieldBlock = NonNullable<Form['fields']>[number]
 
+let recaptchaLoad: Promise<void> | undefined
+
+function loadRecaptcha(siteKey: string): Promise<void> {
+  if (window.grecaptcha) return Promise.resolve()
+  if (recaptchaLoad) return recaptchaLoad
+
+  recaptchaLoad = new Promise<void>((resolve, reject) => {
+    const script = document.createElement('script')
+    script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`
+    script.async = true
+    script.dataset.dimmRecaptcha = ''
+    script.addEventListener('load', () => resolve(), { once: true })
+    script.addEventListener(
+      'error',
+      () => {
+        recaptchaLoad = undefined
+        script.remove()
+        reject(new Error('reCAPTCHA failed to load'))
+      },
+      { once: true },
+    )
+    document.head.appendChild(script)
+  })
+
+  return recaptchaLoad
+}
+
+async function createRecaptchaToken(siteKey: string): Promise<string> {
+  await loadRecaptcha(siteKey)
+  const recaptcha = window.grecaptcha
+  if (!recaptcha) throw new Error('reCAPTCHA is unavailable')
+
+  return new Promise<string>((resolve, reject) => {
+    recaptcha.ready(async () => {
+      try {
+        resolve(await recaptcha.execute(siteKey, { action: 'submit' }))
+      } catch (error) {
+        reject(error)
+      }
+    })
+  })
+}
+
 function isLockedEmail(field: FormFieldBlock): boolean {
   return field.blockType === 'email' && field.isPreDefined === true
 }
@@ -24,19 +67,6 @@ export function FormComponent({ form }: { form: Form }) {
   const [status, setStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle')
   const [values, setValues] = useState<Record<string, string>>({})
   const siteKey = process.env.NEXT_PUBLIC_RECAPTCHA_SITE_KEY || ''
-
-  useEffect(() => {
-    if (!siteKey) return
-
-    const script = document.createElement('script')
-    script.src = `https://www.google.com/recaptcha/api.js?render=${siteKey}`
-    script.async = true
-    document.head.appendChild(script)
-
-    return () => {
-      document.head.removeChild(script)
-    }
-  }, [siteKey])
 
   function setValue(name: string, value: string) {
     setValues((prev) => ({ ...prev, [name]: value }))
@@ -52,17 +82,9 @@ export function FormComponent({ form }: { form: Form }) {
       value: isLockedEmail(field) ? field.defaultValue || '' : values[field.name] || '',
     }))
 
-    if (siteKey && window.grecaptcha) {
+    if (siteKey) {
       try {
-        const token = await new Promise<string>((resolve, reject) => {
-          window.grecaptcha.ready(async () => {
-            try {
-              resolve(await window.grecaptcha.execute(siteKey, { action: 'submit' }))
-            } catch (err) {
-              reject(err)
-            }
-          })
-        })
+        const token = await createRecaptchaToken(siteKey)
         submissionData.push({ field: 'recaptchaToken', value: token })
       } catch {
         setStatus('error')

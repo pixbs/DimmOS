@@ -1,0 +1,5 @@
+export const E2E_ADMIN_EMAIL = 'e2e-admin@example.test'
+export const E2E_ADMIN_PASSWORD = 'e2e-admin-password-2026'
+export const E2E_CONSENT_VERSION = 'e2e-v1'
+export const E2E_ORIGIN = 'http://127.0.0.1:3000'
+export const E2E_POSTHOG_ORIGIN = 'http://127.0.0.1:3999'

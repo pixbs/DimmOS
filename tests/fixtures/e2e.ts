@@ -2,7 +2,11 @@ import { getPayload } from 'payload'
 
 import config from '../../src/payload.config'
 
-export const E2E_CONSENT_VERSION = 'e2e-v1'
+import {
+  E2E_ADMIN_EMAIL,
+  E2E_ADMIN_PASSWORD,
+  E2E_CONSENT_VERSION,
+} from './e2e-values'
 
 function lexicalDocument(text: string) {
   return {
@@ -38,6 +42,90 @@ try {
 
   await Promise.all([
     payload.create({
+      collection: 'users',
+      data: {
+        email: E2E_ADMIN_EMAIL,
+        password: E2E_ADMIN_PASSWORD,
+      },
+      overrideAccess: true,
+    }),
+    payload.create({
+      collection: 'cookie-services',
+      data: {
+        name: 'DimmOS preferences',
+        category: 'essential',
+        legalName: 'DimmOS',
+        description: 'Stores the visitor privacy choices required by the site.',
+        cookies: [
+          {
+            storageType: 'localStorage',
+            name: 'cookie-consent',
+            duration: '6 months',
+            description: 'Records consent categories and policy version.',
+          },
+        ],
+      },
+      overrideAccess: true,
+    }),
+    payload.create({
+      collection: 'cookie-services',
+      data: {
+        name: 'E2E Analytics',
+        category: 'analytics',
+        legalName: 'PostHog, Inc.',
+        description: 'Measures product usage only after analytics consent.',
+        privacyPolicyUrl: 'https://posthog.com/privacy',
+        cookies: [
+          {
+            storageType: 'localStorage',
+            name: 'ph_e2e',
+            duration: '1 year',
+            description: 'Controlled analytics state for the test environment.',
+          },
+        ],
+      },
+      overrideAccess: true,
+    }),
+    payload.create({
+      collection: 'forms',
+      data: {
+        title: 'E2E Contact',
+        slug: 'e2e-contact',
+        showShortcut: true,
+        shortcutName: 'Contact',
+        shortcutIcon: 'ri-mail-send-fill',
+        shortcutOrder: 3,
+        fields: [
+          {
+            blockType: 'text',
+            name: 'name',
+            label: 'Name',
+            placeholder: 'Your name',
+            required: true,
+          },
+          {
+            blockType: 'email',
+            name: 'email',
+            label: 'Email',
+            defaultValue: 'owner@example.test',
+            isPreDefined: true,
+          },
+          {
+            blockType: 'textarea',
+            name: 'message',
+            label: 'Message',
+            placeholder: 'Describe your project',
+            required: true,
+          },
+        ],
+        confirmationMessage: lexicalDocument('Your controlled message was received.'),
+      },
+      overrideAccess: true,
+    }),
+  ])
+
+  await Promise.all([
+    payload.create({
       collection: 'articles',
       data: {
         title: 'Alpha Project',
@@ -45,6 +133,11 @@ try {
         slug: 'e2e-alpha',
         year: 2026,
         shortcutIcon: 'ri-rocket-fill',
+        meta: {
+          title: 'Alpha Project | DimmOS',
+          description: 'A deterministic project page used to verify production SEO behavior.',
+          noIndex: false,
+        },
         content: [
           {
             blockType: 'hero',
@@ -89,6 +182,27 @@ try {
             blockType: 'hero',
             title: 'Beta system',
             description: 'A second project used to validate filtering and view changes.',
+          },
+        ],
+      },
+      overrideAccess: true,
+    }),
+    payload.create({
+      collection: 'articles',
+      data: {
+        title: 'Private Project',
+        type: 'service',
+        slug: 'e2e-private',
+        meta: {
+          title: 'Private Project | DimmOS',
+          description: 'A deterministic page excluded from search indexing.',
+          noIndex: true,
+        },
+        content: [
+          {
+            blockType: 'hero',
+            title: 'Private delivery',
+            description: 'This content remains available while search indexing is disabled.',
           },
         ],
       },

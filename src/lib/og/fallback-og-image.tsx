@@ -107,7 +107,7 @@ function FallbackOgFrame({ title }: { title: string }) {
             width: '100%',
           }}
         >
-          <div style={{ display: 'flex', gap: 4, zIndex: 1 }}>
+          <div style={{ display: 'flex', gap: 4 }}>
             <TrafficLight color="#FF5F57" symbol="x" />
             <TrafficLight color="#FEBC2E" symbol="-" />
             <TrafficLight color="#28C840" symbol="+" />
