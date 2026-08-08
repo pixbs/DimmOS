@@ -11,6 +11,8 @@ case "${TEST_SUITE:-all}" in
     bun run typecheck
     bun run test:unit
     bun run test:unit
+    bun run test:component
+    bun run test:component
     bun run test:coverage
     bun run build
     ;;

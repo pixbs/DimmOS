@@ -21,7 +21,7 @@
     "test:integration": "bash tests/scripts/run-test-stack.sh integration",
     "test:e2e": "bash tests/scripts/run-test-stack.sh e2e",
     "test:e2e:all-browsers": "bash tests/scripts/run-test-stack.sh all-browsers",
-    "test:coverage": "vitest run --project unit --coverage",
+    "test:coverage": "vitest run --project unit --project component --coverage",
     "test:watch": "vitest --project unit --project component",
     "test:container": "bash tests/scripts/run-in-container.sh",
     "seed:cookies": "cross-env NODE_OPTIONS=\"--no-deprecation --import=tsx/esm\" node src/scripts/seedCookieServices.ts",
@@ -84,6 +84,11 @@
   "engines": {
     "node": "^18.20.2 || >=20.9.0",
     "pnpm": "^9 || ^10"
+  },
+  "msw": {
+    "workerDirectory": [
+      "public"
+    ]
   },
   "pnpm": {
     "onlyBuiltDependencies": [

@@ -51,6 +51,7 @@ const eslintConfig = [
     ignores: [
       '.next/',
       'artifacts/',
+      'public/mockServiceWorker.js',
       'src/payload-types.ts',
       'src/payload-generated-schema.ts',
     ],
