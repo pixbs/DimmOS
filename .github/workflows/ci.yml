@@ -2,14 +2,22 @@ name: CI
 
 on:
   push:
-    branches: [master, main]
   pull_request:
-    branches: [master, main]
+  schedule:
+    - cron: '0 3 * * *'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: test-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   test:
+    if: github.event_name != 'schedule'
     runs-on: ubuntu-24.04
-    timeout-minutes: 30
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -22,3 +30,38 @@ jobs:
 
       - name: Run deterministic test gate
         run: bun run test:ci
+
+      - name: Upload test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-reports-${{ github.run_attempt }}
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 14
+
+  nightly-cross-browser:
+    if: github.event_name == 'schedule'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: oven-sh/setup-bun@v2
+        with:
+          bun-version: 1.2.15
+
+      - name: Verify lockfile
+        run: bun install --frozen-lockfile
+
+      - name: Run repeated cross-browser component and E2E suites
+        run: bun run test:e2e:all-browsers
+
+      - name: Upload cross-browser reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cross-browser-reports-${{ github.run_attempt }}
+          path: artifacts/
+          if-no-files-found: warn
+          retention-days: 14

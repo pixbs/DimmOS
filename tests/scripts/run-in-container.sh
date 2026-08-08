@@ -31,7 +31,25 @@ case "${TEST_SUITE:-all}" in
     bun run test:e2e:run --project=chromium-desktop --project=chromium-mobile
     ;;
   all-browsers)
-    bun run test:e2e:run --repeat-each=2
+    for pass in 1 2; do
+      VITEST_BROWSER_MATRIX=all \
+        VITEST_JUNIT_OUTPUT="artifacts/vitest/junit-component-cross-browser-${pass}.xml" \
+        bun run test:component
+    done
+    bun run test:e2e:seed
+    bun run build
+    bun run test:e2e:run \
+      --project=chromium-desktop \
+      --project=chromium-mobile \
+      --project=firefox-desktop \
+      --project=firefox-mobile \
+      --project=webkit-desktop \
+      --project=webkit-mobile \
+      --repeat-each=2
+    ;;
+  failure-check)
+    echo "Intentional failure used to verify container and volume cleanup." >&2
+    exit 86
     ;;
   *)
     echo "Unknown TEST_SUITE: ${TEST_SUITE:-}" >&2

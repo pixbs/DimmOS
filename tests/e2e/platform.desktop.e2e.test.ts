@@ -93,7 +93,9 @@ async function loginThroughAdmin(page: Page): Promise<void> {
   await expect(page.getByRole('heading', { name: 'Collections', level: 2 })).toBeVisible()
 }
 
-test('cookie acceptance persists, records its audit event, and unlocks controlled analytics', async ({ page }) => {
+test('cookie acceptance persists, records its audit event, and unlocks controlled analytics', async ({
+  page,
+}) => {
   await installClientState(page, { consentCategories: null })
   const analyticsRequests = await mockPostHog(page)
   await page.goto('/')
@@ -112,10 +114,12 @@ test('cookie acceptance persists, records its audit event, and unlocks controlle
   expect((await auditResponse).status()).toBe(201)
   await expect(notice).toBeHidden()
 
-  await expect.poll(() => readConsent(page)).toMatchObject({
-    categories: ['essential', 'functional', 'analytics', 'marketing'],
-    version: E2E_CONSENT_VERSION,
-  })
+  await expect
+    .poll(() => readConsent(page))
+    .toMatchObject({
+      categories: ['essential', 'functional', 'analytics', 'marketing'],
+      version: E2E_CONSENT_VERSION,
+    })
   const stored = await readConsent(page)
   expect(stored).not.toBeNull()
   await expect.poll(() => readPostHogConsent(page)).toBe('1')
@@ -129,7 +133,9 @@ test('cookie acceptance persists, records its audit event, and unlocks controlle
   await expect.poll(() => readConsent(page)).toEqual(stored)
 })
 
-test('cookie rejection and configured updates persist as distinct audited choices', async ({ page }) => {
+test('cookie rejection and configured updates persist as distinct audited choices', async ({
+  page,
+}) => {
   await installClientState(page, { consentCategories: null })
   await mockPostHog(page)
   await page.goto('/')
@@ -215,7 +221,9 @@ test('contact submission exposes controlled failure and success states without t
     await route.fulfill({
       status: attempt === 1 ? 503 : 201,
       contentType: 'application/json',
-      body: JSON.stringify(attempt === 1 ? { errors: [{ message: 'Controlled failure' }] } : { id: 1 }),
+      body: JSON.stringify(
+        attempt === 1 ? { errors: [{ message: 'Controlled failure' }] } : { id: 1 },
+      ),
     })
   })
 
@@ -242,7 +250,9 @@ test('contact submission exposes controlled failure and success states without t
   })
 })
 
-test('search metadata, discovery files, fallback images, and preview rendering agree', async ({ page }) => {
+test('search metadata, discovery files, fallback images, and preview rendering agree', async ({
+  page,
+}) => {
   await installClientState(page)
   const request = page.context().request
   const sitemapResponse = await request.get(`${E2E_ORIGIN}/sitemap.xml`)
@@ -299,11 +309,8 @@ test('admin login supports controlled AI feedback and authenticated content CRUD
   await page.route('https://www.gravatar.com/**', async (route) => {
     await route.fulfill({
       status: 200,
-      contentType: 'image/png',
-      body: Buffer.from(
-        'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+Xw3qWQAAAABJRU5ErkJggg==',
-        'base64',
-      ),
+      contentType: 'image/gif',
+      body: Buffer.from('R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw==', 'base64'),
     })
   })
   await loginThroughAdmin(page)
@@ -336,8 +343,7 @@ test('admin login supports controlled AI feedback and authenticated content CRUD
   await slug.fill('e2e-admin-window')
   const createResponse = page.waitForResponse(
     (response) =>
-      new URL(response.url()).pathname === '/api/windows' &&
-      response.request().method() === 'POST',
+      new URL(response.url()).pathname === '/api/windows' && response.request().method() === 'POST',
   )
   await page.getByRole('button', { name: 'Save', exact: true }).click()
   const createdResponse = await createResponse

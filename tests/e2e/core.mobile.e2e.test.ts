@@ -7,7 +7,12 @@ test('mobile startup uses the configured sheet and shortcut navigation', async (
   await page.goto('/')
 
   const welcome = page.getByRole('dialog', { name: 'Mobile Welcome' })
-  await expect(welcome).toBeVisible()
+  await expect
+    .poll(() => page.evaluate(() => sessionStorage.getItem('managed-startup-opened:mobile')), {
+      timeout: 15_000,
+    })
+    .toBe('true')
+  await expect(welcome).toBeVisible({ timeout: 15_000 })
   await expect(page.getByRole('dialog', { name: 'Desktop Welcome' })).toBeHidden()
   await expect(welcome.getByText('Mobile ready')).toBeVisible()
 
@@ -28,7 +33,9 @@ test('mobile startup uses the configured sheet and shortcut navigation', async (
   await expect(drawer.getByRole('button', { name: 'Table view' })).toBeHidden()
 })
 
-test('mobile navigation resolves content without leaving a route preloader behind', async ({ page }) => {
+test('mobile navigation resolves content without leaving a route preloader behind', async ({
+  page,
+}) => {
   await installClientState(page)
   await page.goto('/e2e-workspace')
 
@@ -40,6 +47,8 @@ test('mobile navigation resolves content without leaving a route preloader behin
   await expect(page).toHaveURL(/\/e2e-alpha$/)
   const articleDrawer = page.getByTestId('page-drawer')
   await expect(articleDrawer.getByRole('heading', { name: 'Alpha delivery' })).toBeVisible()
-  await expect(articleDrawer.getByText('The team validated each stage with users and production data.')).toBeVisible()
+  await expect(
+    articleDrawer.getByText('The team validated each stage with users and production data.'),
+  ).toBeVisible()
   await expect(page.getByRole('status', { name: 'Loading' })).toBeHidden()
 })

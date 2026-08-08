@@ -17,7 +17,9 @@ test('desktop startup opens the configured content once per session', async ({ p
   await expect(welcome).toBeHidden()
 })
 
-test('managed windows preserve focus, geometry, taskbar state, and session state', async ({ page }) => {
+test('managed windows preserve focus, geometry, taskbar state, and session state', async ({
+  page,
+}) => {
   await installClientState(page)
   await page.goto('/')
 
@@ -25,15 +27,17 @@ test('managed windows preserve focus, geometry, taskbar state, and session state
   let workspace = page.getByRole('dialog', { name: 'Core Workspace' })
   await expect(workspace).toBeVisible()
   await expect(page).toHaveURL(/\/e2e-workspace$/)
-  await expect.poll(() =>
-    workspace.evaluate((element) => {
-      const style = getComputedStyle(element)
-      return (
-        Number(style.opacity) > 0.999 &&
-        (style.transform === 'none' || style.transform === 'matrix(1, 0, 0, 1, 0, 0)')
-      )
-    }),
-  ).toBe(true)
+  await expect
+    .poll(() =>
+      workspace.evaluate((element) => {
+        const style = getComputedStyle(element)
+        return (
+          Number(style.opacity) > 0.999 &&
+          (style.transform === 'none' || style.transform === 'matrix(1, 0, 0, 1, 0, 0)')
+        )
+      }),
+    )
+    .toBe(true)
 
   const title = workspace.getByText('Core Workspace', { exact: true })
   const titleBar = title.locator('..')
@@ -41,17 +45,24 @@ test('managed windows preserve focus, geometry, taskbar state, and session state
   expect(titleBox).not.toBeNull()
   await page.mouse.move(titleBox!.x + titleBox!.width / 2, titleBox!.y + titleBox!.height / 2)
   await page.mouse.down()
-  await page.mouse.move(titleBox!.x + titleBox!.width / 2 + 96, titleBox!.y + titleBox!.height / 2 + 64)
+  await page.mouse.move(
+    titleBox!.x + titleBox!.width / 2 + 96,
+    titleBox!.y + titleBox!.height / 2 + 64,
+  )
   await page.mouse.up()
-  await expect.poll(() => readWindowGeometry(page, 'secondary:e2e-workspace')).toMatchObject({
-    x: expect.any(Number),
-    y: expect.any(Number),
-  })
+  await expect
+    .poll(() => readWindowGeometry(page, 'secondary:e2e-workspace'))
+    .toMatchObject({
+      x: expect.any(Number),
+      y: expect.any(Number),
+    })
 
   const initialBox = await workspace.boundingBox()
   expect(initialBox).not.toBeNull()
   await workspace.getByRole('separator', { name: 'Resize window width' }).press('ArrowRight')
-  await expect.poll(async () => (await workspace.boundingBox())?.width).toBeGreaterThan(initialBox!.width)
+  await expect
+    .poll(async () => (await workspace.boundingBox())?.width)
+    .toBeGreaterThan(initialBox!.width)
 
   await workspace.getByRole('button', { name: 'Expand to full screen' }).click()
   await expect(workspace.getByRole('button', { name: 'Restore window' })).toBeVisible()
@@ -82,19 +93,37 @@ test('managed windows preserve focus, geometry, taskbar state, and session state
   await notes.getByRole('button', { name: 'Close' }).click()
   await expect(notes).toBeHidden()
   const savedGeometry = await readWindowGeometry(page, 'secondary:e2e-workspace')
-  expect(savedGeometry).toMatchObject({ w: expect.any(Number), x: expect.any(Number), y: expect.any(Number) })
+  expect(savedGeometry).toMatchObject({
+    w: expect.any(Number),
+    x: expect.any(Number),
+    y: expect.any(Number),
+  })
+  await expect
+    .poll(() =>
+      page.evaluate(() => {
+        const stored = JSON.parse(sessionStorage.getItem('open-windows') ?? '[]') as Array<{
+          slug: string
+        }>
+        return stored.map((entry) => entry.slug)
+      }),
+    )
+    .toEqual(['e2e-workspace'])
 
   await page.goto('/')
   workspace = page.getByRole('dialog', { name: 'Core Workspace' })
   await expect(workspace).toBeVisible()
-  await expect.poll(() => readWindowGeometry(page, 'secondary:e2e-workspace')).toEqual(savedGeometry)
+  await expect
+    .poll(() => readWindowGeometry(page, 'secondary:e2e-workspace'))
+    .toEqual(savedGeometry)
 
   await workspace.getByRole('button', { name: 'Close' }).click()
   await expect(workspace).toBeHidden()
   await expect(page).toHaveURL(/\/$/)
 })
 
-test('toolbar journeys filter Works, switch views, and navigate within one window', async ({ page }) => {
+test('toolbar journeys filter Works, switch views, and navigate within one window', async ({
+  page,
+}) => {
   await installClientState(page)
   await page.goto('/')
   await page.getByRole('link', { name: 'Workspace' }).click()
@@ -134,14 +163,34 @@ test('context menus and display controls update the real cursor preference', asy
   await page.goto('/')
 
   const workspaceShortcut = page.getByRole('link', { name: 'Workspace' })
-  await workspaceShortcut.hover()
   const cursor = page.locator('[data-dimm-custom-cursor]')
-  await expect(cursor).toHaveAttribute('data-cursor-kind', 'window')
+  const hasFinePointer = await page.evaluate(
+    () => matchMedia('(hover: hover) and (pointer: fine) and (min-width: 1024px)').matches,
+  )
+  const readCursorState = () =>
+    cursor.evaluateAll((elements) => ({
+      count: elements.length,
+      kind: elements[0]?.getAttribute('data-cursor-kind') ?? null,
+    }))
+  const initialCursorState = new Map([
+    [true, { count: 1, kind: 'idle' }],
+    [false, { count: 0, kind: null }],
+  ]).get(hasFinePointer)
+  const expectedCursorState = new Map([
+    [true, { count: 1, kind: 'window' }],
+    [false, { count: 0, kind: null }],
+  ]).get(hasFinePointer)
+  await expect.poll(readCursorState).toEqual(initialCursorState)
+  await page.mouse.move(0, 0)
+  await workspaceShortcut.hover()
+  await expect.poll(readCursorState).toEqual(expectedCursorState)
 
   await workspaceShortcut.click({ button: 'right' })
   const shortcutMenu = page.getByRole('menu', { name: 'Shortcut menu' })
   await expect(shortcutMenu).toBeVisible()
-  await expect(shortcutMenu.getByRole('menuitem', { name: 'Open in new DimmOS window' })).toBeFocused()
+  await expect(
+    shortcutMenu.getByRole('menuitem', { name: 'Open in new DimmOS window' }),
+  ).toBeFocused()
   await page.keyboard.press('Escape')
   await expect(shortcutMenu).toBeHidden()
 
@@ -156,7 +205,7 @@ test('context menus and display controls update the real cursor preference', asy
   await expect(cursorSwitch).not.toBeChecked()
   await expect(page.locator('html')).toHaveAttribute('data-dimm-cursor', 'system')
   await expect(cursor).toHaveCount(0)
-  await expect.poll(() =>
-    page.evaluate(() => JSON.parse(localStorage.getItem('display-options:v1') ?? '{}')),
-  ).toEqual({ cursorMode: 'system' })
+  await expect
+    .poll(() => page.evaluate(() => JSON.parse(localStorage.getItem('display-options:v1') ?? '{}')))
+    .toEqual({ cursorMode: 'system' })
 })

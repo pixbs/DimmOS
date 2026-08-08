@@ -56,12 +56,20 @@ const coverageModules = [
   'src/utilities/windowBehavior.ts',
 ]
 
+const componentBrowsers =
+  process.env.VITEST_BROWSER_MATRIX === 'all'
+    ? (['chromium', 'firefox', 'webkit'] as const)
+    : (['chromium'] as const)
+
 export default defineConfig({
   plugins: [tsconfigPaths(), react()],
   test: {
     allowOnly: false,
     passWithNoTests: false,
-    reporters: ['default', ['junit', { outputFile: 'artifacts/vitest/junit.xml' }]],
+    reporters: [
+      'default',
+      ['junit', { outputFile: process.env.VITEST_JUNIT_OUTPUT ?? 'artifacts/vitest/junit.xml' }],
+    ],
     coverage: {
       provider: 'v8',
       include: coverageModules,
@@ -123,11 +131,15 @@ export default defineConfig({
             },
             {
               find: /^next\/image$/,
-              replacement: fileURLToPath(new URL('./tests/stubs/browser-image.tsx', import.meta.url)),
+              replacement: fileURLToPath(
+                new URL('./tests/stubs/browser-image.tsx', import.meta.url),
+              ),
             },
             {
               find: /^next\/link$/,
-              replacement: fileURLToPath(new URL('./tests/stubs/browser-link.tsx', import.meta.url)),
+              replacement: fileURLToPath(
+                new URL('./tests/stubs/browser-link.tsx', import.meta.url),
+              ),
             },
             {
               find: /^next\/navigation$/,
@@ -152,12 +164,10 @@ export default defineConfig({
             headless: true,
             provider: playwright(),
             screenshotDirectory: 'artifacts/vitest/screenshots',
-            instances: [
-              {
-                browser: 'chromium',
-                viewport: { width: 1280, height: 900 },
-              },
-            ],
+            instances: componentBrowsers.map((browser) => ({
+              browser,
+              viewport: { width: 1280, height: 900 },
+            })),
           },
         },
       }),

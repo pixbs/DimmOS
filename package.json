@@ -14,7 +14,7 @@
     "payload": "cross-env NODE_OPTIONS=--no-deprecation payload",
     "start": "cross-env NODE_OPTIONS=--no-deprecation next start",
     "typecheck": "tsc --noEmit",
-    "test": "bun run test:ci",
+    "test": "bash tests/scripts/run-test-stack.sh all",
     "test:ci": "bash tests/scripts/run-test-stack.sh all",
     "test:unit": "vitest run --project unit",
     "test:component": "vitest run --project component",

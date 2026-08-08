@@ -14,8 +14,7 @@ import { StatsView } from '@/components/content-blocks/sections/stats'
 import { SummaryView } from '@/components/content-blocks/sections/summary'
 import { WelcomeIntroView } from '@/components/content-blocks/sections/welcome-intro'
 
-const transparentPixel =
-  'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M/wHwAF/gL+Xw3qWQAAAABJRU5ErkJggg=='
+const transparentPixel = 'data:image/gif;base64,R0lGODlhAQABAIAAAAAAAP///ywAAAAAAQABAAACAUwAOw=='
 
 describe('animation accessibility and browser behavior', () => {
   it('renders one natural accessible heading while visual units remain hidden', async () => {
@@ -37,10 +36,9 @@ describe('animation accessibility and browser behavior', () => {
 
     const wrapper = (await accessibleValue.element()).parentElement!
     await expect.poll(() => wrapper.querySelector('[data-count-number]')?.textContent).toBe('1.2')
-    expect([...wrapper.querySelectorAll('[data-count-affix]')].map((node) => node.textContent)).toEqual([
-      '$',
-      'K',
-    ])
+    expect(
+      [...wrapper.querySelectorAll('[data-count-affix]')].map((node) => node.textContent),
+    ).toEqual(['$', 'K'])
   })
 
   it('draws horizontal and vertical dividers with explicit orientation', async () => {
@@ -74,7 +72,9 @@ describe('animation accessibility and browser behavior', () => {
     const wrapper = (await image.element()).parentElement!
 
     await expect.poll(() => wrapper.querySelector('canvas')).toBeNull()
-    expect((await image.element() as HTMLImageElement).naturalWidth).toBeGreaterThan(0)
+    await expect
+      .poll(async () => ((await image.element()) as HTMLImageElement).naturalWidth)
+      .toBeGreaterThan(0)
   })
 })
 
@@ -167,12 +167,16 @@ describe('content sections', () => {
   })
 
   it('renders the interactive portrait and reacts to pointer input', async () => {
-    const screen = await render(<InteractivePortraitView block={{ blockType: 'interactivePortrait' } as never} />)
+    const screen = await render(
+      <InteractivePortraitView block={{ blockType: 'interactivePortrait' } as never} />,
+    )
     const portrait = screen.getByRole('img', { name: 'Portrait that follows pointer movement' })
     await expect.element(portrait).toBeVisible()
     await userEvent.hover(portrait)
 
-    const region = (await portrait.element()).closest('[aria-label="Interactive portrait"]') as HTMLElement
+    const region = (await portrait.element()).closest(
+      '[aria-label="Interactive portrait"]',
+    ) as HTMLElement
     await expect.poll(() => region.dataset.gazeMode).toMatch(/pointer|idle/)
     expect(region.querySelectorAll('[data-look-index]').length).toBeGreaterThan(10)
   })

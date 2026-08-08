@@ -3,7 +3,7 @@ set -euo pipefail
 
 suite="${1:-all}"
 case "$suite" in
-  all|coverage|integration|e2e|all-browsers) ;;
+  all|coverage|integration|e2e|all-browsers|failure-check) ;;
   *)
     echo "Unknown test suite: $suite" >&2
     exit 2
@@ -29,6 +29,7 @@ cleanup() {
 }
 trap cleanup EXIT INT TERM
 
+rm -rf artifacts/coverage artifacts/playwright artifacts/vitest
 mkdir -p artifacts
 export TEST_SUITE="$suite"
 "${compose[@]}" up --build --abort-on-container-exit --exit-code-from tests tests
