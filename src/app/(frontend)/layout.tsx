@@ -27,6 +27,7 @@ const onest = Onest({ subsets: ['latin'] })
 const SITE_TITLE = "Dimm's OS"
 
 export const metadata: Metadata = {
+  metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL ?? 'http://localhost:3000'),
   title: "Dimm's OS",
   description: 'Interactive OS-style portfolio — an OS-metaphor desktop built on Next.js + Payload CMS.',
   openGraph: { title: "Dimm's OS", images: [{ url: '/og' }] },
@@ -208,7 +209,14 @@ export default function RootLayout(props: { children: React.ReactNode }) {
             `,
           }}
         />
-        <PostHogProvider clientOptions={{ opt_out_capturing_by_default: true }}>
+        <PostHogProvider
+          clientOptions={{
+            advanced_disable_flags: true,
+            disable_external_dependency_loading: true,
+            disable_surveys: true,
+            opt_out_capturing_by_default: true,
+          }}
+        >
           <CookieConsentProvider>
             <PostHogConsentGate />
             <SentryReplayProvider />

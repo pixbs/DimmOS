@@ -11,6 +11,8 @@
 
 # testing
 /coverage
+/artifacts
+/.vitest-reports
 
 # next.js
 /.next/

@@ -6,22 +6,22 @@ Interactive OS-style portfolio built on Next.js + Payload CMS. The UI metaphor i
 
 ## Stack
 
-| Layer | Package | Version |
-|---|---|---|
-| Framework | Next.js | 16.2.3 |
-| React | react / react-dom | 19.2.4 |
-| CMS | Payload CMS | 3.84.1 |
-| Database | PostgreSQL via `@payloadcms/db-postgres` | — |
-| Rich text | `@payloadcms/richtext-lexical` | — |
-| Forms | `@payloadcms/plugin-form-builder` | — |
-| Email | `@payloadcms/email-resend` | — |
-| Styling | Tailwind CSS | 4.2.4 |
-| Icons | Remixicon | 4.9.1 |
-| Analytics | `@posthog/next` | — |
-| Error tracking | `@sentry/nextjs` + `@payloadcms/plugin-sentry` | — |
-| E2E tests | Playwright | 1.58.2 |
-| Unit/int tests | Vitest | 4.0.18 |
-| Runtime | Bun | — |
+| Layer                            | Package                                        | Version |
+| -------------------------------- | ---------------------------------------------- | ------- |
+| Framework                        | Next.js                                        | 16.2.3  |
+| React                            | react / react-dom                              | 19.2.4  |
+| CMS                              | Payload CMS                                    | 3.84.1  |
+| Database                         | PostgreSQL via `@payloadcms/db-postgres`       | —       |
+| Rich text                        | `@payloadcms/richtext-lexical`                 | —       |
+| Forms                            | `@payloadcms/plugin-form-builder`              | —       |
+| Email                            | `@payloadcms/email-resend`                     | —       |
+| Styling                          | Tailwind CSS                                   | 4.2.4   |
+| Icons                            | Remixicon                                      | 4.9.1   |
+| Analytics                        | `@posthog/next`                                | —       |
+| Error tracking                   | `@sentry/nextjs` + `@payloadcms/plugin-sentry` | —       |
+| E2E tests                        | Playwright                                     | 1.58.2  |
+| Unit/component/integration tests | Vitest + Browser Mode                          | 4.0.18  |
+| Runtime                          | Bun                                            | 1.2.15  |
 
 ---
 
@@ -122,7 +122,7 @@ src/
 Three layers cooperate to serve window content; each exists for a different reason:
 
 1. **Server cache** — `fetchWindowContent(slug)` in `src/lib/windowContent.ts` is wrapped in `unstable_cache` (tag `window-content`, per-slug keying via the function argument). CMS saves invalidate it through the shared revalidation hooks (`src/hooks/revalidateContent.ts`).
-2. **Server action transport** — `src/actions/getWindowContent.ts` re-exports the fetcher as a `'use server'` action so the client can request content for on-demand windows. This is deliberately a POST-for-reads tradeoff: shortcut windows are SSR-preloaded and results are cached on both ends, so only the *first* open of a non-shortcut window pays one POST. Revisit as a GET route handler only if window-open latency becomes a measured problem.
+2. **Server action transport** — `src/actions/getWindowContent.ts` re-exports the fetcher as a `'use server'` action so the client can request content for on-demand windows. This is deliberately a POST-for-reads tradeoff: shortcut windows are SSR-preloaded and results are cached on both ends, so only the _first_ open of a non-shortcut window pays one POST. Revisit as a GET route handler only if window-open latency becomes a measured problem.
 3. **Client promise cache** — `src/lib/window-promise-cache.ts` holds one promise per slug for the session. Reliability rules:
    - A **rejected** promise evicts itself (identity-guarded), so the next open retries instead of replaying the failure all session.
    - **Closing a window evicts its history stack**, so reopening refetches fresh data; preloaded shortcut roots re-seed from SSR data on the next render and stay instant.
@@ -145,10 +145,12 @@ On **mobile** (no window system), `not-found.tsx` renders a full-page BSOD overl
 **Styled as a branded BSOD:** brand-red (`#F22F57`) background, monospace font, uppercase layout, with the failed route path displayed.
 
 **Key files:**
+
 - `src/app/(frontend)/not-found.tsx` — calls `manager.openDeferred(slug)` + `router.replace('/')` on all viewports; renders `lg:hidden` mobile BSOD overlay
 - `src/components/window/content-view.tsx` — `data === null` branch renders the BSOD content
 
 **Window manager API:**
+
 - `manager.openDeferred(slug)` — queues `slug` to open as an on-demand window once `realPrimarySlug` clears (after the redirect). Uses a `[pendingOpen, realPrimarySlug]` effect so the window isn't immediately removed by Effect 3's primary-clear logic.
 
 **Taskbar:** content windows without a CMS registry entry (including any 404'd slug) appear with `ri-error-warning-fill` and brand-red color. System windows use built-in taskbar metadata for cookie notice/preferences and display options.
@@ -156,12 +158,14 @@ On **mobile** (no window system), `not-found.tsx` renders a full-page BSOD overl
 ---
 
 ### DrawerShell — generic bottom sheet
+
 - Used by: the `/test` page demo and simple drawer experiments. Cookie notice/preferences now render through managed system windows.
 - CSS: `translate-y-full` (closed) → `translate-y-0` (open)
 - Dismiss: drag > 40% panel height, Escape key, backdrop click
 - z-index: dialog at z-50, backdrop at z-40
 
 ### PageDrawerShell — route-based full-height drawer
+
 - Used by: all routes under `(pages)/`
 - Auto-navigates to `/` on close via `router.push('/')`
 - Sets `document.body.dataset.pageDrawer` = `open | closed | dragging`
@@ -169,13 +173,8 @@ On **mobile** (no window system), `not-found.tsx` renders a full-page BSOD overl
 - Dismiss threshold: 25% panel height (smaller than generic)
 
 ### Testing drawers
-Playwright cannot use `toBeVisible()` for drawer closed state because CSS transforms don't remove elements from the accessibility tree. Use class assertions:
-```ts
-await expect(el).toHaveClass(/translate-y-0/)   // open
-await expect(el).toHaveClass(/translate-y-full/) // closed
-```
 
-Use `data-testid="page-drawer"` (set on `PageDrawerShell`) rather than `[role="dialog"]` in Playwright selectors — both `PageDrawerShell` (z-30) and `DrawerShell` / cookie banner (z-50) have `role="dialog"`, causing Playwright strict-mode violations if you target by role alone.
+Exercise drawers through their trigger, close action, keyboard handling, and drag behavior. Prefer a named `dialog` role and assert the public `data-state="open | closed"` contract. `data-testid="page-drawer"` is permitted only to disambiguate the route drawer before queries are scoped to accessible roles and names. Do not assert Tailwind classes, transforms, or React state.
 
 ---
 
@@ -186,6 +185,7 @@ Use `data-testid="page-drawer"` (set on `PageDrawerShell`) rather than `[role="d
 **Valid if:** present + not older than 6 months + `version` matches `CookieSettings.consentVersion`
 
 **Flow:**
+
 1. `CookieConsentProvider` mounts → reads localStorage → fetches `/api/globals/cookie-settings?depth=0`
 2. If invalid → `needsBanner = true` → `WindowManagerProvider` opens `system:cookie-notice`
 3. User picks Accept All / Reject / Configure
@@ -202,18 +202,18 @@ Use `data-testid="page-drawer"` (set on `PageDrawerShell`) rather than `[role="d
 
 ## Payload collections & globals
 
-| Slug | Type | Access |
-|---|---|---|
-| `users` | Auth | Admin only |
-| `media` | Upload | Read: public; write: admin |
-| `windows` | General content pages (about, contact, welcome) + content blocks | Read: public; write: admin |
-| `articles` | Portfolio case studies + service descriptions; `type: 'case-study' \| 'service'`; section blocks, `year`, `tags`, `bgImage`/`fgImage` | Read: public; write: admin |
-| `tags` | Reusable labels for articles (shown in the Works table) | Read: public; write: admin |
-| `forms` | Form-builder plugin collection (contact etc.) | Read: public (plugin default); write: admin |
-| `form-submissions` | Form-builder plugin collection | Create: public; read: admin (plugin default) |
-| `cookie-services` | Service catalogue | Read: public; write: admin |
-| `cookie-consents` | Audit log | Create: endpoint only; read/update/delete: admin |
-| `cookie-settings` (global) | Config | Read: public; update: admin |
+| Slug                       | Type                                                                                                                                  | Access                                           |
+| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| `users`                    | Auth                                                                                                                                  | Admin only                                       |
+| `media`                    | Upload                                                                                                                                | Read: public; write: admin                       |
+| `windows`                  | General content pages (about, contact, welcome) + content blocks                                                                      | Read: public; write: admin                       |
+| `articles`                 | Portfolio case studies + service descriptions; `type: 'case-study' \| 'service'`; section blocks, `year`, `tags`, `bgImage`/`fgImage` | Read: public; write: admin                       |
+| `tags`                     | Reusable labels for articles (shown in the Works table)                                                                               | Read: public; write: admin                       |
+| `forms`                    | Form-builder plugin collection (contact etc.)                                                                                         | Read: public (plugin default); write: admin      |
+| `form-submissions`         | Form-builder plugin collection                                                                                                        | Create: public; read: admin (plugin default)     |
+| `cookie-services`          | Service catalogue                                                                                                                     | Read: public; write: admin                       |
+| `cookie-consents`          | Audit log                                                                                                                             | Create: endpoint only; read/update/delete: admin |
+| `cookie-settings` (global) | Config                                                                                                                                | Read: public; update: admin                      |
 
 **Windows and Articles** share a `content` blocks field built by `createContentBlocksField()` in `src/fields/contentBlocks.ts`: `richText`, `articleList` (Works), `welcomeIntro`, `interactivePortrait`, and the case-study section blocks `summary`, `stats`, `imageSection`, `description`, `sectionTitle`; Articles additionally get the doc-image-backed `hero`. The `articleList` block queries articles by `type` at render time (server-side via `resolveBlocks` in `src/lib/windowContent.ts`), resolving each article's cover images, tags, and year, and passes a resolved `articles` array to the client; it never fetches on the client. Both collections have `afterChange`/`afterDelete` hooks that call `revalidateTag('window-content')` + `revalidatePath` for instant cache busting on save. See [Content section blocks & scroll animations](#content-section-blocks--scroll-animations) for the full set.
 
@@ -222,6 +222,7 @@ Use `data-testid="page-drawer"` (set on `PageDrawerShell`) rather than `[role="d
 **Startup window fields** (`windowOpenOnStartup`, `windowStartupViewports`, `windowStartupOrder`) are on Windows and Articles only via `windowStartupFields`. Root layout fetches eligible docs, sorts by startup order → shortcut order → title, and opens them once per page session through the managed window stack.
 
 **Querying conventions:**
+
 - Always pass `select` to limit returned fields in listing queries. Use `as const` so TypeScript infers literal `true` values required by Payload's `select` type.
 - Use `depth: 0` for listing queries where only IDs are needed; `depth: 1` when one level of relationship population is required. Set it explicitly — never rely on Payload's default of 1.
 - Index all fields used in `where` clauses. `slug` on Windows, Articles, and Forms has `index: true`; `type` on Articles has `index: true`. Follow the same pattern for any `status` or `category` selector fields added in future collections.
@@ -230,31 +231,33 @@ Use `data-testid="page-drawer"` (set on `PageDrawerShell`) rather than `[role="d
 
 ## Testing
 
+Docker Desktop must be running. The full gate owns a disposable PostgreSQL 16 database, applies migrations only to that database, builds the production application, starts the production server, and cleans up containers and volumes on success or failure.
+
+```bash
+bun run test                     # exact full local/GitHub gate
+bun run test:ci                  # alias of the exact same full gate
+bun run test:unit                # deterministic Node logic
+bun run test:component           # Chromium Vitest Browser Mode
+bun run test:integration         # real Payload + disposable PostgreSQL
+bun run test:e2e                 # production-build Chromium desktop/mobile
+bun run test:e2e:all-browsers    # repeated Chromium, Firefox, and WebKit matrix
+bun run test:coverage            # combined unit/component/integration coverage
+bun run test:watch               # unit + component watch mode
+bun run typecheck
 ```
-bun test:int     # Vitest — tests/int/**/*.int.spec.ts
-bun test:e2e     # Playwright — tests/e2e/**/*.e2e.spec.ts
-```
 
-**Vitest config:** `environment: 'node'`, `pool: 'forks'`. The `forks` pool is required because Payload config uses `fileURLToPath(import.meta.url)` which breaks under Vite's SSR transform in the default `threads` pool.
+| Layer       | Location                                     | Contract                                                                            |
+| ----------- | -------------------------------------------- | ----------------------------------------------------------------------------------- |
+| Unit        | `tests/unit/**/*.unit.test.ts`               | Pure deterministic logic; fake time when time is part of the contract               |
+| Component   | `tests/component/**/*.component.test.tsx`    | Real browser rendering and user interaction with network-level MSW mocks            |
+| Integration | `tests/integration/**/*.integration.test.ts` | Real Payload, migrations, access control, hooks, endpoints, and PostgreSQL behavior |
+| E2E         | `tests/e2e/**/*.e2e.test.ts`                 | Critical journeys through a production Next.js build                                |
 
-**E2E config:** Chromium only; reuses a running dev server (`reuseExistingServer: true`); drawer state tested via class assertions not visibility checks.
+Coverage is enforced at 90% lines/statements/functions and 85% branches globally, plus per-file floors of 70% lines/statements/functions and 60% branches. Generated files, migrations, operational scripts, and framework bootstrap wrappers are excluded from numeric coverage; their behavior is exercised through integration or E2E journeys.
 
-| File | What it covers |
-|---|---|
-| `tests/int/cookie-consents.int.spec.ts` | Hook unit test, consent creation, access control, unique constraint |
-| `tests/int/cookie-services.int.spec.ts` | Service creation, public read, admin-only write |
-| `tests/int/cookie-manifest.int.spec.ts` | All manifest entries seed correctly and are publicly readable |
-| `tests/int/windows.int.spec.ts` | Window creation with each block type, optional content, access control |
-| `tests/int/articles.int.spec.ts` | Article creation, type discriminator (`case-study`/`service`), slug uniqueness, access control |
-| `tests/int/windows-revalidation.int.spec.ts` | `revalidatePath` called on `afterChange`/`afterDelete`; `skipHooks` re-entry guard |
-| `tests/e2e/cookie-banner.e2e.spec.ts` | Full consent flow: first visit, accept, reject, configure, preferences, update |
-| `tests/e2e/admin.e2e.spec.ts` | Admin login, dashboard, list view, edit view |
-| `tests/e2e/frontend.e2e.spec.ts` | Homepage title + load |
-| `tests/e2e/windows.e2e.spec.ts` | Navigating to a window slug opens PageDrawer; richText block renders |
-| `tests/e2e/works.e2e.spec.ts` | articleList-block listing window: PageDrawer open, article card visible, clicking card navigates to detail |
-| `tests/e2e/analytics.e2e.spec.ts` | PostHog consent gating (opted in/out via `ph_*` localStorage); cookie audit (no undeclared keys); services API |
+Pull requests and pushes run the exact same containerized command as local development. The 03:00 UTC nightly job repeats component and E2E suites across Chromium, Firefox, and WebKit with zero retries. Reports are written under `artifacts/` and uploaded even after a GitHub Actions failure. The test gate uses deterministic placeholder configuration and controlled network boundaries; it requires no repository secrets or third-party availability.
 
-**Integration test access control pattern.** Always pass `overrideAccess: false` together with a `user` object to exercise real access control. Use `overrideAccess: true` only in test setup/teardown helpers. See `tests/int/cookie-services.int.spec.ts` — setup uses `overrideAccess: true` and assertions use `overrideAccess: false` — as the model to follow.
+See [`docs/testing.md`](docs/testing.md) for fixture rules, database safety, locator conventions, coverage scope, debugging, and mandatory standards for future tests.
 
 ---
 
@@ -276,13 +279,13 @@ These rules apply to every task in the roadmap. A checklist item is not done unt
 
 ### Server-first rules
 
-| Scenario | Correct approach |
-|---|---|
-| Read collection data for rendering | `async` Server Component calling `getPayload()` |
-| Read a global for rendering | `async` Server Component calling `payload.findGlobal()` |
-| Submit a form / mutation | Client Component POSTing to a custom Payload endpoint |
-| Cookie consent version check | Client fetch to `/api/globals/cookie-settings?depth=0` (existing, only permitted case) |
-| Any other client-side fetch | Requires explicit justification — default is no |
+| Scenario                           | Correct approach                                                                       |
+| ---------------------------------- | -------------------------------------------------------------------------------------- |
+| Read collection data for rendering | `async` Server Component calling `getPayload()`                                        |
+| Read a global for rendering        | `async` Server Component calling `payload.findGlobal()`                                |
+| Submit a form / mutation           | Client Component POSTing to a custom Payload endpoint                                  |
+| Cookie consent version check       | Client fetch to `/api/globals/cookie-settings?depth=0` (existing, only permitted case) |
+| Any other client-side fetch        | Requires explicit justification — default is no                                        |
 
 Never call `getPayload()` inside a Client Component (`'use client'`). Never use SWR, React Query, or `useEffect`-based fetching for content available at request time.
 
@@ -305,6 +308,7 @@ The `postgresAdapter` uses default `push` behavior. Two distinct modes:
 **CI / production (fresh databases)** — `bun payload migrate` applies all pending migration files in sequence before starting the server.
 
 Steps when changing any collection, global, or field:
+
 1. Edit the config
 2. Run `bun payload migrate:create` — Payload diffs the DB schema and emits a migration file under `src/migrations/`
 3. Review the generated SQL before committing
@@ -315,12 +319,12 @@ Never write migration SQL by hand.
 
 ### Hook safety rules
 
-| Hook timing | Purpose | Key constraint |
-|---|---|---|
-| `beforeValidate` | Normalise / format incoming data | Do not call Local API here |
-| `beforeChange` | Business logic, lookups, guards | Thread `req`; throw to abort the operation |
-| `afterChange` | Side effects: cache revalidation, notifications | Pass `req`; use `req.context.skipHooks` guard |
-| `afterDelete` | Side effects on deletion | Same as `afterChange` |
+| Hook timing      | Purpose                                         | Key constraint                                |
+| ---------------- | ----------------------------------------------- | --------------------------------------------- |
+| `beforeValidate` | Normalise / format incoming data                | Do not call Local API here                    |
+| `beforeChange`   | Business logic, lookups, guards                 | Thread `req`; throw to abort the operation    |
+| `afterChange`    | Side effects: cache revalidation, notifications | Pass `req`; use `req.context.skipHooks` guard |
+| `afterDelete`    | Side effects on deletion                        | Same as `afterChange`                         |
 
 Always pass `req` to nested Local API calls inside hooks:
 
@@ -336,12 +340,14 @@ await p.findByID({ collection: 'forms', id })
 Prevent infinite `afterChange` loops with the context pattern:
 
 ```ts
-afterChange: [async ({ req, doc }) => {
-  if (req.context.skipHooks) return
-  req.context.skipHooks = true
-  await req.payload.update({ collection: 'windows', id: doc.id, data: {}, req })
-  req.context.skipHooks = false
-}]
+afterChange: [
+  async ({ req, doc }) => {
+    if (req.context.skipHooks) return
+    req.context.skipHooks = true
+    await req.payload.update({ collection: 'windows', id: doc.id, data: {}, req })
+    req.context.skipHooks = false
+  },
+]
 ```
 
 ### Access control defaults
@@ -353,26 +359,29 @@ afterChange: [async ({ req, doc }) => {
 ### Performance defaults
 
 For every `payload.find()` call:
+
 - Set `select` to include only fields the caller uses
 - Set `depth` explicitly (not relying on Payload's default)
 - Add `limit` when the collection can have unbounded documents
 - Index all fields used in `where` clauses (`index: true` on the field definition)
 
-### TDD definition of done
+### Test definition of done
 
 Each feature is not done until:
 
-- [ ] Integration test covers: happy path, access control rejection, any unique constraint, any hook side effect
-- [ ] `bun test:int` passes with zero skipped tests
-- [ ] E2E test covers: the primary user flow end-to-end, drawer/window open state (via class assertion), and at least one error/empty state
-- [ ] `bun test:e2e` passes against a running dev server
-- [ ] `bun run build` passes (no TypeScript errors)
+- [ ] Tests are placed at the lowest layer that proves the behavior without duplicating lower-level details
+- [ ] Integration coverage includes applicable access rejection, validation, relationship, transaction, and hook side effects
+- [ ] Critical user behavior is covered as a consolidated production-build E2E journey, including meaningful failure or empty states
+- [ ] Tests pass alone, in the accumulated suite, and on repeated execution with zero skips and retries
+- [ ] `bun run test` passes in the same pinned container used by GitHub Actions
 - [ ] `bun generate:types` has been run and `src/payload-types.ts` is committed
+- [ ] Production behavior remains the source of truth; no test-only branch or product regression was introduced to satisfy an assertion
 
 ### Quality gate between phases
 
 Before starting the next phase:
-- `bun test:int && bun test:e2e && bun run build` all green
+
+- `bun run test` is green
 - No `TODO` or `as any` cast introduced without a tracking issue
 - `src/payload-types.ts` is committed and up to date
 
@@ -382,7 +391,7 @@ Before starting the next phase:
 
 # Roadmap
 
-Each task follows TDD order: write integration test → implement schema/hook → write E2E test → implement UI. The Quality Standards section above defines when a task is done. Phases are ordered by dependency.
+The roadmap records product work. Current test placement and acceptance are governed by [`docs/testing.md`](docs/testing.md), not by historical one-test-per-feature filenames. Tests validate production behavior; implementation is never weakened to accommodate a brittle assertion.
 
 ---
 
@@ -392,24 +401,13 @@ Must be completed before merging any Phase 1 work to main.
 
 ### 0.1 GitHub Actions CI pipeline
 
-- [x] Create `.github/workflows/ci.yml` with steps in order:
-  1. `bun install --frozen-lockfile`
-  2. `bun run build` — fails the workflow if TypeScript or Next.js compilation errors exist
-  3. Start a PostgreSQL service container (`postgres:16`; set `POSTGRES_DB`, `POSTGRES_USER`, `POSTGRES_PASSWORD`)
-  4. Run `bun payload migrate` against the CI database
-  5. `bun test:int`
-  6. Start `bun start` as a background step; wait for port 3000
-  7. `bun test:e2e`
-- [x] Fix `playwright.config.ts` `webServer` for CI:
-  ```ts
-  webServer: {
-    command: process.env.CI ? 'bun start' : 'bun run dev',
-    reuseExistingServer: !process.env.CI,
-    url: 'http://localhost:3000',
-  }
-  ```
-  (`forbidOnly: !!process.env.CI` and `retries: process.env.CI ? 2 : 0` are already set.)
-- [x] Add required CI secrets: `DATABASE_URL`, `PAYLOAD_SECRET`, `RECAPTCHA_SECRET_KEY`, `NEXT_PUBLIC_RECAPTCHA_SITE_KEY`
+- [x] `bun run test` and `bun run test:ci` execute the same Docker-owned gate locally and on GitHub Actions.
+- [x] Bun 1.2.15, Playwright 1.58.2, its browser image, and PostgreSQL 16.9 are pinned.
+- [x] Every run creates a fresh test-only database, validates its host/name before migrations, and removes its containers and volumes after success or failure.
+- [x] Pull requests and pushes run lint, typecheck, repeated unit/component suites, integration, coverage, production build, and Chromium desktop/mobile E2E.
+- [x] The 03:00 UTC nightly run repeats component and E2E suites across Chromium, Firefox, and WebKit with zero retries.
+- [x] Coverage, JUnit, traces, screenshots, video, and HTML reports are retained after failures.
+- [x] Test configuration uses safe placeholders and controlled mocks; GitHub secrets and external services are not required.
 
 **Tests required:** the CI workflow itself; it must exit 0 on a clean main branch.
 
@@ -427,11 +425,11 @@ Windows and Works have slugs and shortcut metadata but no content. This phase ad
 
 ### 1.2 Content blocks field
 
-- [x] Write `tests/int/windows.int.spec.ts` — Window creation with each block type, optional content, access control
+- [x] Payload model coverage verifies Window block variants, optional content, and access control in `tests/integration/payload-models.integration.test.ts`
 - [x] Create `src/fields/contentBlocks.ts` — content blocks shared by Windows and Articles
 - [x] Add the blocks field to `Windows.ts` and `Articles.ts`
-- [x] Run `bun generate:types` → `bun payload migrate:create` → `bun payload migrate`
-- [x] `bun test:int` — new tests pass
+- [x] Run `bun generate:types` → `bun payload migrate:create`; local schema changes are applied by `bun dev`, while migrations run only against fresh CI/production databases
+- [x] `bun run test:integration` — new tests pass
 
 > **Superseded (article-sections branch):** the original `image`/`gallery`/`embed`/`cta`
 > blocks were removed and replaced by the case-study section blocks, and
@@ -444,37 +442,31 @@ Windows and Works have slugs and shortcut metadata but no content. This phase ad
 
 Revalidation lands here alongside content blocks so that admin saves immediately invalidate the Next.js cache in production without a redeploy.
 
-- [x] Write `tests/int/windows-revalidation.int.spec.ts` — `revalidatePath` called on `afterChange`/`afterDelete`; `skipHooks` re-entry guard verified
+- [x] `tests/integration/content-hooks-and-seo.integration.test.ts` verifies `afterChange`/`afterDelete` revalidation and the `skipHooks` re-entry guard
 - [x] Add `afterChange` + `afterDelete` hooks to `Windows.ts` and `Articles.ts`:
   - `revalidatePath` wrapped in `try/catch` so test-runner seed calls (outside Next.js context) don't throw "static generation store missing"
   - `Articles.ts` also revalidates `/works` and `/services`
-- [x] `bun test:int` — revalidation tests pass
+- [x] `bun run test:integration` — revalidation tests pass
 
 ### 1.4 Welcome Window
 
-- [x] Extend `tests/int/windows.int.spec.ts` — seed a Window with a `RichTextBlock`; assert `content[0].blockType === 'richText'`
+- [x] Integration coverage creates a Window with rich text and verifies the resolved content contract
 - [x] Create `src/components/window-content/index.tsx` — Server Component; renders blocks via the shared `ContentBlocks` renderer (`src/components/content-blocks/`), which switches on `block.blockType` and emits `data-block-type` attributes for test targeting
 - [x] Create `src/components/article-content/index.tsx` — same pattern typed with `Article`
-- [x] Write `tests/e2e/windows.e2e.spec.ts`:
-  - Navigate to seeded window slug; assert `[data-testid="page-drawer"]` has class `translate-y-0`
-  - Assert `[data-block-type="richText"]` is visible
-  - Uses `page.addInitScript()` to seed cookie consent in localStorage before navigation (prevents cookie banner overlay)
+- [x] `tests/e2e/core.desktop.e2e.test.ts` and `tests/e2e/core.mobile.e2e.test.ts` navigate to deterministic seeded content and verify the named window/drawer, rendered content, and URL through user-visible contracts
 
 ### 1.5 Works listing page (`/works`)
 
-- [x] Write `tests/e2e/works.e2e.spec.ts`:
-  - Navigate to `/works`; assert PageDrawer open (`translate-y-0`)
-  - Assert ≥ 1 article card is visible (seeded `type: 'case-study'` article in `beforeAll`)
-  - Assert clicking a card navigates to `/{slug}` and detail drawer opens
+- [x] The core desktop/mobile journeys open the Works view, exercise search and view switching, and navigate from a deterministic article card to its detail content
 - [x] Replace placeholder copy in `src/app/(frontend)/(pages)/works/page.tsx`:
   - `payload.find({ collection: 'articles', where: { type: { equals: 'case-study' } }, select: { title: true, slug: true, shortcutIcon: true } as const, depth: 0, limit: 24 })`
   - Renders a grid of article cards (Server Components, no `'use client'`)
 - [x] Update `generateStaticParams` in `src/app/(frontend)/(pages)/[slug]/page.tsx` — covers windows + articles + forms:
   ```ts
   const [windows, articles, forms] = await Promise.all([
-    payload.find({ collection: 'windows',  select: { slug: true } as const, limit: 200, depth: 0 }),
+    payload.find({ collection: 'windows', select: { slug: true } as const, limit: 200, depth: 0 }),
     payload.find({ collection: 'articles', select: { slug: true } as const, limit: 200, depth: 0 }),
-    payload.find({ collection: 'forms',    select: { slug: true } as const, limit: 200, depth: 0 }),
+    payload.find({ collection: 'forms', select: { slug: true } as const, limit: 200, depth: 0 }),
   ])
   ```
 
@@ -482,17 +474,12 @@ Revalidation lands here alongside content blocks so that admin saves immediately
 
 - [x] Filter Articles by `type: 'service'` — no separate collection needed; `Articles.ts` is the single source
 - [x] Create `src/app/(frontend)/(pages)/services/page.tsx` mirroring works/page.tsx with `where: { type: { equals: 'service' } }`
-- [x] Integration test coverage: `tests/int/articles.int.spec.ts` covers `type: 'service'` creation and access control
-- [ ] Write `tests/e2e/services.e2e.spec.ts` mirroring `works.e2e.spec.ts`
+- [x] `tests/integration/payload-models.integration.test.ts` covers article types and access control
+- [ ] Add any new Services-specific critical journey to the consolidated core E2E file instead of creating a one-assertion setup duplicate
 
-**Tests required for Phase 1:**
-- `tests/int/windows.int.spec.ts` ✓
-- `tests/int/articles.int.spec.ts` ✓ (replaces `works.int.spec.ts`; Articles collection replaced Works)
-- `tests/int/windows-revalidation.int.spec.ts` ✓
-- `tests/e2e/windows.e2e.spec.ts` ✓
-- `tests/e2e/works.e2e.spec.ts` ✓
+**Tests required for Phase 1:** current Payload model/content-hook integration suites and core production-build E2E journeys. ✓
 
-**Quality gate:** `bun test:int && bun test:e2e && bun run build` pass; `src/payload-types.ts` committed. ✓ **All gates green.**
+**Quality gate:** `bun run test` passes; `src/payload-types.ts` is committed. ✓ **All gates green.**
 
 ---
 
@@ -506,28 +493,28 @@ Every content collection (`windows`, `articles`, `forms`) now has a **Window** t
 
 **Chrome behavior fields**
 
-| Field | Type | Default | Effect |
-|-------|------|---------|--------|
-| `windowCollapsible` | checkbox | `true` | Shows minimize button in title bar |
-| `windowExpandable` | checkbox | `false` | Shows full-screen expand button (green traffic light) |
-| `windowResizable` | checkbox | `true` | Renders E / S / SE resize handles on desktop |
+| Field               | Type     | Default | Effect                                                |
+| ------------------- | -------- | ------- | ----------------------------------------------------- |
+| `windowCollapsible` | checkbox | `true`  | Shows minimize button in title bar                    |
+| `windowExpandable`  | checkbox | `false` | Shows full-screen expand button (green traffic light) |
+| `windowResizable`   | checkbox | `true`  | Renders E / S / SE resize handles on desktop          |
 
 **Toolbar behavior fields**
 
-| Field | Type | Default | Effect |
-|-------|------|---------|--------|
-| `windowDisplaySearch` | checkbox | `false` | Renders a search input in the window toolbar (desktop); sections that receive the context (`articleList`) filter content client-side |
-| `windowDisplayViewToggle` | checkbox | `false` | Renders grid / table toggle buttons (`ri-layout-grid-line` / `ri-table-view`) |
-| `windowDefaultView` | select (`grid`/`table`) | `grid` | Initial view mode when `windowDisplayViewToggle` is true |
-| `windowDisplayHistory` | checkbox | `false` | Renders back / forward buttons; article links navigate in-window instead of opening new windows |
+| Field                     | Type                    | Default | Effect                                                                                                                               |
+| ------------------------- | ----------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------ |
+| `windowDisplaySearch`     | checkbox                | `false` | Renders a search input in the window toolbar (desktop); sections that receive the context (`articleList`) filter content client-side |
+| `windowDisplayViewToggle` | checkbox                | `false` | Renders grid / table toggle buttons (`ri-layout-grid-line` / `ri-table-view`)                                                        |
+| `windowDefaultView`       | select (`grid`/`table`) | `grid`  | Initial view mode when `windowDisplayViewToggle` is true                                                                             |
+| `windowDisplayHistory`    | checkbox                | `false` | Renders back / forward buttons; article links navigate in-window instead of opening new windows                                      |
 
 **Startup fields** (Windows and Articles only)
 
-| Field | Type | Default | Effect |
-|-------|------|---------|--------|
-| `windowOpenOnStartup` | checkbox | `false` | Opens this content window automatically when the visitor lands on `/` |
-| `windowStartupViewports` | multi-select (`desktop`/`mobile`) | `['desktop']` | Limits startup opening by viewport |
-| `windowStartupOrder` | number | `0` | Sorts startup windows before `shortcutOrder` and title |
+| Field                    | Type                              | Default       | Effect                                                                |
+| ------------------------ | --------------------------------- | ------------- | --------------------------------------------------------------------- |
+| `windowOpenOnStartup`    | checkbox                          | `false`       | Opens this content window automatically when the visitor lands on `/` |
+| `windowStartupViewports` | multi-select (`desktop`/`mobile`) | `['desktop']` | Limits startup opening by viewport                                    |
+| `windowStartupOrder`     | number                            | `0`           | Sorts startup windows before `shortcutOrder` and title                |
 
 **Adding to a new collection:**
 
@@ -564,8 +551,7 @@ Content windows opened via `useWindowManager.openContent(slug)` (or the compatib
 - [x] `src/components/window/ResizeHandles.tsx` — E / S / SE handles with ARIA + keyboard
 - [x] `src/components/window/title-context.tsx` — holds chrome + toolbar flags; exposes `SetWindowOptions` and `SetWindowToolbar` setter components
 - [x] `src/components/window/title-bar.tsx` — green button activates when `expandable: true`
-- [x] `tests/int/window-behavior.int.spec.ts` — round-trip for all three fields on Windows + Articles
-- [x] `tests/int/window-toolbar-fields.int.spec.ts` — round-trip for all four toolbar fields + `extractBehavior` defaults
+- [x] Payload model and field-contract tests cover Window behavior fields, toolbar fields, and `extractBehavior` defaults
 
 ### 2.1 Window state management
 
@@ -586,12 +572,7 @@ Content windows opened via `useWindowManager.openContent(slug)` (or the compatib
 
 ### 2.2 WindowShell component
 
-- [ ] Write E2E tests **first** (TDD):
-  - At viewport 1280×800: clicking a shortcut opens a `[role="dialog"]` that does **not** have class `translate-y-0`
-  - Dragging the title bar repositions the window (assert `style.transform` changes)
-  - Minimize → window not visible, taskbar entry present
-  - Close → window removed, `?open` URL param updated
-  - At viewport 375×812: same route opens a bottom-sheet drawer (existing PageDrawerShell behaviour unchanged)
+- [x] The consolidated core E2E journeys verify named desktop dialogs and mobile drawers, pointer dragging, accessible resize controls, minimize/restore, close, URL synchronization, and persisted geometry
 - [ ] Create `src/components/window/WindowShell.tsx` (`'use client'`):
   - Drag via `onPointerDown` / `onPointerMove` / `onPointerUp`
   - zIndex management on focus via `useWindowManager`
@@ -603,7 +584,7 @@ Content windows opened via `useWindowManager.openContent(slug)` (or the compatib
 
 ### 2.3 Taskbar
 
-- [ ] Write E2E test: minimized window entries appear in the taskbar; clicking an entry restores the window
+- [x] The core desktop journey verifies that a minimized window appears in the taskbar and restores from its named taskbar action
 - [ ] Create `src/components/taskbar/index.tsx` — Client Component, desktop only (≥ 1024 px), subscribed to `useWindowManager`
 
 ### 2.4 Open Graph per window (foundation for Phase 3)
@@ -629,6 +610,7 @@ ArticleListBlock (consumes context: filters by searchQuery, renders in viewMode,
 ```
 
 **History lifecycle rules:**
+
 - History stack lives in `AdditionalWindow`, not in the context provider — this is the single source of truth.
 - `displaySlug` is derived from `historyStack[historyIndex]`; there is no separate `displaySlug` state.
 - On back navigation to the initial slug of a pre-rendered window, `preloadedData` is explicitly restored (the content effect must NOT early-return without setting `data`).
@@ -636,6 +618,7 @@ ArticleListBlock (consumes context: filters by searchQuery, renders in viewMode,
 - For the primary route (`PageDrawerShell`), `canGoBack=true` always and `onBack = router.back()` — browser history is used instead of an in-window stack.
 
 **View mode:**
+
 - `viewMode` in the context uses `userViewMode ?? behavior.defaultView`. `null` means "follow the CMS default"; an explicit value means the user has toggled it.
 - This ensures a non-preloaded window with `windowDefaultView: 'table'` shows the correct mode as soon as data loads, without resetting a user's explicit choice.
 
@@ -649,8 +632,8 @@ ArticleListBlock (consumes context: filters by searchQuery, renders in viewMode,
 - [x] `src/components/window/WindowToolbar.tsx` — toolbar UI (`data-window-toolbar`, `data-view-mode` attributes for E2E targeting)
 - [x] `src/components/window/AdditionalWindow.tsx` — owns history state; resets on close; `ArticleListBlock` sub-component consumes toolbar context
 - [x] `src/components/drawer/page-shell.tsx` — wraps primary route content with `WindowToolbarProvider` using browser navigation callbacks
-- [x] `tests/int/window-toolbar-fields.int.spec.ts` — 13 integration tests for field defaults, mapping, and all three collections
-- [x] `tests/e2e/window-toolbar.e2e.spec.ts` — E2E tests: toolbar visibility, view toggle, articleList search, in-window history, mobile
+- [x] Field-contract and Payload model tests verify toolbar defaults and mapping across the applicable collections
+- [x] Core desktop/mobile journeys verify toolbar visibility, view toggle, article-list search, and in-window history
 
 ### 2.6 Window pre-rendering and boot preloader
 
@@ -675,6 +658,7 @@ On-demand windows (opened via `useWindowManager.open(slug)` for slugs not in `sh
 `PreloaderProvider` tracks progress toward a `total` target using a `readyCount` counter. Each pre-rendered `AdditionalWindow` calls `onReady()` once on mount, incrementing the counter. `PagePreloader` shows a full-screen overlay with a `{percentage}%` counter; `AnimatePresence` fades it out when `isComplete` becomes true.
 
 `total` is `number | null`:
+
 - `null` — viewport not yet checked; preloader shows at 0% (SSR/hydration initial state)
 - `0` — mobile viewport confirmed; `isComplete = true` immediately (nothing to pre-render)
 - `N` — desktop viewport confirmed; waits for N `reportReady()` calls
@@ -692,6 +676,7 @@ true  → total = N     → waits for N ready   (desktop: count up to 100%)
 Pre-rendered windows and the Taskbar only render when `isDesktop === true`. On mobile, regular route navigation still uses `PageDrawerShell`; managed startup/system windows keep their stack in `useWindowManager` and render the focused/top window as the active sheet.
 
 **Key files:**
+
 - `src/lib/windowContent.ts` — server-only `unstable_cache` fetch + `WindowContentResult` type
 - `src/actions/getWindowContent.ts` — `'use server'` re-export
 - `src/app/(frontend)/layout.tsx` — calls `fetchAllShortcutContents`, passes `preloadedContents` + `shortcutSlugs`
@@ -703,15 +688,9 @@ Pre-rendered windows and the Taskbar only render when `isDesktop === true`. On m
 - [x] `src/components/preloader/` — `PreloaderProvider` + `PagePreloader`
 - [x] `src/components/window/WindowManagerProvider.tsx` — `isDesktop`-aware `total` computation; always-mounted shortcut windows
 - [x] `src/components/window/AdditionalWindow.tsx` — `preloadedData`, `isVisible`, `onReady` props; module-level `contentCache`
-- [x] `tests/e2e/preloader.e2e.spec.ts` — 6 tests: preloader visible on load, counts to 100%, exits on completion, skipped on mobile
+- [x] Core desktop/mobile journeys verify startup and navigation complete without a stranded preloader; viewport behavior is asserted without skips
 
-**Tests required for Phase 2:**
-- `tests/int/window-state.int.spec.ts`
-- `tests/int/window-toolbar-fields.int.spec.ts` ✓
-- `tests/e2e/windows.e2e.spec.ts` (extend with desktop viewport assertions)
-- `tests/e2e/taskbar.e2e.spec.ts`
-- `tests/e2e/window-toolbar.e2e.spec.ts` ✓
-- `tests/e2e/preloader.e2e.spec.ts` ✓
+**Tests required for Phase 2:** window-state/unit coverage, browser component coverage for window chrome and recovery, and core desktop/mobile E2E journeys. ✓
 
 **Quality gate:** Phase 1 tests still pass; no mobile regression; `bun run build` clean.
 
@@ -732,7 +711,7 @@ SEO precedes analytics: `generateMetadata` provides canonical URLs and Open Grap
   - Plugin injects a `meta` group (`title`, `description`, `image`) and appends an **SEO tab** to the existing Content / Shortcut tabs — giving `Content / Shortcut / SEO`.
   - Extended with a `noIndex` checkbox via the plugin's `fields` option; stored as `meta_no_index` (schema-compatible with existing DB columns — no data migration needed).
   - `generateTitle` and `generateURL` config functions power the admin's auto-generate buttons.
-- [x] `tests/int/seo-fields.int.spec.ts` — tests `meta.title`, `meta.description`, `meta.noIndex` round-trip on the Windows collection.
+- [x] Payload model integration coverage verifies `meta.title`, `meta.description`, and `meta.noIndex` round-trips
 
 ### 3.3 `generateMetadata` in routes
 
@@ -744,11 +723,9 @@ SEO precedes analytics: `generateMetadata` provides canonical URLs and Open Grap
 
 - [x] `src/app/sitemap.ts` — fetches windows and articles where `meta.noIndex` is not true; canonical base from `process.env.NEXT_PUBLIC_SITE_URL`.
 - [x] `src/app/robots.ts` — synchronous; reads `NEXT_PUBLIC_SITE_URL` for sitemap URL.
-- [x] `tests/e2e/seo.e2e.spec.ts` — covers sitemap XML, robots.txt, `og:title`, and `meta.noIndex` → `robots: noindex`.
+- [x] The platform E2E journey covers sitemap XML, robots.txt, canonical metadata, Open Graph images, and `meta.noIndex` → `robots: noindex`
 
-**Tests required for Phase 3:**
-- `tests/int/seo-fields.int.spec.ts` ✓
-- `tests/e2e/seo.e2e.spec.ts` ✓
+**Tests required for Phase 3:** content/SEO integration coverage and the platform metadata journey. ✓
 
 **Quality gate:** sitemap generated at build; no public-facing page has `robots: noindex` by default; `bun run build` clean. ✓ **All gates green.**
 
@@ -765,10 +742,10 @@ All services integrate with the existing cookie consent system. No service fires
 Every cookie/storage item the site writes is declared in a canonical manifest. An E2E audit test catches any undeclared key that appears after a library update.
 
 - [x] Create `src/data/cookieManifest.ts` — single source of truth for all `CookieService` entries (essential, functional, analytics)
-- [x] Create `tests/helpers/seedCookieServices.ts` — delete-first idempotent seeder (matches project pattern from `seedContent.ts`)
+- [x] The deterministic E2E fixture seeds declared cookie services with unique records and registered cleanup
 - [x] `bun run seed:cookies` script populates a fresh local DB from the manifest
-- [x] `tests/int/cookie-manifest.int.spec.ts` — verifies all manifest entries seed and are publicly readable
-- [x] Cookie audit test in `tests/e2e/analytics.e2e.spec.ts` — accept all consent → collect every `document.cookie` name + localStorage + sessionStorage key → assert each matches a declared manifest entry (prefix patterns like `ph_*` and `__ph_*` supported)
+- [x] Payload integration coverage verifies cookie services and consent audit behavior
+- [x] The platform E2E journey verifies accept/reject/configure/update persistence, audit recording, and analytics consent gating while all external traffic is blocked
 
 ### 4.1 PostHog
 
@@ -791,9 +768,7 @@ Every cookie/storage item the site writes is declared in a canonical manifest. A
 - [x] `withSentryConfig` wrapping `next.config.ts`
 - [x] `NEXT_PUBLIC_SENTRY_DSN`, `SENTRY_ORG`, `SENTRY_PROJECT` added to `.env.example`
 
-**Tests required for Phase 4:**
-- `tests/int/cookie-manifest.int.spec.ts` ✓
-- `tests/e2e/analytics.e2e.spec.ts` ✓ (PostHog consent gating via `ph_*` localStorage side-effects; cookie audit; services API)
+**Tests required for Phase 4:** Payload consent integration coverage plus the platform cookie/analytics journey. ✓
 
 **Quality gate:** no analytics tool writes storage or fires events when the user rejects all optional categories; cookie audit test fails if a library update introduces an undeclared key. ✓ **All gates green.**
 
@@ -803,7 +778,7 @@ Every cookie/storage item the site writes is declared in a canonical manifest. A
 
 ### 5.1 Loading / boot screen
 
-- [ ] Write `tests/e2e/boot.e2e.spec.ts` **first**:
+- [ ] Extend the consolidated core E2E journey when boot-session behavior changes:
   - On first load (no `sessionStorage['booted']`): boot overlay is visible
   - After animation completes: `sessionStorage['booted']` is set and the overlay is not in the DOM
   - Second load: overlay is skipped entirely
@@ -814,23 +789,21 @@ Every cookie/storage item the site writes is declared in a canonical manifest. A
 
 ### 5.2 Wallpaper
 
-- [ ] Write E2E test: wallpaper element has a non-transparent background; when `data-page-drawer="open"`, the wallpaper has a visually distinct state (use `toHaveCSS` or `toHaveScreenshot()`)
+- [ ] Add a focused visual assertion only if wallpaper appearance is a stable product contract; interaction/state belongs in component or core E2E coverage
 - [ ] Implement a wallpaper that reacts to `--drawer-open-pct` CSS variable (already set by `PageDrawerShell`) — e.g., blur or darken as a drawer opens
 
 ### 5.3 Content animations
 
-- [ ] Write E2E screenshot test (`toHaveScreenshot()`) for the final rendered state of a content window
+- [ ] Add screenshots only for deliberately stable visual contracts; animation behavior belongs in the real-browser component suite
 - [ ] Intersection Observer + CSS `@keyframes` for scroll-triggered animations inside window/drawer content
 - [ ] Framer Motion `motion.div` with staggered `transition.delay` for sequenced list animations
 
 ### 5.4 Shortcut icon animations
 
-- [ ] Write E2E test: shortcut icon has a `transition` CSS property; hovering changes its scale (use `toHaveCSS`)
+- [ ] Verify shortcut hover behavior through a real pointer interaction, not an implementation-specific class assertion
 - [ ] Add `hover:scale-105 active:scale-95 transition-transform` to `src/components/shortcut/index.tsx`
 
-**Tests required for Phase 5:**
-- `tests/e2e/boot.e2e.spec.ts`
-- `tests/e2e/animations.e2e.spec.ts` (screenshot snapshots for key visual states)
+**Tests required for Phase 5:** animation component coverage and only the critical boot behavior in the consolidated core E2E journey.
 
 **Quality gate:** `bun run build` passes; no animation library added unless Framer Motion is already present.
 
@@ -840,13 +813,19 @@ Every cookie/storage item the site writes is declared in a canonical manifest. A
 
 ### 6.1 Shortcut ordering and fetch optimisation
 
-- [ ] Write `tests/int/shortcuts.int.spec.ts`: two shortcuts with the same `shortcutOrder` are sorted stably by `id` as a tiebreaker
+- [ ] Add a deterministic unit or Payload integration case for stable shortcut ordering when that behavior is implemented
 - [x] Fix `fetchShortcuts` in `src/app/(frontend)/layout.tsx` — `select`, `depth: 0`, `limit: 100` added to all calls (windows, articles, forms); `works` entry removed; done as part of Phase 1 when wiring up Articles shortcuts:
   ```ts
   payload.find({
     collection: 'windows',
     where: { showShortcut: { equals: true } },
-    select: { title: true, slug: true, shortcutName: true, shortcutIcon: true, shortcutOrder: true } as const,
+    select: {
+      title: true,
+      slug: true,
+      shortcutName: true,
+      shortcutIcon: true,
+      shortcutOrder: true,
+    } as const,
     depth: 0,
     limit: 100,
   })
@@ -854,7 +833,7 @@ Every cookie/storage item the site writes is declared in a canonical manifest. A
 
 ### 6.2 Context menu
 
-- [ ] Write `tests/e2e/context-menu.e2e.spec.ts` **first**:
+- [x] The consolidated core desktop journey verifies the context-menu behavior:
   - Right-clicking a shortcut shows a context menu with at least "Open" and "Get Info" items
   - Clicking outside the menu dismisses it
   - Pressing Escape dismisses it
@@ -869,9 +848,7 @@ Every cookie/storage item the site writes is declared in a canonical manifest. A
 - [ ] Add `imageSizes` to `payload.config.ts` for thumbnail resize variants
 - [ ] Add `format: ['webp', 'avif']` to the Sharp config if not set
 
-**Tests required for Phase 6:**
-- `tests/int/shortcuts.int.spec.ts`
-- `tests/e2e/context-menu.e2e.spec.ts`
+**Tests required for Phase 6:** deterministic shortcut-order coverage plus the existing core context-menu journey.
 
 **Quality gate:** Lighthouse performance score does not regress from Phase 5 baseline.
 
@@ -885,8 +862,9 @@ Every cookie/storage item the site writes is declared in a canonical manifest. A
 - [ ] Confirm all migration files are committed and `bun payload migrate` runs clean from a fresh database
 
 **Overall project completion quality gate:**
+
 - All phase 0–7 checklists checked
-- `bun test:int && bun test:e2e` pass clean in CI
+- `bun run test` passes locally and in CI through the same containerized gate
 - `bun run build` zero TypeScript errors
 - No `overrideAccess: true` in Server Components
 - No `getPayload()` calls inside Client Components (`'use client'`)
@@ -897,20 +875,20 @@ Every cookie/storage item the site writes is declared in a canonical manifest. A
 
 ## Environment variables
 
-| Variable | Required | Description |
-|---|---|---|
-| `DATABASE_URL` | Yes | PostgreSQL connection string |
-| `PAYLOAD_SECRET` | Yes | JWT signing secret (min 32 chars) |
-| `RESEND_API_KEY` | Yes | Resend API key for form submission emails |
-| `RESEND_DEFAULT_FROM_ADDRESS` | No | Sender address for form submission emails (defaults to `noreply@dimm.co`) |
-| `RECAPTCHA_SECRET_KEY` | Yes | reCAPTCHA v3 server-side secret |
-| `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` | Yes | reCAPTCHA v3 public site key |
-| `NEXT_PUBLIC_SITE_URL` | Phase 3 | Canonical base URL for sitemap and robots.txt (no trailing slash) |
-| `NEXT_PUBLIC_POSTHOG_KEY` | Phase 4 | PostHog project API key (`phc_…`) |
-| `NEXT_PUBLIC_POSTHOG_HOST` | Phase 4 | PostHog ingest host (e.g. `https://eu.i.posthog.com`) |
-| `NEXT_PUBLIC_SENTRY_DSN` | Phase 4 | Sentry project DSN |
-| `SENTRY_ORG` | Phase 4 | Sentry organisation slug (for source map uploads in CI) |
-| `SENTRY_PROJECT` | Phase 4 | Sentry project slug |
+| Variable                         | Required | Description                                                               |
+| -------------------------------- | -------- | ------------------------------------------------------------------------- |
+| `DATABASE_URL`                   | Yes      | PostgreSQL connection string                                              |
+| `PAYLOAD_SECRET`                 | Yes      | JWT signing secret (min 32 chars)                                         |
+| `RESEND_API_KEY`                 | Yes      | Resend API key for form submission emails                                 |
+| `RESEND_DEFAULT_FROM_ADDRESS`    | No       | Sender address for form submission emails (defaults to `noreply@dimm.co`) |
+| `RECAPTCHA_SECRET_KEY`           | Yes      | reCAPTCHA v3 server-side secret                                           |
+| `NEXT_PUBLIC_RECAPTCHA_SITE_KEY` | Yes      | reCAPTCHA v3 public site key                                              |
+| `NEXT_PUBLIC_SITE_URL`           | Phase 3  | Canonical base URL for sitemap and robots.txt (no trailing slash)         |
+| `NEXT_PUBLIC_POSTHOG_KEY`        | Phase 4  | PostHog project API key (`phc_…`)                                         |
+| `NEXT_PUBLIC_POSTHOG_HOST`       | Phase 4  | PostHog ingest host (e.g. `https://eu.i.posthog.com`)                     |
+| `NEXT_PUBLIC_SENTRY_DSN`         | Phase 4  | Sentry project DSN                                                        |
+| `SENTRY_ORG`                     | Phase 4  | Sentry organisation slug (for source map uploads in CI)                   |
+| `SENTRY_PROJECT`                 | Phase 4  | Sentry project slug                                                       |
 
 ---
 
@@ -920,18 +898,18 @@ Articles and Windows share a `content` blocks field built by
 `createContentBlocksField()` in `src/fields/contentBlocks.ts`. Windows get the
 shared set; Articles also get the doc-image-backed **Hero**.
 
-| Block | `blockType` | Notes |
-|---|---|---|
-| Rich Text | `richText` | Lexical rich text |
-| Works / Article List | `articleList` | Grid + table views (toggle via window toolbar); table rows show tags + year with a mouse-following hover preview |
-| Welcome Intro | `welcomeIntro` | Animated title, role, and descriptor for the welcome surface |
-| Interactive Portrait | `interactivePortrait` | React/SVG portrait with pointer-follow gaze, idle gaze loop, and blinking |
-| Summary | `summary` | 1/3 + 2/3 columns with a draw-on-scroll divider |
-| Stats | `stats` | Up to three count-up figures (single value string like `"30Mil"`/`"$30,000"`/`"21%"` + label) |
-| Image | `imageSection` | Full-width image with the de-pixelation reveal |
-| Description | `description` | 1/3 animated title + 2/3 rich text |
-| Title | `sectionTitle` | Letter-by-letter animated title with optional role/description; after `interactivePortrait` it renders with the compact welcome-card styling |
-| Hero | `hero` | **Articles only** — animated title + 2/3 parallax image from the article's `bgImage`/`fgImage` |
+| Block                | `blockType`           | Notes                                                                                                                                        |
+| -------------------- | --------------------- | -------------------------------------------------------------------------------------------------------------------------------------------- |
+| Rich Text            | `richText`            | Lexical rich text                                                                                                                            |
+| Works / Article List | `articleList`         | Grid + table views (toggle via window toolbar); table rows show tags + year with a mouse-following hover preview                             |
+| Welcome Intro        | `welcomeIntro`        | Animated title, role, and descriptor for the welcome surface                                                                                 |
+| Interactive Portrait | `interactivePortrait` | React/SVG portrait with pointer-follow gaze, idle gaze loop, and blinking                                                                    |
+| Summary              | `summary`             | 1/3 + 2/3 columns with a draw-on-scroll divider                                                                                              |
+| Stats                | `stats`               | Up to three count-up figures (single value string like `"30Mil"`/`"$30,000"`/`"21%"` + label)                                                |
+| Image                | `imageSection`        | Full-width image with the de-pixelation reveal                                                                                               |
+| Description          | `description`         | 1/3 animated title + 2/3 rich text                                                                                                           |
+| Title                | `sectionTitle`        | Letter-by-letter animated title with optional role/description; after `interactivePortrait` it renders with the compact welcome-card styling |
+| Hero                 | `hero`                | **Articles only** — animated title + 2/3 parallax image from the article's `bgImage`/`fgImage`                                               |
 
 Article-only fields (Content tab): `year`, `tags` (relationship → **Tags**
 collection; pick existing or create new), `bgImage`, `fgImage` (16:9 upload
@@ -939,7 +917,7 @@ pair used by the Hero parallax and Works cards).
 
 ### Scroll-animation toolkit
 
-`src/components/animation/` — Framer Motion primitives that trigger on *true*
+`src/components/animation/` — Framer Motion primitives that trigger on _true_
 visibility inside the window's `.win-scroll` container (via `ScrollRoot` /
 `useScrollRoot`), not the viewport: `AnimatedText` (word/letter reveal with an
 accessible full-text copy), `PixelatedImage` (canvas de-pixelation → real
@@ -957,6 +935,7 @@ accessible full-text copy), `PixelatedImage` (canvas de-pixelation → real
 
 ### Tests
 
-- `bun run test:int` — Payload integration (collections, blocks, resolver)
-- `bun run test:dom` — jsdom unit + component tests (`tests/unit`, `tests/component`)
-- `bun run test:e2e` — Playwright (includes `article-sections.e2e.spec.ts`)
+- `bun run test:component` — real-browser rendering, animation, and section behavior
+- `bun run test:integration` — Payload collections, blocks, hooks, and content resolution against disposable PostgreSQL
+- `bun run test:e2e` — production-build desktop/mobile content journeys
+- `bun run test` — the complete local/GitHub acceptance gate

@@ -2,7 +2,7 @@ name: dimm-os-ci
 
 services:
   postgres:
-    image: postgres:16
+    image: postgres:16.9-bookworm
     environment:
       POSTGRES_DB: dimmos_test
       POSTGRES_USER: postgres
@@ -12,8 +12,9 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+      start_period: 5s
 
-  ci:
+  tests:
     build:
       context: .
       dockerfile: Dockerfile.ci
@@ -26,12 +27,15 @@ services:
       RECAPTCHA_SECRET_KEY: ci-placeholder
       NEXT_PUBLIC_RECAPTCHA_SITE_KEY: ci-placeholder
       RESEND_API_KEY: ci-placeholder
+      RESEND_DEFAULT_FROM_ADDRESS: noreply@example.test
+      ANTHROPIC_API_KEY: test-placeholder
+      NEXT_PUBLIC_POSTHOG_KEY: phc_test
+      NEXT_PUBLIC_POSTHOG_HOST: http://127.0.0.1:3999
+      NEXT_PUBLIC_SITE_URL: http://127.0.0.1:3000
+      PAYLOAD_DISABLE_BLOB_STORAGE: "true"
+      SEO_IMAGE_GENERATION_DISABLED: "true"
+      DIMMOS_TEST_RUN: "true"
+      TEST_SUITE: ${TEST_SUITE:-all}
       CI: "true"
-    command: >
-      sh -c "
-        bun payload migrate &&
-        bun run build &&
-        bun test:int &&
-        bunx playwright install --with-deps chromium &&
-        bun test:e2e
-      "
+    volumes:
+      - ./artifacts:/app/artifacts

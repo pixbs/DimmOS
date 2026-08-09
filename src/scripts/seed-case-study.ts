@@ -1,5 +1,5 @@
 import 'dotenv/config'
-import { seedCaseStudy } from '../../tests/helpers/seedContent.js'
+import { seedCaseStudy } from './seed-content.js'
 
 // Seed a full case study exercising every section block + a Works list, for
 // hand QA. Pass a slug as the first arg, otherwise defaults to "case-study-demo".
