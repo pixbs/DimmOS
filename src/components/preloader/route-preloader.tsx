@@ -5,18 +5,28 @@ import { BASE_BG, computeGrid, drawGrid } from '@/components/desktop-wallpaper/g
 
 // First-load splash. Reuses the wallpaper's tile grid but drives it with a
 // travelling diagonal wave instead of mouse proximity. When the page is ready a
-// final wave scales every tile to 0, revealing the live site underneath, then
-// the component unmounts. Mounted once in the persistent root layout, so it
-// only plays on the initial/cold load — never on client-side route transitions.
+// final wave sweeps across: each grey tile rounds up — exposing the live site
+// through its corners — while the circle scales to 0, then the overlay unmounts.
+// Mounted once in the persistent root layout, so it only plays on the initial/
+// cold load — never on client-side route transitions.
 
 // ── Wave ──────────────────────────────────────────────────────────────────────
-const WAVE_COUNT = 2.4 // diagonal crests visible at once
 const WAVE_SPEED = 0.9 // crest travel (cycles / second)
 const MIN_WAVE_MS = 1000 // always show ≥1 full wave before revealing
 const MAX_WAIT_MS = 6000 // safety: reveal even if "ready" never fires
-const REVEAL_MS = 900 // reveal sweep duration
+const REVEAL_MS = 1200 // reveal sweep duration
 const REVEAL_BAND = 0.28 // reveal front softness (fraction of the diagonal)
 const FADE_MS = 240 // final fade after tiles reach 0 (uncovers the header strip)
+
+// Diagonal crests visible at once. Denser grids (desktop) get longer waves so
+// the sweep reads as one big wave rather than a fine ripple — tile size is
+// unchanged, only the wavelength grows with column count.
+function waveCountFor(cols: number): number {
+  if (cols >= 32) return 1.2
+  if (cols >= 20) return 1.5
+  if (cols >= 12) return 2.0
+  return 2.4
+}
 
 export function RoutePreloader() {
   const containerRef = useRef<HTMLDivElement>(null)
@@ -40,6 +50,7 @@ export function RoutePreloader() {
     let cols = 6
     let rows = 1
     let tileSize = 1
+    let waveCount = waveCountFor(6)
     let proximities = new Float32Array(0)
     let scales: Float32Array | null = null
 
@@ -78,6 +89,7 @@ export function RoutePreloader() {
       cols = g.cols
       rows = g.rows
       tileSize = g.tileSize
+      waveCount = waveCountFor(cols)
       proximities = new Float32Array(rows * cols)
       scales = null
     }
@@ -102,6 +114,9 @@ export function RoutePreloader() {
 
       if (revealStart === 0 && ready && ts - startTs >= MIN_WAVE_MS) {
         revealStart = ts
+        // Drop the opaque backdrop so the canvas's cleared corners now expose
+        // the live site instead of the solid cover.
+        if (containerRef.current) containerRef.current.style.backgroundColor = 'transparent'
       }
 
       const denom = cols - 1 + (rows - 1) || 1
@@ -110,13 +125,16 @@ export function RoutePreloader() {
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
           const diag = (c + r) / denom // 0..1 along TL → BR
-          const phase = diag * WAVE_COUNT - elapsed * WAVE_SPEED
+          const phase = diag * waveCount - elapsed * WAVE_SPEED
           const wave = 0.5 + 0.5 * Math.cos(phase * Math.PI * 2) // 0..1
           proximities[r * cols + c] = wave * wave * wave
         }
       }
 
-      // ── reveal: a front sweeps the diagonal, shrinking tiles to 0 behind it ──
+      // ── reveal: a front sweeps the diagonal. Ahead of it, tiles stay full grey
+      //    squares (opaque cover). As the front reaches a tile it rounds the
+      //    corners up — exposing the site behind them (brand layer off + canvas
+      //    cleared) — then the resulting circle scales down to 0.
       if (revealStart !== 0) {
         if (!scales) scales = new Float32Array(rows * cols)
         const rp = Math.min(1, (ts - revealStart) / REVEAL_MS)
@@ -125,13 +143,11 @@ export function RoutePreloader() {
           for (let c = 0; c < cols; c++) {
             const diag = (c + r) / denom
             const local = (front - diag) / REVEAL_BAND
-            const shrink = local <= 0 ? 0 : local >= 1 ? 1 : local
-            scales[r * cols + c] = 1 - shrink
-            // bright, rounded leading edge just before each tile vanishes
-            const edge = 1 - Math.abs(local - 0.5) * 2
-            if (edge > 0) {
-              proximities[r * cols + c] = Math.max(proximities[r * cols + c], edge)
-            }
+            const p = local <= 0 ? 0 : local >= 1 ? 1 : local // 0 ahead → 1 gone
+            // round up first (site peeks through the corners), holding rounded…
+            proximities[r * cols + c] = Math.min(1, p / 0.45)
+            // …then shrink the circle to nothing
+            scales[r * cols + c] = 1 - (p <= 0.3 ? 0 : Math.min(1, (p - 0.3) / 0.7))
           }
         }
         if (rp >= 1) {
@@ -152,6 +168,7 @@ export function RoutePreloader() {
         proximities,
         scales: scales ?? undefined,
         clear: revealStart !== 0,
+        brand: revealStart === 0, // during reveal, corners expose the site — not the brand
         width: vw,
         height: Math.max(1, vh - headerH),
       })
@@ -214,11 +231,17 @@ export function RoutePreloader() {
     <div
       ref={containerRef}
       aria-label="Loading"
-      className="fixed inset-0 z-9999"
+      // pointer-events-none: this is a decorative reveal over an already-loaded
+      // page, so it must not trap input while it plays (the page beneath stays
+      // interactive — e.g. dismissing the startup sheet during the splash).
+      className="pointer-events-none fixed inset-0 z-9999"
       data-route-preloader=""
       role="status"
+      // Opaque until the reveal begins, so a fast load never flashes the site
+      // before the canvas has painted its first cover frame.
+      style={{ backgroundColor: BASE_BG }}
     >
-      <canvas ref={canvasRef} className="pointer-events-none block" />
+      <canvas ref={canvasRef} className="block" />
     </div>
   )
 }

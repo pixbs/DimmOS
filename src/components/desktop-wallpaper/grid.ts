@@ -78,6 +78,12 @@ export interface DrawGridOptions {
    * shrunk tiles expose whatever is behind the canvas (the reveal). Default false.
    */
   clear?: boolean
+  /**
+   * Draw the brand glow layer behind the tiles. Default true. Set false so a
+   * rounding tile exposes whatever is behind the canvas through its corners
+   * (the reveal) instead of the brand colour (the wallpaper's resting look).
+   */
+  brand?: boolean
   /** Canvas drawing width/height in CSS px (device-independent). */
   width: number
   height: number
@@ -97,18 +103,21 @@ export function drawGrid(ctx: CanvasRenderingContext2D, o: DrawGridOptions): voi
   const tileY = (r: number, size: number) => r * tileSize + (tileSize - size) / 2
   const tileSizeAt = (r: number, c: number) => (scales ? tileSize * scales[r * cols + c] : tileSize)
 
-  // 1) Brand glow under active tiles.
-  ctx.fillStyle = BRAND
-  ctx.beginPath()
-  for (let r = 0; r < rows; r++) {
-    for (let c = 0; c < cols; c++) {
-      if (proximities[r * cols + c] < 0.01) continue
-      const size = tileSizeAt(r, c)
-      if (size <= 0) continue
-      ctx.rect(tileX(c, size), tileY(r, size), size, size)
+  // 1) Brand glow under active tiles. Skipped when brand === false so the
+  //    rounding tile's corners expose the cleared (transparent) backdrop.
+  if (o.brand !== false) {
+    ctx.fillStyle = BRAND
+    ctx.beginPath()
+    for (let r = 0; r < rows; r++) {
+      for (let c = 0; c < cols; c++) {
+        if (proximities[r * cols + c] < 0.01) continue
+        const size = tileSizeAt(r, c)
+        if (size <= 0) continue
+        ctx.rect(tileX(c, size), tileY(r, size), size, size)
+      }
     }
+    ctx.fill()
   }
-  ctx.fill()
 
   // 2) Tile fill + border, corner radius scaled by proximity.
   ctx.beginPath()
