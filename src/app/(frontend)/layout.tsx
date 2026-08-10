@@ -221,11 +221,15 @@ export default function RootLayout(props: { children: React.ReactNode }) {
             <PostHogConsentGate />
             <SentryReplayProvider />
             <PostHogPageView />
-            <Suspense fallback={<RoutePreloader />}>
+            <Suspense fallback={<div aria-hidden className="fixed inset-0 z-9998 bg-bgs" />}>
               <FrontendDataShell>{children}</FrontendDataShell>
             </Suspense>
           </CookieConsentProvider>
         </PostHogProvider>
+        {/* First-load splash: plays a wave then reveals the site. Mounted here
+            (outside Suspense, in the persistent layout) so it shows once on cold
+            load and never on client-side route transitions. */}
+        <RoutePreloader />
       </body>
     </html>
   )
