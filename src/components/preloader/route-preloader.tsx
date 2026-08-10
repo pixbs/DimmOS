@@ -44,6 +44,16 @@ export function RoutePreloader() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2)
     const reduced = window.matchMedia('(prefers-reduced-motion: reduce)').matches
 
+    // Block input only until React has hydrated, then let events pass through.
+    // The overlay renders opaque + pointer-blocking in SSR so a click landing
+    // before hydration can't hit a not-yet-wired handler (which would fall back
+    // to a full-page navigation). This effect runs post-hydration; one frame
+    // later every handler is attached, so we drop the block and the decorative
+    // splash no longer traps gestures (e.g. dismissing the mobile startup sheet).
+    const unblockId = requestAnimationFrame(() => {
+      if (containerRef.current) containerRef.current.style.pointerEvents = 'none'
+    })
+
     let headerH = 0
     let vw = 0
     let vh = 0
@@ -219,6 +229,7 @@ export function RoutePreloader() {
 
     return () => {
       cancelAnimationFrame(rafId)
+      cancelAnimationFrame(unblockId)
       window.removeEventListener('load', markReady)
       window.clearTimeout(maxTimer)
       ro.disconnect()
@@ -231,10 +242,9 @@ export function RoutePreloader() {
     <div
       ref={containerRef}
       aria-label="Loading"
-      // pointer-events-none: this is a decorative reveal over an already-loaded
-      // page, so it must not trap input while it plays (the page beneath stays
-      // interactive — e.g. dismissing the startup sheet during the splash).
-      className="pointer-events-none fixed inset-0 z-9999"
+      // Blocks input in SSR / pre-hydration (default pointer-events), then the
+      // effect drops it to none once hydrated — see the effect for the why.
+      className="fixed inset-0 z-9999"
       data-route-preloader=""
       role="status"
       // Opaque until the reveal begins, so a fast load never flashes the site
